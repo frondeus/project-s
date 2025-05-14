@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tree-sitter-s = { path = "tree-sitter-s" }
+tree-sitter = "*"
+thiserror = "2.0.12"

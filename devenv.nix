@@ -5,10 +5,11 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = [ pkgs.git pkgs.tree-sitter ];
 
   # https://devenv.sh/languages/
   languages.rust.enable = true;
+  languages.typescript.enable = true;
 
   # https://devenv.sh/processes/
   # processes.cargo-watch.exec = "cargo-watch";
