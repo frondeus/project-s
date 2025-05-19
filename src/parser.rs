@@ -96,6 +96,11 @@ impl SExpParser {
     }
 }
 
+pub fn parse(input: &str) -> Result<SExp, ParseError> {
+    let mut parser = SExpParser::new()?;
+    parser.parse(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,48 +110,42 @@ mod tests {
     fn integration() -> test_runner::Result{
 
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
-            let mut parser = SExpParser::new().expect("Failed to create parser");
-            let result = parser.parse(input).expect("Failed to parse");
+            let result = parse(input).expect("Failed to parse");
             format!("{:?}", result)
         })
     }
 
     #[test]
     fn test_parse_simple_symbol() -> Result<(), ParseError> {
-        let mut parser = SExpParser::new()?;
-        let result = parser.parse("foo")?;
+        let result = parse("foo")?;
         assert!(matches!(result, SExp::Symbol(s) if s == "foo"));
         Ok(())
     }
 
     #[test]
     fn test_parse_numeric_symbol() -> Result<(), ParseError> {
-        let mut parser = SExpParser::new()?;
-        let result = parser.parse("42")?;
+        let result = parse("42")?;
         assert!(matches!(result, SExp::Symbol(s) if s == "42"));
         Ok(())
     }
 
     #[test]
     fn test_parse_operator_symbol() -> Result<(), ParseError> {
-        let mut parser = SExpParser::new()?;
-        let result = parser.parse("->")?;
+        let result = parse("->")?;
         assert!(matches!(result, SExp::Symbol(s) if s == "->"));
         Ok(())
     }
 
     #[test]
     fn test_parse_empty_list() -> Result<(), ParseError> {
-        let mut parser = SExpParser::new()?;
-        let result = parser.parse("()")?;
+        let result = parse("()")?;
         assert!(matches!(result, SExp::List(list) if list.is_empty()));
         Ok(())
     }
 
     #[test]
     fn test_parse_list_with_symbols() -> Result<(), ParseError> {
-        let mut parser = SExpParser::new()?;
-        let result = parser.parse("(-> foo bar 12 ==)")?;
+        let result = parse("(-> foo bar 12 ==)")?;
         match result {
             SExp::List(items) => {
                 assert_eq!(items.len(), 5);
