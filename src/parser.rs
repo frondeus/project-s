@@ -52,7 +52,8 @@ impl SExpParser {
     fn node_to_sexp(&self, node: tree_sitter::Node, source: &str) -> Result<SExp, ParseError> {
         match node.kind() {
             "symbol" => {
-                let text = node.utf8_text(source.as_bytes())
+                let text = node
+                    .utf8_text(source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(SExp::Symbol(text.to_string()))
             }
@@ -65,12 +66,16 @@ impl SExpParser {
                 }
                 Ok(SExp::List(items))
             }
-            kind => Err(ParseError::UnexpectedNode(format!("Unexpected node kind: {}", kind))),
+            kind => Err(ParseError::UnexpectedNode(format!(
+                "Unexpected node kind: {}",
+                kind
+            ))),
         }
     }
 
     pub fn parse(&mut self, input: &str) -> Result<SExp, ParseError> {
-        let tree = self.parser
+        let tree = self
+            .parser
             .parse(input, None)
             .ok_or_else(|| ParseError::TreeSitterError("Failed to parse input".to_string()))?;
 
@@ -91,7 +96,10 @@ impl SExpParser {
         // The first child should be a symbol or list
         match cursor.node().kind() {
             "symbol" | "list" => self.node_to_sexp(cursor.node(), input),
-            kind => Err(ParseError::UnexpectedNode(format!("Expected symbol or list, got {}", kind))),
+            kind => Err(ParseError::UnexpectedNode(format!(
+                "Expected symbol or list, got {}",
+                kind
+            ))),
         }
     }
 }
@@ -105,10 +113,8 @@ pub fn parse(input: &str) -> Result<SExp, ParseError> {
 mod tests {
     use super::*;
 
-
     #[test]
-    fn integration() -> test_runner::Result{
-
+    fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
             let result = parse(input).expect("Failed to parse");
             format!("{:?}", result)
@@ -160,4 +166,3 @@ mod tests {
         Ok(())
     }
 }
-

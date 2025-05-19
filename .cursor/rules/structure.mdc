@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 You can run tests by using `cargo xtask test`.
 Each layer of the application should use integration tests.
@@ -16,3 +16,6 @@ fn integration() -> test_runner::Result {
 }
 
 It runs markdown files like `docs/001.md` and finds every codeblock with the same <extension> as requested.
+
+ALWAYS make sure that tests are passing with `cargo xtask test`
+ALWAYS use `cargo xtask clippy` and `cargo xtask fmt` after making the code passing tests.

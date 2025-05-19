@@ -1,10 +1,10 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 pub enum Value {
     String(String),
     Object(BTreeMap<String, Box<Value>>),
-    /// For error handling 
-    Error(String)
+    /// For error handling
+    Error(String),
 }
 
 pub fn walk(ast: &crate::parser::SExp) -> Value {
@@ -13,14 +13,14 @@ pub fn walk(ast: &crate::parser::SExp) -> Value {
         SExp::Symbol(s) => {
             if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
                 // Remove the outer quotes for string literals
-                Value::String(s[1..s.len()-1].to_string())
+                Value::String(s[1..s.len() - 1].to_string())
             } else {
                 Value::String(s.clone())
             }
-        },
+        }
         SExp::List(items) => {
             // Check for (:struct ...)
-            if let Some(SExp::Symbol(tag)) = items.get(0) {
+            if let Some(SExp::Symbol(tag)) = items.first() {
                 if tag == ":struct" {
                     let mut map = BTreeMap::new();
                     let mut i = 1;
@@ -43,31 +43,18 @@ pub fn walk(ast: &crate::parser::SExp) -> Value {
     }
 }
 
-fn to_json(value: Value) -> String {
+pub fn to_json(value: Value) -> serde_json::Value {
     match value {
-        Value::String(s) => format!("\"{}\"", escape_json_string(&s)),
+        Value::String(s) => serde_json::Value::String(s),
         Value::Object(map) => {
-            let mut out = String::from("{\n");
-            let mut first = true;
+            let mut obj = serde_json::Map::new();
             for (k, v) in map {
-                if !first {
-                    out.push_str(",\n");
-                }
-                first = false;
-                out.push_str("    \"");
-                out.push_str(&escape_json_string(&k));
-                out.push_str("\": ");
-                out.push_str(&to_json(*v));
+                obj.insert(k, to_json(*v));
             }
-            out.push_str("\n}");
-            out
+            serde_json::Value::Object(obj)
         }
-        Value::Error(e) => e,
+        Value::Error(e) => serde_json::Value::String(e),
     }
-}
-
-fn escape_json_string(s: &str) -> String {
-    s.replace('"', "\\\"")
 }
 
 #[cfg(test)]
@@ -79,7 +66,8 @@ mod tests {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
             let ast = crate::parser::parse(input).unwrap();
             let value = walk(&ast);
-            to_json(value)
+            let value = to_json(value);
+            serde_json::to_string_pretty(&value).unwrap()
         })
     }
 }

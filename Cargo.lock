@@ -242,6 +242,7 @@ dependencies = [
 name = "project-s"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "test-runner",
  "thiserror",
  "tree-sitter",
