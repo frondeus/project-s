@@ -3,6 +3,9 @@ name = "project-s"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = [".", "test-runner", "xtask"]
+
 [dependencies]
 tree-sitter-s = { path = "tree-sitter-s" }
 tree-sitter = "*"
