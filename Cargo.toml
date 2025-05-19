@@ -7,3 +7,6 @@ edition = "2024"
 tree-sitter-s = { path = "tree-sitter-s" }
 tree-sitter = "*"
 thiserror = "2.0.12"
+
+[dev-dependencies]
+test-runner = { path = "./test-runner" }

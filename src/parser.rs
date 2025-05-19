@@ -100,6 +100,17 @@ impl SExpParser {
 mod tests {
     use super::*;
 
+
+    #[test]
+    fn integration() -> test_runner::Result{
+
+        test_runner::test_snapshots("docs/", "cst", |input, _deps| {
+            let mut parser = SExpParser::new().expect("Failed to create parser");
+            let result = parser.parse(input).expect("Failed to parse");
+            format!("{:?}", result)
+        })
+    }
+
     #[test]
     fn test_parse_simple_symbol() -> Result<(), ParseError> {
         let mut parser = SExpParser::new()?;
