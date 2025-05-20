@@ -5,7 +5,7 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git pkgs.tree-sitter pkgs.colordiff ];
+  packages = [ pkgs.git pkgs.tree-sitter pkgs.colordiff pkgs.bun ];
 
   # https://devenv.sh/languages/
   languages.rust.enable = true;

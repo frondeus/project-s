@@ -14,6 +14,14 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "float"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "integer"
+        },
+        {
+          "type": "SYMBOL",
           "name": "symbol"
         },
         {
@@ -21,10 +29,6 @@
           "name": "list"
         }
       ]
-    },
-    "symbol": {
-      "type": "PATTERN",
-      "value": "[^\\s()]+"
     },
     "list": {
       "type": "SEQ",
@@ -45,6 +49,39 @@
           "value": ")"
         }
       ]
+    },
+    "symbol": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[^\\s()]+"
+        }
+      }
+    },
+    "float": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "[+-]?(?:[0-9]+\\.[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
+        }
+      }
+    },
+    "integer": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "[+-]?[0-9]+"
+        }
+      }
     }
   },
   "extras": [

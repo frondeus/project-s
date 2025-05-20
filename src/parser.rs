@@ -4,6 +4,7 @@ use tree_sitter::Parser as TSParser;
 
 #[derive(Debug, Clone)]
 pub enum SExp {
+    Number(f64),
     Symbol(String),
     List(Vec<SExp>),
 }
@@ -11,6 +12,7 @@ pub enum SExp {
 impl fmt::Display for SExp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            SExp::Number(n) => write!(f, "{}", n),
             SExp::Symbol(s) => write!(f, "{}", s),
             SExp::List(items) => {
                 write!(f, "(")?;
@@ -50,7 +52,16 @@ impl SExpParser {
 
     #[allow(clippy::only_used_in_recursion)]
     fn node_to_sexp(&self, node: tree_sitter::Node, source: &str) -> Result<SExp, ParseError> {
-        match node.kind() {
+        match dbg!(node.kind()) {
+            "float" | "integer" => {
+                let text = node
+                    .utf8_text(source.as_bytes())
+                    .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+                let value = text
+                    .parse::<f64>()
+                    .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+                Ok(SExp::Number(value))
+            }
             "symbol" => {
                 let text = node
                     .utf8_text(source.as_bytes())
@@ -93,11 +104,11 @@ impl SExpParser {
             return Err(ParseError::UnexpectedNode("Empty source file".to_string()));
         }
 
-        // The first child should be a symbol or list
+        // The first child should be a symbol, float, or list
         match cursor.node().kind() {
-            "symbol" | "list" => self.node_to_sexp(cursor.node(), input),
+            "symbol" | "float" | "integer" | "list" => self.node_to_sexp(cursor.node(), input),
             kind => Err(ParseError::UnexpectedNode(format!(
-                "Expected symbol or list, got {}",
+                "Expected symbol, float or list, got {}",
                 kind
             ))),
         }
@@ -112,6 +123,11 @@ pub fn parse(input: &str) -> Result<SExp, ParseError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn compare_f64(a: f64, b: f64) -> bool {
+        let precision = 0.01;
+        (a - b).abs() < precision
+    }
 
     #[test]
     fn integration() -> test_runner::Result {
@@ -131,7 +147,8 @@ mod tests {
     #[test]
     fn test_parse_numeric_symbol() -> Result<(), ParseError> {
         let result = parse("42")?;
-        assert!(matches!(result, SExp::Symbol(s) if s == "42"));
+        dbg!(&result);
+        assert!(matches!(result, SExp::Number(s) if compare_f64(s, 42.0)));
         Ok(())
     }
 
@@ -158,7 +175,7 @@ mod tests {
                 assert!(matches!(items[0], SExp::Symbol(ref s) if s == "->"));
                 assert!(matches!(items[1], SExp::Symbol(ref s) if s == "foo"));
                 assert!(matches!(items[2], SExp::Symbol(ref s) if s == "bar"));
-                assert!(matches!(items[3], SExp::Symbol(ref s) if s == "12"));
+                assert!(matches!(items[3], SExp::Number(s) if compare_f64(s, 12.0)));
                 assert!(matches!(items[4], SExp::Symbol(ref s) if s == "=="));
             }
             _ => panic!("Expected a list with five symbols"),

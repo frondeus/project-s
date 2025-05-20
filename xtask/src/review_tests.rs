@@ -7,7 +7,7 @@ use crate::Result;
 pub fn run(root: &Path) -> Result {
     std::env::set_current_dir(root)?;
 
-    let entries = glob::glob("./**/*.patch")?.collect::<Result<Vec<_>, _>>()?;
+    let entries = glob::glob("docs/**/*.patch")?.collect::<Result<Vec<_>, _>>()?;
 
     let max_count = entries.len();
     println!();
@@ -92,7 +92,7 @@ pub fn run(root: &Path) -> Result {
     }
 
     // Remove original files
-    let original_entries = glob::glob("./**/*.orig")?.collect::<Result<Vec<_>, _>>()?;
+    let original_entries = glob::glob("docs/**/*.orig")?.collect::<Result<Vec<_>, _>>()?;
 
     for entry in original_entries {
         if let Err(e) = std::fs::remove_file(&entry) {

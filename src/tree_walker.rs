@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 pub enum Value {
+    Number(f64),
     String(String),
     Object(BTreeMap<String, Box<Value>>),
     /// For error handling
@@ -10,6 +11,7 @@ pub enum Value {
 pub fn walk(ast: &crate::parser::SExp) -> Value {
     use crate::parser::SExp;
     match ast {
+        SExp::Number(n) => Value::Number(*n),
         SExp::Symbol(s) => {
             if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
                 // Remove the outer quotes for string literals
@@ -45,6 +47,7 @@ pub fn walk(ast: &crate::parser::SExp) -> Value {
 
 pub fn to_json(value: Value) -> serde_json::Value {
     match value {
+        Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
         Value::String(s) => serde_json::Value::String(s),
         Value::Object(map) => {
             let mut obj = serde_json::Map::new();

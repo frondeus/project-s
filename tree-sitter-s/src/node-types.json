@@ -8,6 +8,14 @@
       "required": false,
       "types": [
         {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -28,6 +36,14 @@
       "required": false,
       "types": [
         {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -45,6 +61,14 @@
   {
     "type": ")",
     "named": false
+  },
+  {
+    "type": "float",
+    "named": true
+  },
+  {
+    "type": "integer",
+    "named": true
   },
   {
     "type": "symbol",
