@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "string",
+          "named": true
+        },
+        {
           "type": "symbol",
           "named": true
         }
@@ -48,11 +52,35 @@
           "named": true
         },
         {
+          "type": "string",
+          "named": true
+        },
+        {
           "type": "symbol",
           "named": true
         }
       ]
     }
+  },
+  {
+    "type": "string",
+    "named": true,
+    "fields": {
+      "inner": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_inner",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "\"",
+    "named": false
   },
   {
     "type": "(",
@@ -68,6 +96,10 @@
   },
   {
     "type": "integer",
+    "named": true
+  },
+  {
+    "type": "string_inner",
     "named": true
   },
   {

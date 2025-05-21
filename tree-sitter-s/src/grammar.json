@@ -22,6 +22,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "string"
+        },
+        {
+          "type": "SYMBOL",
           "name": "symbol"
         },
         {
@@ -50,6 +54,31 @@
         }
       ]
     },
+    "string": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\""
+        },
+        {
+          "type": "FIELD",
+          "name": "inner",
+          "content": {
+            "type": "SYMBOL",
+            "name": "string_inner"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "\""
+        }
+      ]
+    },
+    "string_inner": {
+      "type": "PATTERN",
+      "value": "[^\"]*"
+    },
     "symbol": {
       "type": "TOKEN",
       "content": {
@@ -57,7 +86,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "[^\\s()]+"
+          "value": "[^\\s()\"]+"
         }
       }
     },

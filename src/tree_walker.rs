@@ -12,14 +12,8 @@ pub fn walk(ast: &crate::parser::SExp) -> Value {
     use crate::parser::SExp;
     match ast {
         SExp::Number(n) => Value::Number(*n),
-        SExp::Symbol(s) => {
-            if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
-                // Remove the outer quotes for string literals
-                Value::String(s[1..s.len() - 1].to_string())
-            } else {
-                Value::String(s.clone())
-            }
-        }
+        SExp::String(s) => Value::String(s.clone()),
+        SExp::Symbol(s) => Value::String(s.clone()),
         SExp::List(items) => {
             // Check for (:struct ...)
             if let Some(SExp::Symbol(tag)) = items.first() {

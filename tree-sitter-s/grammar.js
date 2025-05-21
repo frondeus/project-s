@@ -23,6 +23,7 @@ module.exports = grammar({
     _sexp: $ => choice(
       $.float,
       $.integer,
+      $.string,
       $.symbol,
       $.list
     ),
@@ -34,7 +35,13 @@ module.exports = grammar({
       ')'
     ),
 
-    symbol: $ =>  token(prec(1, /[^\s()]+/)),
+    string: $ => seq(
+      '"',
+      field("inner", $.string_inner),
+      '"'
+    ),
+    string_inner: $ => /[^"]*/,
+    symbol: $ =>  token(prec(1, /[^\s()"]+/)),
     float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),
     integer: $ => token(prec(2, /[+-]?[0-9]+/)),
   }

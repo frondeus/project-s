@@ -67,3 +67,16 @@ Let's start with a number:
 ```json
 5.0
 ```
+
+# Log 21.05
+
+Okay, now a string. I will definitely need a string. 
+For now simple string will be enough. No escaping, nothing that fancy
+
+```
+"5"
+```
+
+```json
+"5"
+```

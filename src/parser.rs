@@ -5,6 +5,7 @@ use tree_sitter::Parser as TSParser;
 #[derive(Debug, Clone)]
 pub enum SExp {
     Number(f64),
+    String(String),
     Symbol(String),
     List(Vec<SExp>),
 }
@@ -13,6 +14,7 @@ impl fmt::Display for SExp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SExp::Number(n) => write!(f, "{}", n),
+            SExp::String(s) => write!(f, "\"{}\"", s),
             SExp::Symbol(s) => write!(f, "{}", s),
             SExp::List(items) => {
                 write!(f, "(")?;
@@ -62,6 +64,15 @@ impl SExpParser {
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(SExp::Number(value))
             }
+            "string" => {
+                let inner = node
+                    .child_by_field_name("inner")
+                    .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
+                let text = inner
+                    .utf8_text(source.as_bytes())
+                    .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+                Ok(SExp::String(text.to_string()))
+            }
             "symbol" => {
                 let text = node
                     .utf8_text(source.as_bytes())
@@ -104,14 +115,7 @@ impl SExpParser {
             return Err(ParseError::UnexpectedNode("Empty source file".to_string()));
         }
 
-        // The first child should be a symbol, float, or list
-        match cursor.node().kind() {
-            "symbol" | "float" | "integer" | "list" => self.node_to_sexp(cursor.node(), input),
-            kind => Err(ParseError::UnexpectedNode(format!(
-                "Expected symbol, float or list, got {}",
-                kind
-            ))),
-        }
+        self.node_to_sexp(cursor.node(), input)
     }
 }
 
@@ -156,6 +160,13 @@ mod tests {
     fn test_parse_operator_symbol() -> Result<(), ParseError> {
         let result = parse("->")?;
         assert!(matches!(result, SExp::Symbol(s) if s == "->"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_string() -> Result<(), ParseError> {
+        let result = parse("\"foo\"")?;
+        assert!(matches!(result, SExp::String(s) if s == "foo"));
         Ok(())
     }
 
