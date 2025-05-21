@@ -38,6 +38,10 @@ impl AST {
         self.nodes.first()
     }
 
+    pub fn root_id(&self) -> Option<SExpId> {
+        self.nodes.first().map(|_| SExpId(0))
+    }
+
     pub fn parse(input: &str) -> Result<Self, ParseError> {
         let parser = SExpParser::new()?;
         parser.parse(input)
@@ -60,6 +64,13 @@ pub enum SExp {
 impl SExp {
     pub fn fmt<'a>(&'a self, ast: &'a AST) -> SExpFmt<'a> {
         SExpFmt { ast, expr: self }
+    }
+
+    pub fn as_symbol(&self) -> Option<&str> {
+        match self {
+            SExp::Symbol(s) => Some(s),
+            _ => None,
+        }
     }
 }
 

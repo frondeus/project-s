@@ -36,7 +36,7 @@ Okay, so what I want?
 I want to at least have
 
 ```
-(:struct
+(struct
     :name "Name"
     :surname "Surname"
 )
@@ -85,3 +85,54 @@ Cool. Before I go next. I think its time to extend the language vertically.
 First - static typing
 
 But before we do that, maybe its time to express our tree as a flat array 
+Now that we have it, we can apply some basic typechecking
+
+```
+5
+```
+
+```type
+Number
+```
+
+```
+"41"
+```
+
+```type
+String
+```
+
+Cool. Now the next thing should be type ascription in the expression
+
+```
+(is-type 5 Number)
+```
+
+```json
+true
+```
+
+```
+(is-type 5 String)
+```
+
+```json
+false
+```
+
+```
+(is-type "5" Number)
+```
+
+```json
+false
+```
+
+```
+(is-type "5" String)
+```
+
+```json
+true
+```
