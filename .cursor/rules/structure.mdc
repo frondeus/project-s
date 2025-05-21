@@ -3,7 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
-You can run tests by using `cargo xtask test`.
 Each layer of the application should use integration tests.
 There is builtin test runner that you can use like this:
 
@@ -15,7 +14,6 @@ fn integration() -> test_runner::Result {
     })
 }
 
-It runs markdown files like `docs/001.md` and finds every codeblock with the same <extension> as requested.
+It runs markdown files like `docs/log.md` and finds every codeblock with the same <extension> as requested.
 
-ALWAYS make sure that tests are passing with `cargo xtask test`
-ALWAYS use `cargo xtask clippy` and `cargo xtask fmt` after making the code passing tests.
+After making a change ALWAYS make sure everything passes by using `cargo xtask ci`. It will run clippy, format, tests, tree sitter codegen etc.

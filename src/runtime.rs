@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::ast::AST;
+
 pub enum Value {
     Number(f64),
     String(String),
@@ -8,22 +10,23 @@ pub enum Value {
     Error(String),
 }
 
-pub fn walk(ast: &crate::parser::SExp) -> Value {
-    use crate::parser::SExp;
-    match ast {
+pub fn walk(ast: &AST, sexp: &crate::ast::SExp) -> Value {
+    use crate::ast::SExp;
+    match sexp {
+        SExp::Error => Value::Error("AST Error".to_string()),
         SExp::Number(n) => Value::Number(*n),
         SExp::String(s) => Value::String(s.clone()),
         SExp::Symbol(s) => Value::String(s.clone()),
         SExp::List(items) => {
             // Check for (:struct ...)
-            if let Some(SExp::Symbol(tag)) = items.first() {
+            if let Some(SExp::Symbol(tag)) = ast.maybe_get(items.first().copied()) {
                 if tag == ":struct" {
                     let mut map = BTreeMap::new();
                     let mut i = 1;
                     while i + 1 < items.len() {
-                        if let SExp::Symbol(key) = &items[i] {
+                        if let SExp::Symbol(key) = ast.get(items[i]) {
                             let key = key.trim_start_matches(':');
-                            let value = walk(&items[i + 1]);
+                            let value = walk(ast, ast.get(items[i + 1]));
                             map.insert(key.to_string(), Box::new(value));
                             i += 2;
                         } else {
@@ -61,8 +64,8 @@ mod tests {
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
-            let ast = crate::parser::parse(input).unwrap();
-            let value = walk(&ast);
+            let ast = crate::ast::AST::parse(input).unwrap();
+            let value = walk(&ast, ast.root().unwrap());
             let value = to_json(value);
             serde_json::to_string_pretty(&value).unwrap()
         })

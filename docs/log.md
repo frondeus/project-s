@@ -80,3 +80,8 @@ For now simple string will be enough. No escaping, nothing that fancy
 ```json
 "5"
 ```
+
+Cool. Before I go next. I think its time to extend the language vertically.
+First - static typing
+
+But before we do that, maybe its time to express our tree as a flat array 

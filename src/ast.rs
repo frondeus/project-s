@@ -2,26 +2,120 @@ use std::fmt;
 
 use tree_sitter::Parser as TSParser;
 
+#[derive(Default, Debug)]
+pub struct AST {
+    nodes: Vec<SExp>,
+}
+
+impl AST {
+    pub fn add_node(&mut self, node: SExp) -> SExpId {
+        let id = self.nodes.len();
+        self.nodes.push(node);
+        SExpId(id)
+    }
+
+    pub fn reserve(&mut self) -> SExpId {
+        self.add_node(SExp::Error)
+    }
+
+    pub fn set(&mut self, id: SExpId, node: SExp) {
+        self.nodes[id.0] = node;
+    }
+
+    pub fn get(&self, id: SExpId) -> &SExp {
+        &self.nodes[id.0]
+    }
+
+    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&SExp> {
+        id.map(|id| self.get(id))
+    }
+
+    pub fn nodes(&self) -> &[SExp] {
+        &self.nodes
+    }
+
+    pub fn root(&self) -> Option<&SExp> {
+        self.nodes.first()
+    }
+
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        let parser = SExpParser::new()?;
+        parser.parse(input)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SExpId(usize);
+
 #[derive(Debug, Clone)]
 pub enum SExp {
     Number(f64),
     String(String),
     Symbol(String),
-    List(Vec<SExp>),
+    List(Vec<SExpId>),
+
+    Error,
 }
 
-impl fmt::Display for SExp {
+impl SExp {
+    pub fn fmt<'a>(&'a self, ast: &'a AST) -> SExpFmt<'a> {
+        SExpFmt { ast, expr: self }
+    }
+}
+
+pub struct SExpFmt<'a> {
+    ast: &'a AST,
+    expr: &'a SExp,
+}
+
+struct SExpFmtList<'a> {
+    list: &'a [SExpId],
+    ast: &'a AST,
+}
+
+impl std::fmt::Debug for SExpFmtList<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
+        f.debug_list()
+            .entries(
+                self.list
+                    .iter()
+                    .map(|item| self.ast.get(*item).fmt(self.ast)),
+            )
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for SExpFmt<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.expr {
+            SExp::Number(n) => f.debug_tuple("Number").field(n).finish(),
+            SExp::String(s) => f.debug_tuple("String").field(s).finish(),
+            SExp::Symbol(s) => f.debug_tuple("Symbol").field(s).finish(),
+            SExp::Error => f.debug_tuple("Error").finish(),
+            SExp::List(items) => f
+                .debug_tuple("List")
+                .field(&SExpFmtList {
+                    ast: self.ast,
+                    list: items,
+                })
+                .finish(),
+        }
+    }
+}
+impl std::fmt::Display for SExpFmt<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.expr {
             SExp::Number(n) => write!(f, "{}", n),
             SExp::String(s) => write!(f, "\"{}\"", s),
             SExp::Symbol(s) => write!(f, "{}", s),
+            SExp::Error => write!(f, "<Error>"),
             SExp::List(items) => {
                 write!(f, "(")?;
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 {
                         write!(f, " ")?;
                     }
+                    let item = self.ast.get(*item).fmt(self.ast);
                     write!(f, "{}", item)?;
                 }
                 write!(f, ")")
@@ -40,6 +134,7 @@ pub enum ParseError {
 
 pub struct SExpParser {
     parser: TSParser,
+    ast: AST,
 }
 
 impl SExpParser {
@@ -49,11 +144,18 @@ impl SExpParser {
             .set_language(&tree_sitter_s::LANGUAGE.into())
             .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
 
-        Ok(SExpParser { parser })
+        Ok(SExpParser {
+            parser,
+            ast: AST::default(),
+        })
     }
 
     #[allow(clippy::only_used_in_recursion)]
-    fn node_to_sexp(&self, node: tree_sitter::Node, source: &str) -> Result<SExp, ParseError> {
+    fn node_to_sexp(
+        &mut self,
+        node: tree_sitter::Node,
+        source: &str,
+    ) -> Result<SExpId, ParseError> {
         match dbg!(node.kind()) {
             "float" | "integer" => {
                 let text = node
@@ -62,7 +164,7 @@ impl SExpParser {
                 let value = text
                     .parse::<f64>()
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(SExp::Number(value))
+                Ok(self.ast.add_node(SExp::Number(value)))
             }
             "string" => {
                 let inner = node
@@ -71,22 +173,24 @@ impl SExpParser {
                 let text = inner
                     .utf8_text(source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(SExp::String(text.to_string()))
+                Ok(self.ast.add_node(SExp::String(text.to_string())))
             }
             "symbol" => {
                 let text = node
                     .utf8_text(source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(SExp::Symbol(text.to_string()))
+                Ok(self.ast.add_node(SExp::Symbol(text.to_string())))
             }
             "list" => {
+                let parent = self.ast.reserve();
                 let mut items = Vec::new();
                 let mut child = node.named_child(0);
                 while let Some(n) = child {
                     items.push(self.node_to_sexp(n, source)?);
                     child = n.next_named_sibling();
                 }
-                Ok(SExp::List(items))
+                self.ast.set(parent, SExp::List(items));
+                Ok(parent)
             }
             kind => Err(ParseError::UnexpectedNode(format!(
                 "Unexpected node kind: {}",
@@ -95,7 +199,7 @@ impl SExpParser {
         }
     }
 
-    pub fn parse(&mut self, input: &str) -> Result<SExp, ParseError> {
+    pub fn parse(mut self, input: &str) -> Result<AST, ParseError> {
         let tree = self
             .parser
             .parse(input, None)
@@ -115,13 +219,9 @@ impl SExpParser {
             return Err(ParseError::UnexpectedNode("Empty source file".to_string()));
         }
 
-        self.node_to_sexp(cursor.node(), input)
+        self.node_to_sexp(cursor.node(), input)?;
+        Ok(self.ast)
     }
-}
-
-pub fn parse(input: &str) -> Result<SExp, ParseError> {
-    let mut parser = SExpParser::new()?;
-    parser.parse(input)
 }
 
 #[cfg(test)]
@@ -136,58 +236,66 @@ mod tests {
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
-            let result = parse(input).expect("Failed to parse");
+            let ast = AST::parse(input).expect("Failed to parse");
+            let result = ast.root().unwrap();
+            let result = result.fmt(&ast);
             format!("{:?}", result)
         })
     }
 
     #[test]
     fn test_parse_simple_symbol() -> Result<(), ParseError> {
-        let result = parse("foo")?;
+        let result = AST::parse("foo")?;
+        let result = result.root().unwrap();
         assert!(matches!(result, SExp::Symbol(s) if s == "foo"));
         Ok(())
     }
 
     #[test]
     fn test_parse_numeric_symbol() -> Result<(), ParseError> {
-        let result = parse("42")?;
+        let result = AST::parse("42")?;
+        let result = result.root().unwrap();
         dbg!(&result);
-        assert!(matches!(result, SExp::Number(s) if compare_f64(s, 42.0)));
+        assert!(matches!(result, SExp::Number(s) if compare_f64(*s, 42.0)));
         Ok(())
     }
 
     #[test]
     fn test_parse_operator_symbol() -> Result<(), ParseError> {
-        let result = parse("->")?;
+        let result = AST::parse("->")?;
+        let result = result.root().unwrap();
         assert!(matches!(result, SExp::Symbol(s) if s == "->"));
         Ok(())
     }
 
     #[test]
     fn test_parse_string() -> Result<(), ParseError> {
-        let result = parse("\"foo\"")?;
+        let result = AST::parse("\"foo\"")?;
+        let result = result.root().unwrap();
         assert!(matches!(result, SExp::String(s) if s == "foo"));
         Ok(())
     }
 
     #[test]
     fn test_parse_empty_list() -> Result<(), ParseError> {
-        let result = parse("()")?;
+        let result = AST::parse("()")?;
+        let result = result.root().unwrap();
         assert!(matches!(result, SExp::List(list) if list.is_empty()));
         Ok(())
     }
 
     #[test]
     fn test_parse_list_with_symbols() -> Result<(), ParseError> {
-        let result = parse("(-> foo bar 12 ==)")?;
+        let ast = AST::parse("(-> foo bar 12 ==)")?;
+        let result = ast.root().unwrap();
         match result {
             SExp::List(items) => {
                 assert_eq!(items.len(), 5);
-                assert!(matches!(items[0], SExp::Symbol(ref s) if s == "->"));
-                assert!(matches!(items[1], SExp::Symbol(ref s) if s == "foo"));
-                assert!(matches!(items[2], SExp::Symbol(ref s) if s == "bar"));
-                assert!(matches!(items[3], SExp::Number(s) if compare_f64(s, 12.0)));
-                assert!(matches!(items[4], SExp::Symbol(ref s) if s == "=="));
+                assert!(matches!(ast.get(items[0]), SExp::Symbol(s) if s == "->"));
+                assert!(matches!(ast.get(items[1]), SExp::Symbol(s) if s == "foo"));
+                assert!(matches!(ast.get(items[2]), SExp::Symbol(s) if s == "bar"));
+                assert!(matches!(ast.get(items[3]), SExp::Number(s) if compare_f64(*s, 12.0)));
+                assert!(matches!(ast.get(items[4]), SExp::Symbol(s) if s == "=="));
             }
             _ => panic!("Expected a list with five symbols"),
         }
