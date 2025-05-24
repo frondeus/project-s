@@ -361,6 +361,10 @@ impl Objects {
     fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Box<Value>>> {
         self.stack.last_mut()
     }
+
+    fn root(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+        self.stack.first()
+    }
 }
 
 impl Runtime {
@@ -379,6 +383,12 @@ impl Runtime {
             SExp::Symbol(s) if s == "self" => {
                 let Some(map) = self.objs._self() else {
                     return Value::Error("self used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
+            SExp::Symbol(s) if s == "root" => {
+                let Some(map) = self.objs.root() else {
+                    return Value::Error("root used outside of object".to_string());
                 };
                 Value::Object(map.clone())
             }

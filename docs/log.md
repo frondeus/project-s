@@ -491,3 +491,51 @@ Ok, now next one has to fail, right?
 ```
 
 Yep.
+
+Okay, now the only thing missing is "root".
+
+```
+(struct `(
+  :another 4
+  :key (struct '(
+    :a 1
+    :b (+ 1 (root :another))
+  ))
+))
+```
+
+```json
+{
+  "another": 4.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0
+  }
+}
+```
+
+Damn, that's cool!
+
+Does it work with accessing self?
+
+```
+(struct `(
+  :another 4
+  :key (struct '(
+    :a 1
+    :b (+ 1 ((root :key) :a))
+  ))
+))
+```
+
+```json
+{
+  "another": 4.0,
+  "key": {
+    "a": 1.0,
+    "b": "<Error: Unknown value: Error(\"Undefined key: key\")>"
+  }
+}
+```
+
+No. It doesnt because key was not created yet. Makes sense.
