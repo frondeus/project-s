@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fmt,
     sync::{
         LazyLock,
@@ -9,6 +10,36 @@ use std::{
 use tree_sitter::Parser as TSParser;
 
 static GENERATION: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(0));
+
+#[derive(Debug, Default)]
+pub struct ASTS {
+    asts: HashMap<usize, AST>,
+}
+
+impl ASTS {
+    pub fn new(ast: AST) -> Self {
+        let mut asts = Self::default();
+        asts.add_ast(ast);
+        asts
+    }
+
+    pub fn get_ast(&self, id: SExpId) -> &AST {
+        self.asts.get(&id.generation()).unwrap()
+    }
+
+    pub fn get(&self, id: SExpId) -> &SExp {
+        let ast = self.get_ast(id);
+        ast.get(id)
+    }
+
+    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&SExp> {
+        Some(self.get(id?))
+    }
+
+    pub fn add_ast(&mut self, ast: AST) {
+        self.asts.insert(ast.generation(), ast);
+    }
+}
 
 #[derive(Debug)]
 pub struct AST {
@@ -74,12 +105,22 @@ impl AST {
         let parser = SExpParser::new()?;
         parser.parse(input)
     }
+
+    pub fn generation(&self) -> usize {
+        self.generation
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SExpId {
     id: usize,
     generation: usize,
+}
+
+impl SExpId {
+    pub fn generation(self) -> usize {
+        self.generation
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -93,8 +134,8 @@ pub enum SExp {
 }
 
 impl SExp {
-    pub fn fmt<'a>(&'a self, ast: &'a AST) -> SExpFmt<'a> {
-        SExpFmt { ast, expr: self }
+    pub fn fmt<'a>(&'a self, asts: &'a ASTS) -> SExpFmt<'a> {
+        SExpFmt { asts, expr: self }
     }
 
     pub fn as_symbol(&self) -> Option<&str> {
@@ -113,13 +154,13 @@ impl SExp {
 }
 
 pub struct SExpFmt<'a> {
-    ast: &'a AST,
+    asts: &'a ASTS,
     expr: &'a SExp,
 }
 
 struct SExpFmtList<'a> {
     list: &'a [SExpId],
-    ast: &'a AST,
+    asts: &'a ASTS,
 }
 
 impl std::fmt::Debug for SExpFmtList<'_> {
@@ -128,7 +169,7 @@ impl std::fmt::Debug for SExpFmtList<'_> {
             .entries(
                 self.list
                     .iter()
-                    .map(|item| self.ast.get(*item).fmt(self.ast)),
+                    .map(|item| self.asts.get(*item).fmt(self.asts)),
             )
             .finish()
     }
@@ -144,7 +185,7 @@ impl std::fmt::Debug for SExpFmt<'_> {
             SExp::List(items) => f
                 .debug_tuple("List")
                 .field(&SExpFmtList {
-                    ast: self.ast,
+                    asts: self.asts,
                     list: items,
                 })
                 .finish(),
@@ -164,7 +205,7 @@ impl std::fmt::Display for SExpFmt<'_> {
                     if i > 0 {
                         write!(f, " ")?;
                     }
-                    let item = self.ast.get(*item).fmt(self.ast);
+                    let item = self.asts.get(*item).fmt(self.asts);
                     write!(f, "{}", item)?;
                 }
                 write!(f, ")")
@@ -310,8 +351,10 @@ mod tests {
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
             let ast = AST::parse(input).expect("Failed to parse");
-            let result = ast.root().unwrap();
-            let result = result.fmt(&ast);
+            let root_id = ast.root_id().unwrap();
+            let asts = ASTS::new(ast);
+            let result = asts.get(root_id);
+            let result = result.fmt(&asts);
             format!("{:?}", result)
         })
     }

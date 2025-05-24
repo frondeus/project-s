@@ -327,3 +327,43 @@ x
 ```json
 "<Error: Undefined variable: x>"
 ```
+
+Okay, just like jsonnet i want to be able to create new variables inside of structs.
+
+```
+`(:key (+ 1 2))
+```
+
+```json
+"(:key (+ 1 2))"
+```
+
+
+Apparently we have bug in quasiquoting.
+Which isn't surprising.
+The problem is:
+
+```
+(struct `(
+  :key (+ 1 2)
+))
+```
+
+```json
+{
+  "key": "(+ 1 2)"
+}
+```
+
+
+The quasiquote returns SExpression that is generation further
+than the parent.
+
+How? Currently quasiquoting is creating new AST.
+That AST contains (+ 1 2) expression.
+But later, We keep it as a reference and when we try to print that expression,
+the AST is lost. So we have a dangling pointer of sorts.
+
+Ok fixed.
+The only downside is - it's going to leak memory over time.
+But we need GC anyway...

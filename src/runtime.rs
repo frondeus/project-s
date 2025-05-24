@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use itertools::Itertools;
 
 use crate::{
-    ast::{AST, SExp, SExpId},
+    ast::{AST, ASTS, SExp, SExpId},
     types::{Type, TypeEnv},
 };
 
@@ -14,16 +14,14 @@ pub enum Value {
     Bool(bool),
     Object(BTreeMap<String, Box<Value>>),
     SExp(SExpId),
-    DynamicSExp(Arc<AST>),
     /// For error handling
     Error(String),
 }
 
 impl Value {
-    fn as_sexp<'a>(&'a self, ast: &'a AST) -> Option<(&'a SExp, &'a AST)> {
+    fn as_sexp(&self) -> Option<&SExpId> {
         match self {
-            Value::SExp(id) => Some((ast.get(*id), ast)),
-            Value::DynamicSExp(ast) => Some((ast.root().unwrap(), ast)),
+            Value::SExp(id) => Some(id),
             _ => None,
         }
     }
@@ -35,177 +33,175 @@ impl Value {
         }
     }
 
-    fn to_sexp(&self, source: &AST, target: &mut AST) -> SExpId {
+    fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(_b) => todo!(),
             Value::Object(_btree_map) => todo!(),
-            Value::SExp(sexp_id) => copy_sexp(source, target, sexp_id),
-            Value::DynamicSExp(_) => todo!(),
+            Value::SExp(sexp_id) => *sexp_id,
             Value::Error(_) => todo!(),
         }
     }
 }
 
-fn make_struct(ast: &AST, items: &[SExpId], envs: &mut Envs) -> Value {
-    let Some(sexp) = items.first() else {
-        return Value::Error("Expected SExpression. Found None".to_string());
-    };
-    let sexp = ast.get(*sexp);
-    let evaled = eval(ast, sexp, envs);
-    let Some((sexp, ast)) = evaled.as_sexp(ast) else {
-        return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
-    };
-    let Some(items) = sexp.as_list() else {
-        return Value::Error("Expected list".to_string());
-    };
-
-    let mut map = BTreeMap::new();
-    for (key, value) in items.iter().map(|id| ast.get(*id)).tuples() {
-        let Some(symbol) = key.as_symbol() else {
-            return Value::Error("Expected symbol as struct key".to_string());
+impl Runtime {
+    fn make_struct(&mut self, items: &[SExpId]) -> Value {
+        let Some(sexp) = items.first() else {
+            return Value::Error("Expected SExpression. Found None".to_string());
         };
-        let key = symbol.trim_start_matches(':');
-        let value = eval(ast, value, envs);
-        map.insert(key.to_string(), Box::new(value));
+        let evaled = self.eval(*sexp);
+        let Some(sexp) = evaled.as_sexp() else {
+            return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
+        };
+        let sexp = self.asts.get(*sexp);
+        let Some(items) = sexp.as_list() else {
+            return Value::Error("Expected list".to_string());
+        };
+
+        let mut map = BTreeMap::new();
+        for ((_, key), (id, _value)) in items.iter().map(|id| (*id, self.asts.get(*id))).tuples() {
+            let Some(symbol) = key.as_symbol() else {
+                return Value::Error("Expected symbol as struct key".to_string());
+            };
+            let key = symbol.trim_start_matches(':');
+            let value = self.quote(&id);
+            dbg!(&value);
+            // let value = Value::SExp(id);
+            map.insert(key.to_string(), Box::new(value));
+        }
+        Value::Object(map)
     }
-    Value::Object(map)
-}
 
-fn is_type(ast: &AST, items: &[SExpId]) -> Value {
-    let Some(sexp) = items.first() else {
-        return Value::Error("Expected SExpression".to_string());
-    };
-    let mut env = TypeEnv::default();
-    let infered = env.infer(ast, *sexp);
-    let result = env.get(infered);
+    fn is_type(&self, items: &[SExpId]) -> Value {
+        let Some(sexp) = items.first() else {
+            return Value::Error("Expected SExpression".to_string());
+        };
+        let mut env = TypeEnv::default();
+        let infered = env.infer(self.asts.get_ast(*sexp), *sexp);
+        let result = env.get(infered);
 
-    let Some(ty) = items.get(1) else {
-        return Value::Error("Expected type".to_string());
-    };
-    let ty = ast.get(*ty);
-    let Some(ty) = ty.as_symbol() else {
-        return Value::Error("Expected symbol".to_string());
-    };
-    let ty = match ty {
-        "Number" => Type::Number,
-        "String" => Type::String,
-        "Bool" => Type::Bool,
-        "Symbol" => Type::Symbol,
-        "Error" => Type::Error,
-        ty => return Value::Error(format!("Unknown type: {}", ty)),
-    };
-    Value::Bool(*result == ty)
-}
-
-fn quote(ast: &AST, id: &SExpId) -> Value {
-    let sexp = ast.get(*id);
-    match sexp {
-        SExp::Number(n) => Value::Number(*n),
-        SExp::String(s) => Value::String(s.clone()),
-        SExp::Symbol(s) => Value::String(s.clone()),
-        SExp::Error => Value::Error("AST Error".to_string()),
-        SExp::List(_) => Value::SExp(*id),
+        let Some(ty) = items.get(1) else {
+            return Value::Error("Expected type".to_string());
+        };
+        let ty = self.asts.get_ast(*sexp).get(*ty);
+        let Some(ty) = ty.as_symbol() else {
+            return Value::Error("Expected symbol".to_string());
+        };
+        let ty = match ty {
+            "Number" => Type::Number,
+            "String" => Type::String,
+            "Bool" => Type::Bool,
+            "Symbol" => Type::Symbol,
+            "Error" => Type::Error,
+            ty => return Value::Error(format!("Unknown type: {}", ty)),
+        };
+        Value::Bool(*result == ty)
     }
-}
 
-fn quasiquote(ast: &AST, id: &SExpId, envs: &mut Envs) -> Value {
-    let sexp = ast.get(*id);
-    match sexp {
-        SExp::Number(n) => Value::Number(*n),
-        SExp::String(s) => Value::String(s.clone()),
-        SExp::Symbol(s) => Value::String(s.clone()),
-        SExp::Error => Value::Error("AST Error".to_string()),
-        SExp::List(_) => {
-            let mut new_ast = AST::default();
-            traverse_unquote(ast, &mut new_ast, id, envs);
-            Value::DynamicSExp(Arc::new(new_ast))
+    fn quote(&self, id: &SExpId) -> Value {
+        let sexp = self.asts.get(*id);
+        dbg!(&sexp);
+        match sexp {
+            SExp::Number(n) => Value::Number(*n),
+            SExp::String(s) => Value::String(s.clone()),
+            SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::List(_) => Value::SExp(*id),
         }
     }
-}
 
-fn copy_sexp(source: &AST, target: &mut AST, id: &SExpId) -> SExpId {
-    let sexp = source.get(*id);
-    let sexp = sexp.clone();
-    target.add_node(sexp)
-}
-
-fn traverse_unquote(ast: &AST, new_ast: &mut AST, id: &SExpId, envs: &mut Envs) -> SExpId {
-    let sexp = ast.get(*id);
-    match sexp {
-        SExp::List(items) => {
-            let Some(first) = items.first() else {
-                return copy_sexp(ast, new_ast, id);
-            };
-            if is_unquote(ast, first) {
-                let Some(first) = items.get(1) else {
-                    todo!("Should return error somehow");
-                };
-                let evaled = eval(ast, ast.get(*first), envs);
-                evaled.to_sexp(ast, new_ast)
-            } else {
-                let parent = new_ast.reserve();
-                let mut result = Vec::new();
-                for item in items {
-                    result.push(traverse_unquote(ast, new_ast, item, envs));
-                }
-                if &result == items {
-                    return copy_sexp(ast, new_ast, id);
-                }
-                let new_list = SExp::List(result);
-                new_ast.set(parent, new_list);
-                parent
+    fn quasiquote(&mut self, id: &SExpId) -> Value {
+        let sexp = self.asts.get(*id);
+        match sexp {
+            SExp::Number(n) => Value::Number(*n),
+            SExp::String(s) => Value::String(s.clone()),
+            SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::List(_) => {
+                let mut new_ast = AST::default();
+                self.traverse_unquote(&mut new_ast, id);
+                let root = new_ast.root_id().unwrap();
+                self.asts.add_ast(new_ast);
+                Value::SExp(root)
             }
         }
-        _ => copy_sexp(ast, new_ast, id),
     }
-}
 
-fn is_unquote(ast: &AST, id: &SExpId) -> bool {
-    let sexp = ast.get(*id);
-    match sexp {
-        SExp::Symbol(s) => s == "unquote",
-        _ => false,
-    }
-}
-
-fn add(ast: &AST, items: &[SExpId], envs: &mut Envs) -> Value {
-    let mut sum = 0.0;
-    for item in items {
-        let value = eval(ast, ast.get(*item), envs);
-        if let Some(n) = value.as_number() {
-            sum += n;
-        } else {
-            return Value::Error("Expected number".to_string());
+    fn traverse_unquote(&mut self, new_ast: &mut AST, id: &SExpId) -> SExpId {
+        match self.asts.get(*id).clone() {
+            SExp::List(items) => {
+                let Some(first) = items.first() else {
+                    return *id;
+                };
+                if self.is_unquote(first) {
+                    let Some(next) = items.get(1) else {
+                        todo!("Somehow return an error");
+                    };
+                    let evaled = self.eval(*next);
+                    evaled.to_sexp(new_ast)
+                } else {
+                    let parent = new_ast.reserve();
+                    let mut result = Vec::new();
+                    for item in &items {
+                        result.push(self.traverse_unquote(new_ast, item));
+                    }
+                    // if result == items {
+                    //     return *id;
+                    // }
+                    let new_list = SExp::List(result);
+                    new_ast.set(parent, new_list);
+                    parent
+                }
+            }
+            _ => *id,
         }
     }
-    Value::Number(sum)
-}
 
-fn _let(ast: &AST, items: &[SExpId], envs: &mut Envs) -> Value {
-    let Some(ident) = items.first() else {
-        return Value::Error("Expected SExpression".to_string());
-    };
-    let Some(ident) = ast.get(*ident).as_symbol() else {
-        return Value::Error("Expected symbol".to_string());
-    };
+    fn is_unquote(&self, id: &SExpId) -> bool {
+        let sexp = self.asts.get(*id);
+        match sexp {
+            SExp::Symbol(s) => s == "unquote",
+            _ => false,
+        }
+    }
 
-    let Some(value) = items.get(1) else {
-        return Value::Error("Expected value".to_string());
-    };
-    let Some(body) = items.get(2) else {
-        return Value::Error("Expected body".to_string());
-    };
-    let value = ast.get(*value);
-    let body = ast.get(*body);
-    let value = eval(ast, value, envs);
+    fn add(&mut self, items: &[SExpId]) -> Value {
+        let mut sum = 0.0;
+        for item in items {
+            let value = self.eval(*item);
+            if let Some(n) = value.as_number() {
+                sum += n;
+            } else {
+                return Value::Error("Expected number".to_string());
+            }
+        }
+        Value::Number(sum)
+    }
 
-    envs.push();
-    envs.set(ident, value);
-    let result = eval(ast, body, envs);
-    envs.pop();
-    result
+    fn _let(&mut self, items: &[SExpId]) -> Value {
+        let Some(ident) = items.first() else {
+            return Value::Error("Expected SExpression".to_string());
+        };
+        let ident = self.asts.get(*ident).clone();
+        let Some(ident) = ident.as_symbol() else {
+            return Value::Error("Expected symbol".to_string());
+        };
+
+        let Some(value) = items.get(1) else {
+            return Value::Error("Expected value".to_string());
+        };
+        let Some(body) = items.get(2) else {
+            return Value::Error("Expected body".to_string());
+        };
+        let value = self.eval(*value);
+
+        self.envs.push();
+        self.envs.set(ident, value);
+        let result = self.eval(*body);
+        self.envs.pop();
+        result
+    }
 }
 
 #[derive(Default)]
@@ -250,69 +246,76 @@ impl Envs {
     }
 }
 
-pub fn eval(ast: &AST, sexp: &SExp, envs: &mut Envs) -> Value {
-    match sexp {
-        SExp::Error => Value::Error("AST Error".to_string()),
-        SExp::Number(n) => Value::Number(*n),
-        SExp::String(s) => Value::String(s.clone()),
-        SExp::Symbol(s) =>
-        //Value::String(s.clone()),
-        {
-            envs.get(s.as_str())
-                .cloned()
-                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s)))
-        }
-        SExp::List(items) => {
-            // Check for (struct ...)
-            if let Some(SExp::Symbol(tag)) = ast.maybe_get(items.first().copied()) {
-                if tag == "struct" {
-                    return make_struct(ast, &items[1..], envs);
-                } else if tag == "is-type" {
-                    return is_type(ast, &items[1..]);
-                } else if tag == "quote" {
-                    let Some(item) = items.get(1) else {
-                        return Value::Error("Expected item after quote".to_string());
-                    };
-                    return quote(ast, item);
-                } else if tag == "+" {
-                    return add(ast, &items[1..], envs);
-                } else if tag == "quasiquote" {
-                    let Some(item) = items.get(1) else {
-                        return Value::Error("Expected item after quasiquote".to_string());
-                    };
-                    return quasiquote(ast, item, envs);
-                } else if tag == "let" {
-                    return _let(ast, &items[1..], envs);
-                }
-            }
-            // Otherwise, just return error for now
-            Value::Error("Only (struct, is-type, quote, ...) supported for now".to_string())
-        }
-    }
+#[derive(Default)]
+pub struct Runtime {
+    envs: Envs,
+    asts: ASTS,
 }
 
-pub fn to_json(ast: &AST, value: Value) -> serde_json::Value {
-    match value {
-        Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
-        Value::String(s) => serde_json::Value::String(s),
-        Value::Bool(b) => serde_json::Value::Bool(b),
-        Value::Object(map) => {
-            let mut obj = serde_json::Map::new();
-            for (k, v) in map {
-                obj.insert(k, to_json(ast, *v));
+impl Runtime {
+    pub fn new(ast: AST) -> Self {
+        let mut runtime = Self::default();
+        runtime.asts.add_ast(ast);
+        runtime
+    }
+
+    pub fn eval(&mut self, sexp: SExpId) -> Value {
+        let sexp = self.asts.get(sexp).clone();
+        match sexp {
+            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::Number(n) => Value::Number(n),
+            SExp::String(s) => Value::String(s.clone()),
+            SExp::Symbol(s) => self
+                .envs
+                .get(s.as_str())
+                .cloned()
+                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
+            SExp::List(items) => {
+                // Check for (struct ...)
+                if let Some(SExp::Symbol(tag)) = self.asts.maybe_get(items.first().copied()) {
+                    if tag == "struct" {
+                        return self.make_struct(&items[1..]);
+                    } else if tag == "is-type" {
+                        return self.is_type(&items[1..]);
+                    } else if tag == "quote" {
+                        let Some(item) = items.get(1) else {
+                            return Value::Error("Expected item after quote".to_string());
+                        };
+                        return self.quote(item);
+                    } else if tag == "+" {
+                        return self.add(&items[1..]);
+                    } else if tag == "quasiquote" {
+                        let Some(item) = items.get(1) else {
+                            return Value::Error("Expected item after quasiquote".to_string());
+                        };
+                        return self.quasiquote(item);
+                    } else if tag == "let" {
+                        return self._let(&items[1..]);
+                    }
+                }
+                // Otherwise, just return error for now
+                Value::Error("Only (struct, is-type, quote, ...) supported for now".to_string())
             }
-            serde_json::Value::Object(obj)
         }
-        Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
-        Value::SExp(id) => {
-            let sexp = ast.get(id);
-            let sexp = sexp.fmt(ast).to_string();
-            serde_json::Value::String(sexp)
-        }
-        Value::DynamicSExp(ast) => {
-            let root = ast.root().unwrap();
-            let sexp = root.fmt(&ast).to_string();
-            serde_json::Value::String(sexp)
+    }
+    pub fn to_json(&self, value: Value) -> serde_json::Value {
+        match value {
+            Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
+            Value::String(s) => serde_json::Value::String(s),
+            Value::Bool(b) => serde_json::Value::Bool(b),
+            Value::Object(map) => {
+                let mut obj = serde_json::Map::new();
+                for (k, v) in map {
+                    obj.insert(k, self.to_json(*v));
+                }
+                serde_json::Value::Object(obj)
+            }
+            Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
+            Value::SExp(id) => {
+                let ast = self.asts.get_ast(id);
+                let sexp = ast.get(id).fmt(&self.asts).to_string();
+                serde_json::Value::String(sexp)
+            }
         }
     }
 }
@@ -325,9 +328,11 @@ mod tests {
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
             let ast = crate::ast::AST::parse(input).unwrap();
-            let mut envs = Envs::default();
-            let value = eval(&ast, ast.root().unwrap(), &mut envs);
-            let value = to_json(&ast, value);
+            let root_id = ast.root_id().unwrap();
+            let mut runtime = Runtime::new(ast);
+            let value = runtime.eval(root_id);
+            println!("value: {value:?}");
+            let value = runtime.to_json(value);
             serde_json::to_string_pretty(&value).unwrap()
         })
     }
