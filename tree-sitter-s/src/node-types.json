@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "quote",
+          "named": true
+        },
+        {
           "type": "string",
           "named": true
         },
@@ -28,6 +32,42 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "quote",
+    "named": true,
+    "fields": {
+      "inner": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "list",
+            "named": true
+          },
+          {
+            "type": "quote",
+            "named": true
+          },
+          {
+            "type": "string",
+            "named": true
+          },
+          {
+            "type": "symbol",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -49,6 +89,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "quote",
           "named": true
         },
         {
@@ -80,6 +124,10 @@
   },
   {
     "type": "\"",
+    "named": false
+  },
+  {
+    "type": "'",
     "named": false
   },
   {

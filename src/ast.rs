@@ -210,6 +210,20 @@ impl SExpParser {
                 self.ast.set(parent, SExp::List(items));
                 Ok(parent)
             }
+            "quote" => {
+                let parent = self.ast.reserve();
+                let mut items = Vec::new();
+                items.push(self.ast.add_node(SExp::Symbol("quote".to_string())));
+
+                let inner = node
+                    .child_by_field_name("inner")
+                    .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
+
+                let inner = self.node_to_sexp(inner, source)?;
+                items.push(inner);
+                self.ast.set(parent, SExp::List(items));
+                Ok(parent)
+            }
             kind => Err(ParseError::UnexpectedNode(format!(
                 "Unexpected node kind: {}",
                 kind

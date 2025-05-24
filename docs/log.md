@@ -201,3 +201,21 @@ and have it compiled to
 
 For now we treat as if struct was a function that took SExpression.
 Later when we introduce macros, we might want to change that.
+
+For now, we use full `quote`. But it makes sense to expand the grammar to introduce `'`.
+
+```
+(struct '(
+    :name "Name"
+    :surname "Surname"
+))
+```
+
+and have it compiled to 
+
+```json
+{
+  "name": "Name",
+  "surname": "Surname"
+}
+```
