@@ -539,3 +539,26 @@ Does it work with accessing self?
 ```
 
 No. It doesnt because key was not created yet. Makes sense.
+
+Ok, now i want to have another reader shortcut
+
+```
+{
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+```
+
+```json
+{
+  "another": 4.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0
+  }
+}
+```

@@ -32,6 +32,10 @@
           "named": true
         },
         {
+          "type": "struct",
+          "named": true
+        },
+        {
           "type": "symbol",
           "named": true
         },
@@ -72,6 +76,10 @@
           },
           {
             "type": "string",
+            "named": true
+          },
+          {
+            "type": "struct",
             "named": true
           },
           {
@@ -116,6 +124,10 @@
           },
           {
             "type": "string",
+            "named": true
+          },
+          {
+            "type": "struct",
             "named": true
           },
           {
@@ -164,6 +176,10 @@
           "named": true
         },
         {
+          "type": "struct",
+          "named": true
+        },
+        {
           "type": "symbol",
           "named": true
         },
@@ -188,6 +204,53 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "struct",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "quasiquote",
+          "named": true
+        },
+        {
+          "type": "quote",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        },
+        {
+          "type": "struct",
+          "named": true
+        },
+        {
+          "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "unquote",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -220,6 +283,10 @@
           },
           {
             "type": "string",
+            "named": true
+          },
+          {
+            "type": "struct",
             "named": true
           },
           {
@@ -273,5 +340,13 @@
   {
     "type": "symbol",
     "named": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
   }
 ]
