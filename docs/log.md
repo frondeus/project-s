@@ -230,3 +230,50 @@ Let's for now add hardcoded add operator
 ```json
 3.0
 ```
+
+Now we need a way to calculate that op as a field of struct.
+Which means quasiquote and unquote operators.
+
+This is using quote:
+```
+'(1 2 (+ 1 2))
+```
+
+```json
+"(1 2 (+ 1 2))"
+```
+
+But this is using quasiquote
+
+```
+(quasiquote (1 2 (+ 1 2)))
+```
+
+Still no difference:
+
+```json
+"(1 2 (+ 1 2))"
+```
+
+Until we use unquote
+
+```
+(quasiquote (1 2 (unquote (+ 1 2))))
+```
+
+```json
+"(1 2 3)"
+```
+
+
+However in order to make it work, i need to first:
+* Make sure we can create new AST on the fly.
+* Make sure that when we are accessing SExp, we are asking the right AST tree.
+
+The easiest solution is to keep reference to AST inside of SExp.
+But... where?
+
+Or maybe not. Lifetimes will eat me alive.
+Maybe i just need to clone the whole quasiquoted tree.
+
+Yep. For now cloning will work.

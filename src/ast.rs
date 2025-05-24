@@ -1,17 +1,43 @@
-use std::fmt;
+use std::{
+    fmt,
+    sync::{
+        LazyLock,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 
 use tree_sitter::Parser as TSParser;
 
-#[derive(Default, Debug)]
+static GENERATION: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(0));
+
+#[derive(Debug)]
 pub struct AST {
+    generation: usize,
     nodes: Vec<SExp>,
 }
 
+impl Default for AST {
+    fn default() -> Self {
+        let generation = GENERATION.fetch_add(1, Ordering::Relaxed);
+        Self {
+            generation,
+            nodes: Vec::new(),
+        }
+    }
+}
+
 impl AST {
+    fn new_id(&self, id: usize) -> SExpId {
+        SExpId {
+            id,
+            generation: self.generation,
+        }
+    }
+
     pub fn add_node(&mut self, node: SExp) -> SExpId {
         let id = self.nodes.len();
         self.nodes.push(node);
-        SExpId(id)
+        self.new_id(id)
     }
 
     pub fn reserve(&mut self) -> SExpId {
@@ -19,11 +45,13 @@ impl AST {
     }
 
     pub fn set(&mut self, id: SExpId, node: SExp) {
-        self.nodes[id.0] = node;
+        assert_eq!(id.generation, self.generation);
+        self.nodes[id.id] = node;
     }
 
     pub fn get(&self, id: SExpId) -> &SExp {
-        &self.nodes[id.0]
+        assert_eq!(id.generation, self.generation);
+        &self.nodes[id.id]
     }
 
     pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&SExp> {
@@ -39,7 +67,7 @@ impl AST {
     }
 
     pub fn root_id(&self) -> Option<SExpId> {
-        self.nodes.first().map(|_| SExpId(0))
+        self.nodes.first().map(|_| self.new_id(0))
     }
 
     pub fn parse(input: &str) -> Result<Self, ParseError> {
@@ -49,7 +77,10 @@ impl AST {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SExpId(usize);
+pub struct SExpId {
+    id: usize,
+    generation: usize,
+}
 
 #[derive(Debug, Clone)]
 pub enum SExp {

@@ -13,6 +13,7 @@ pub enum Value {
     Bool(bool),
     Object(BTreeMap<String, Box<Value>>),
     SExp(SExpId),
+    DynamicSExp(AST),
     /// For error handling
     Error(String),
 }
@@ -29,6 +30,18 @@ impl Value {
         match self {
             Value::Number(n) => Some(*n),
             _ => None,
+        }
+    }
+
+    fn to_sexp(&self, source: &AST, target: &mut AST) -> SExpId {
+        match self {
+            Value::Number(n) => target.add_node(SExp::Number(*n)),
+            Value::String(s) => target.add_node(SExp::String(s.clone())),
+            Value::Bool(_b) => todo!(),
+            Value::Object(_btree_map) => todo!(),
+            Value::SExp(sexp_id) => copy_sexp(source, target, sexp_id),
+            Value::DynamicSExp(_) => todo!(),
+            Value::Error(_) => todo!(),
         }
     }
 }
@@ -94,6 +107,66 @@ fn quote(ast: &AST, id: &SExpId) -> Value {
     }
 }
 
+fn quasiquote(ast: &AST, id: &SExpId) -> Value {
+    let sexp = ast.get(*id);
+    match sexp {
+        SExp::Number(n) => Value::Number(*n),
+        SExp::String(s) => Value::String(s.clone()),
+        SExp::Symbol(s) => Value::String(s.clone()),
+        SExp::Error => Value::Error("AST Error".to_string()),
+        SExp::List(_) => {
+            let mut new_ast = AST::default();
+            traverse_unquote(ast, &mut new_ast, id);
+            Value::DynamicSExp(new_ast)
+        }
+    }
+}
+
+fn copy_sexp(source: &AST, target: &mut AST, id: &SExpId) -> SExpId {
+    let sexp = source.get(*id);
+    let sexp = sexp.clone();
+    target.add_node(sexp)
+}
+
+fn traverse_unquote(ast: &AST, new_ast: &mut AST, id: &SExpId) -> SExpId {
+    let sexp = ast.get(*id);
+    match sexp {
+        SExp::List(items) => {
+            let Some(first) = items.first() else {
+                return copy_sexp(ast, new_ast, id);
+            };
+            if is_unquote(ast, first) {
+                let Some(first) = items.get(1) else {
+                    todo!("Should return error somehow");
+                };
+                let evaled = eval(ast, ast.get(*first));
+                evaled.to_sexp(ast, new_ast)
+            } else {
+                let parent = new_ast.reserve();
+                let mut result = Vec::new();
+                for item in items {
+                    result.push(traverse_unquote(ast, new_ast, item));
+                }
+                if &result == items {
+                    return copy_sexp(ast, new_ast, id);
+                }
+                let new_list = SExp::List(result);
+                new_ast.set(parent, new_list);
+                parent
+            }
+        }
+        _ => copy_sexp(ast, new_ast, id),
+    }
+}
+
+fn is_unquote(ast: &AST, id: &SExpId) -> bool {
+    let sexp = ast.get(*id);
+    match sexp {
+        SExp::Symbol(s) => s == "unquote",
+        _ => false,
+    }
+}
+
 fn add(ast: &AST, items: &[SExpId]) -> Value {
     let mut sum = 0.0;
     for item in items {
@@ -121,9 +194,17 @@ pub fn eval(ast: &AST, sexp: &SExp) -> Value {
                 } else if tag == "is-type" {
                     return is_type(ast, &items[1..]);
                 } else if tag == "quote" {
-                    return quote(ast, items.get(1).unwrap());
+                    let Some(item) = items.get(1) else {
+                        return Value::Error("Expected item after quote".to_string());
+                    };
+                    return quote(ast, item);
                 } else if tag == "+" {
                     return add(ast, &items[1..]);
+                } else if tag == "quasiquote" {
+                    let Some(item) = items.get(1) else {
+                        return Value::Error("Expected item after quasiquote".to_string());
+                    };
+                    return quasiquote(ast, item);
                 }
             }
             // Otherwise, just return error for now
@@ -148,6 +229,11 @@ pub fn to_json(ast: &AST, value: Value) -> serde_json::Value {
         Value::SExp(id) => {
             let sexp = ast.get(id);
             let sexp = sexp.fmt(ast).to_string();
+            serde_json::Value::String(sexp)
+        }
+        Value::DynamicSExp(ast) => {
+            let root = ast.root().unwrap();
+            let sexp = root.fmt(&ast).to_string();
             serde_json::Value::String(sexp)
         }
     }
