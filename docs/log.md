@@ -136,3 +136,47 @@ false
 ```json
 true
 ```
+
+# 24.05
+
+Cool. It's not finished but at least we started doing something.
+If it's lisp it should allow quoting:
+
+```
+(quote 1)
+```
+
+Primitive atoms are evaluating to themselves
+
+```json
+1.0
+```
+
+```
+(quote "42")
+```
+
+```json
+"42"
+```
+
+Symbols are evaluating to themselves as well
+
+```
+(quote quote)
+```
+
+```json
+"quote"
+```
+
+Any advanced sexp is just kept as is.
+
+```
+(quote (1 2 3))
+```
+
+Printing to JSON is wrapping sexp in Strings
+```json
+"(1 2 3)"
+```

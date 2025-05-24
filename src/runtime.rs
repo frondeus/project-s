@@ -12,6 +12,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Object(BTreeMap<String, Box<Value>>),
+    SExp(SExpId),
     /// For error handling
     Error(String),
 }
@@ -55,6 +56,17 @@ fn is_type(ast: &AST, items: &[SExpId]) -> Value {
     Value::Bool(*result == ty)
 }
 
+fn quote(ast: &AST, id: &SExpId) -> Value {
+    let sexp = ast.get(*id);
+    match sexp {
+        SExp::Number(n) => Value::Number(*n),
+        SExp::String(s) => Value::String(s.clone()),
+        SExp::Symbol(s) => Value::String(s.clone()),
+        SExp::Error => Value::Error("AST Error".to_string()),
+        SExp::List(_) => Value::SExp(*id),
+    }
+}
+
 pub fn eval(ast: &AST, sexp: &SExp) -> Value {
     match sexp {
         SExp::Error => Value::Error("AST Error".to_string()),
@@ -68,15 +80,17 @@ pub fn eval(ast: &AST, sexp: &SExp) -> Value {
                     return make_struct(ast, items);
                 } else if tag == "is-type" {
                     return is_type(ast, items);
+                } else if tag == "quote" {
+                    return quote(ast, items.get(1).unwrap());
                 }
             }
             // Otherwise, just return error for now
-            Value::Error("Only (:struct ...) supported for now".to_string())
+            Value::Error("Only (struct, is-type, quote, ...) supported for now".to_string())
         }
     }
 }
 
-pub fn to_json(value: Value) -> serde_json::Value {
+pub fn to_json(ast: &AST, value: Value) -> serde_json::Value {
     match value {
         Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
         Value::String(s) => serde_json::Value::String(s),
@@ -84,11 +98,16 @@ pub fn to_json(value: Value) -> serde_json::Value {
         Value::Object(map) => {
             let mut obj = serde_json::Map::new();
             for (k, v) in map {
-                obj.insert(k, to_json(*v));
+                obj.insert(k, to_json(ast, *v));
             }
             serde_json::Value::Object(obj)
         }
         Value::Error(e) => serde_json::Value::String(e),
+        Value::SExp(id) => {
+            let sexp = ast.get(id);
+            let sexp = sexp.fmt(ast).to_string();
+            serde_json::Value::String(sexp)
+        }
     }
 }
 
@@ -101,7 +120,7 @@ mod tests {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
             let ast = crate::ast::AST::parse(input).unwrap();
             let value = eval(&ast, ast.root().unwrap());
-            let value = to_json(value);
+            let value = to_json(&ast, value);
             serde_json::to_string_pretty(&value).unwrap()
         })
     }
