@@ -7,6 +7,7 @@ use crate::{
     types::{Type, TypeEnv},
 };
 
+#[derive(Debug)]
 pub enum Value {
     Number(f64),
     String(String),
@@ -19,9 +20,10 @@ pub enum Value {
 }
 
 impl Value {
-    fn as_sexp(&self) -> Option<SExpId> {
+    fn as_sexp<'a>(&'a self, ast: &'a AST) -> Option<(&'a SExp, &'a AST)> {
         match self {
-            Value::SExp(id) => Some(*id),
+            Value::SExp(id) => Some((ast.get(*id), ast)),
+            Value::DynamicSExp(ast) => Some((ast.root().unwrap(), ast)),
             _ => None,
         }
     }
@@ -48,13 +50,14 @@ impl Value {
 
 fn make_struct(ast: &AST, items: &[SExpId]) -> Value {
     let Some(sexp) = items.first() else {
-        return Value::Error("Expected SExpression".to_string());
+        return Value::Error("Expected SExpression. Found None".to_string());
     };
     let sexp = ast.get(*sexp);
-    let Some(sexp) = eval(ast, sexp).as_sexp() else {
-        return Value::Error("Expected SExpression".to_string());
+    let evaled = eval(ast, sexp);
+    let Some((sexp, ast)) = evaled.as_sexp(ast) else {
+        return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
     };
-    let Some(items) = ast.get(sexp).as_list() else {
+    let Some(items) = sexp.as_list() else {
         return Value::Error("Expected list".to_string());
     };
 

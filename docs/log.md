@@ -287,3 +287,21 @@ Ok, now reader shortcut.
 ```json
 "(1 2 3)"
 ```
+
+Cool. Now can we use it in our struct definition?
+
+```
+(struct `(
+  :name "John Smith"
+  :age ,(+ 20 3)
+))
+```
+
+```json
+{
+  "age": 23.0,
+  "name": "John Smith"
+}
+```
+
+NICE.
