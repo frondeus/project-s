@@ -36,10 +36,10 @@ Okay, so what I want?
 I want to at least have
 
 ```
-(struct
+(struct (quote (
     :name "Name"
     :surname "Surname"
-)
+)))
 ```
 
 and have it compiled to 
@@ -180,3 +180,24 @@ Printing to JSON is wrapping sexp in Strings
 ```json
 "(1 2 3)"
 ```
+
+Now we can use this quote to actually properly construct struct
+
+```
+(struct (quote (
+    :name "Name"
+    :surname "Surname"
+)))
+```
+
+and have it compiled to 
+
+```json
+{
+  "name": "Name",
+  "surname": "Surname"
+}
+```
+
+For now we treat as if struct was a function that took SExpression.
+Later when we introduce macros, we might want to change that.

@@ -72,6 +72,13 @@ impl SExp {
             _ => None,
         }
     }
+
+    pub fn as_list(&self) -> Option<&[SExpId]> {
+        match self {
+            SExp::List(list) => Some(list),
+            _ => None,
+        }
+    }
 }
 
 pub struct SExpFmt<'a> {

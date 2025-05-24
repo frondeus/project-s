@@ -17,9 +17,29 @@ pub enum Value {
     Error(String),
 }
 
+impl Value {
+    fn as_sexp(&self) -> Option<SExpId> {
+        match self {
+            Value::SExp(id) => Some(*id),
+            _ => None,
+        }
+    }
+}
+
 fn make_struct(ast: &AST, items: &[SExpId]) -> Value {
+    let Some(sexp) = items.get(1) else {
+        return Value::Error("Expected SExpression".to_string());
+    };
+    let sexp = ast.get(*sexp);
+    let Some(sexp) = eval(ast, sexp).as_sexp() else {
+        return Value::Error("Expected SExpression".to_string());
+    };
+    let Some(items) = ast.get(sexp).as_list() else {
+        return Value::Error("Expected list".to_string());
+    };
+
     let mut map = BTreeMap::new();
-    for (key, value) in items.iter().skip(1).map(|id| ast.get(*id)).tuples() {
+    for (key, value) in items.iter().map(|id| ast.get(*id)).tuples() {
         let Some(symbol) = key.as_symbol() else {
             return Value::Error("Expected symbol as struct key".to_string());
         };
