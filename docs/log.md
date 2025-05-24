@@ -305,3 +305,25 @@ Cool. Now can we use it in our struct definition?
 ```
 
 NICE.
+
+Okay. What's next?
+It would be nice to be able to add two
+objects together.
+However, I think first i need to address lack of variables.
+
+```
+(let x 2 (+ x x))
+```
+
+```json
+4.0
+```
+
+So now just using symbol should return error
+```
+x
+```
+
+```json
+"<Error: Undefined variable: x>"
+```
