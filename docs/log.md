@@ -394,3 +394,60 @@ in order to generate struct from SExp.
 
 The only thing i can do is to reverse the inner quoting.
 Bingo.
+
+Ok, what about "self"?
+
+There are two options i see.
+Either I choose lazy evaluation, or I need to somehow sort the field initialization by the DAG. Assuming there is a DAG.
+
+For example if we have:
+
+```example
+(struct `(
+  :key (+ 1 self.another)
+  :another (+ 1 1)
+))
+```
+
+then we need to reorder the struct into
+
+```example
+(struct `(
+  :another (+1 1)
+  :key (+ 1 self.another)
+))
+```
+because then `:another` key exists in env.
+
+Another point is - in order to use `self` we need struct accessing
+first.
+
+As in accessing field of the struct
+
+The simplest way is to have it like this:
+
+```
+( 
+  (struct '(:key 1 :another 2))
+  :another
+)
+```
+
+```json
+2.0
+```
+
+In other words, structure is used as if it was a function and first
+parameter tells you the key accessed
+
+It works even better if struct is named
+
+```
+(let foo (struct '(:key 1 :another 2))
+  (foo :another)
+)
+```
+
+```json
+2.0
+```

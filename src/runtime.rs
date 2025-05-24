@@ -259,6 +259,7 @@ impl Runtime {
 
         self.envs.push();
         self.envs.set(ident, value);
+        dbg!(&self.envs);
         let result = self.eval(*body);
         self.envs.pop();
         result
@@ -333,30 +334,53 @@ impl Runtime {
                 .cloned()
                 .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
             SExp::List(items) => {
-                // Check for (struct ...)
-                if let Some(SExp::Symbol(tag)) = self.asts.maybe_get(items.first().copied()) {
-                    if tag == "struct" {
-                        return self.make_struct(&items[1..]);
-                    } else if tag == "is-type" {
-                        return self.is_type(&items[1..]);
-                    } else if tag == "quote" {
+                let first_id = items.first().copied();
+                let first = self.asts.maybe_get(first_id);
+                let Some(first) = first else {
+                    todo!("Empty tuple");
+                };
+                let first_id = first_id.unwrap();
+                match first {
+                    SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
+                    SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
+                    SExp::Symbol(tag) if tag == "quote" => {
                         let Some(item) = items.get(1) else {
                             return Value::Error("Expected item after quote".to_string());
                         };
-                        return self.quote(item);
-                    } else if tag == "+" {
-                        return self.add(&items[1..]);
-                    } else if tag == "quasiquote" {
+                        self.quote(item)
+                    }
+                    SExp::Symbol(tag) if tag == "+" => self.add(&items[1..]),
+                    SExp::Symbol(tag) if tag == "quasiquote" => {
                         let Some(item) = items.get(1) else {
                             return Value::Error("Expected item after quasiquote".to_string());
                         };
-                        return self.quasiquote(item);
-                    } else if tag == "let" {
-                        return self._let(&items[1..]);
+                        self.quasiquote(item)
+                    }
+                    SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
+                    // SExp::Symbol(s) => Value::Error(format!("Unknown symbol: {}", s)),
+                    _first => {
+                        let first = self.eval(first_id);
+
+                        match first {
+                            Value::Object(map) => {
+                                let Some(key) = items.get(1) else {
+                                    return Value::Error("Expected key".to_string());
+                                };
+                                let key = self.asts.get(*key).clone();
+                                let Some(key) = key.as_symbol() else {
+                                    return Value::Error("Expected symbol".to_string());
+                                };
+                                let key = key.trim_start_matches(':');
+
+                                map.get(key).cloned().map(|v| *v).unwrap_or_else(|| {
+                                    Value::Error(format!("Undefined key: {}", key))
+                                })
+                            }
+                            _ => Value::Error(format!("Unknown value: {:?}", first)),
+                        }
                     }
                 }
                 // Otherwise, just return error for now
-                Value::Error("Only (struct, is-type, quote, ...) supported for now".to_string())
             }
         }
     }
