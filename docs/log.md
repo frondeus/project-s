@@ -451,3 +451,43 @@ It works even better if struct is named
 ```json
 2.0
 ```
+
+Cool. So, `self`...
+
+Let's say that for now keys HAVE TO
+be ordered explicitly
+
+```
+(struct `(
+  :another (+ 1 1)
+  :key (+ 1 (self :another))
+))
+```
+
+```json
+{
+  "another": 2.0,
+  "key": 3.0
+}
+```
+
+Okay, but how do i access object? It's not in the env. And it cannot be yet
+in some Arc<_> because it is still being mutated.
+
+Ok, now next one has to fail, right?
+
+```
+(struct `(
+  :key (+ 1 (self :another))
+  :another (+ 1 1)
+))
+```
+
+```json
+{
+  "another": 2.0,
+  "key": "<Error: Undefined key: another>"
+}
+```
+
+Yep.

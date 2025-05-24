@@ -16,6 +16,14 @@ pub enum Value {
     Error(String),
 }
 
+macro_rules! try_err {
+    ($val: expr) => {
+        if let Value::Error(e) = $val {
+            return Value::Error(e);
+        };
+    };
+}
+
 impl Value {
     fn as_sexp(&self) -> Option<&SExpId> {
         match self {
@@ -62,8 +70,9 @@ impl Runtime {
             return Value::Error("Expected list".to_string());
         };
 
-        let mut map = BTreeMap::new();
+        // let mut map = BTreeMap::new();
         let mut items = items.to_vec().into_iter();
+        self.objs.push();
 
         self.envs.push();
 
@@ -79,7 +88,10 @@ impl Runtime {
                     };
                     let value = self.eval(value);
                     // let value = self.quote(&value);
-                    map.insert(key.to_string(), Box::new(value));
+                    self.objs
+                        .mut_self()
+                        .unwrap()
+                        .insert(key.to_string(), Box::new(value));
                 }
                 SExp::List(list) => {
                     eprintln!("Processing list: {list:?}");
@@ -113,6 +125,7 @@ impl Runtime {
         }
 
         self.envs.pop();
+        let map = self.objs.pop();
         Value::Object(map)
     }
 
@@ -212,7 +225,7 @@ impl Runtime {
         let mut sum = 0.0;
         for item in items {
             let value = self.eval(*item);
-            dbg!(&value);
+            try_err!(value);
             if let Some(n) = value.as_number() {
                 sum += n;
             } else {
@@ -268,8 +281,14 @@ impl Runtime {
 
 #[derive(Default, Debug)]
 pub struct Env {
+    // is_obj: bool,
     vars: BTreeMap<String, Value>,
 }
+// impl Env {
+//     fn obj() -> Self {
+//         Self { is_obj: true, ..Default::default()}
+//     }
+// }
 
 #[derive(Debug)]
 pub struct Envs {
@@ -308,12 +327,40 @@ impl Envs {
     pub fn pop(&mut self) {
         self.envs.pop();
     }
+
+    // pub fn _self(&self) -> Option<&Env> {
+    //     self.envs.iter().rev().find(|env| env.is_obj)
+    // }
 }
 
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
+    objs: Objects,
     asts: ASTS,
+}
+
+#[derive(Default)]
+struct Objects {
+    stack: Vec<BTreeMap<String, Box<Value>>>,
+}
+
+impl Objects {
+    fn push(&mut self) {
+        self.stack.push(BTreeMap::new());
+    }
+
+    fn pop(&mut self) -> BTreeMap<String, Box<Value>> {
+        self.stack.pop().unwrap()
+    }
+
+    fn _self(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+        self.stack.last()
+    }
+
+    fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Box<Value>>> {
+        self.stack.last_mut()
+    }
 }
 
 impl Runtime {
@@ -329,6 +376,12 @@ impl Runtime {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
+            SExp::Symbol(s) if s == "self" => {
+                let Some(map) = self.objs._self() else {
+                    return Value::Error("self used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
             SExp::Symbol(s) => dbg!(&self.envs)
                 .get(s.as_str())
                 .cloned()
