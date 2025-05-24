@@ -241,25 +241,35 @@ impl SExpParser {
                 self.ast.set(parent, SExp::List(items));
                 Ok(parent)
             }
-            "quote" => {
-                let parent = self.ast.reserve();
-                let mut items = Vec::new();
-                items.push(self.ast.add_node(SExp::Symbol("quote".to_string())));
+            "quote" => self.shortcut(node, source, "quote"),
+            "quasiquote" => self.shortcut(node, source, "quasiquote"),
+            "unquote" => self.shortcut(node, source, "unquote"),
 
-                let inner = node
-                    .child_by_field_name("inner")
-                    .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
-
-                let inner = self.node_to_sexp(inner, source)?;
-                items.push(inner);
-                self.ast.set(parent, SExp::List(items));
-                Ok(parent)
-            }
             kind => Err(ParseError::UnexpectedNode(format!(
                 "Unexpected node kind: {}",
                 kind
             ))),
         }
+    }
+
+    fn shortcut(
+        &mut self,
+        node: tree_sitter::Node,
+        source: &str,
+        symbol: &str,
+    ) -> Result<SExpId, ParseError> {
+        let parent = self.ast.reserve();
+        let mut items = Vec::new();
+        items.push(self.ast.add_node(SExp::Symbol(symbol.to_string())));
+
+        let inner = node
+            .child_by_field_name("inner")
+            .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
+
+        let inner = self.node_to_sexp(inner, source)?;
+        items.push(inner);
+        self.ast.set(parent, SExp::List(items));
+        Ok(parent)
     }
 
     pub fn parse(mut self, input: &str) -> Result<AST, ParseError> {

@@ -277,3 +277,13 @@ Or maybe not. Lifetimes will eat me alive.
 Maybe i just need to clone the whole quasiquoted tree.
 
 Yep. For now cloning will work.
+
+Ok, now reader shortcut.
+
+```
+`(1 2 ,(+ 1 2))
+```
+
+```json
+"(1 2 3)"
+```

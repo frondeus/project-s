@@ -22,6 +22,8 @@ module.exports = grammar({
 
     _sexp: $ => choice(
       $.quote,
+      $.quasiquote,
+      $.unquote,
       $.float,
       $.integer,
       $.string,
@@ -36,6 +38,16 @@ module.exports = grammar({
       ')'
     ),
 
+    quasiquote: $ => seq(
+      "`",
+      field("inner", $._sexp)
+    ),
+
+    unquote: $ => seq(
+      ",",
+      field("inner", $._sexp)
+    ),
+
     quote: $ => seq(
       "'",
       field("inner", $._sexp)
@@ -47,7 +59,7 @@ module.exports = grammar({
       '"'
     ),
     string_inner: $ => /[^"]*/,
-    symbol: $ =>  token(prec(1, /[^\s()'"]+/)),
+    symbol: $ =>  token(prec(1, /[^\s()'"`,]+/)),
     float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),
     integer: $ => token(prec(2, /[+-]?[0-9]+/)),
   }

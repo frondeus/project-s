@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "quasiquote",
+          "named": true
+        },
+        {
           "type": "quote",
           "named": true
         },
@@ -30,8 +34,56 @@
         {
           "type": "symbol",
           "named": true
+        },
+        {
+          "type": "unquote",
+          "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "quasiquote",
+    "named": true,
+    "fields": {
+      "inner": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "list",
+            "named": true
+          },
+          {
+            "type": "quasiquote",
+            "named": true
+          },
+          {
+            "type": "quote",
+            "named": true
+          },
+          {
+            "type": "string",
+            "named": true
+          },
+          {
+            "type": "symbol",
+            "named": true
+          },
+          {
+            "type": "unquote",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -55,6 +107,10 @@
             "named": true
           },
           {
+            "type": "quasiquote",
+            "named": true
+          },
+          {
             "type": "quote",
             "named": true
           },
@@ -64,6 +120,10 @@
           },
           {
             "type": "symbol",
+            "named": true
+          },
+          {
+            "type": "unquote",
             "named": true
           }
         ]
@@ -92,6 +152,10 @@
           "named": true
         },
         {
+          "type": "quasiquote",
+          "named": true
+        },
+        {
           "type": "quote",
           "named": true
         },
@@ -101,6 +165,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "unquote",
           "named": true
         }
       ]
@@ -123,6 +191,50 @@
     }
   },
   {
+    "type": "unquote",
+    "named": true,
+    "fields": {
+      "inner": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "list",
+            "named": true
+          },
+          {
+            "type": "quasiquote",
+            "named": true
+          },
+          {
+            "type": "quote",
+            "named": true
+          },
+          {
+            "type": "string",
+            "named": true
+          },
+          {
+            "type": "symbol",
+            "named": true
+          },
+          {
+            "type": "unquote",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "\"",
     "named": false
   },
@@ -136,6 +248,14 @@
   },
   {
     "type": ")",
+    "named": false
+  },
+  {
+    "type": ",",
+    "named": false
+  },
+  {
+    "type": "`",
     "named": false
   },
   {
