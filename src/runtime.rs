@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
 
-use itertools::Itertools;
-
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     types::{Type, TypeEnv},
@@ -40,12 +38,17 @@ impl Value {
             Value::Bool(_b) => todo!(),
             Value::Object(_btree_map) => todo!(),
             Value::SExp(sexp_id) => *sexp_id,
-            Value::Error(_) => todo!(),
+            Value::Error(err) => {
+                println!("Error: {err}");
+                target.add_node(SExp::Error)
+            }
         }
     }
 }
 
 impl Runtime {
+    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
+    #[allow(clippy::unnecessary_to_owned)]
     fn make_struct(&mut self, items: &[SExpId]) -> Value {
         let Some(sexp) = items.first() else {
             return Value::Error("Expected SExpression. Found None".to_string());
@@ -60,16 +63,56 @@ impl Runtime {
         };
 
         let mut map = BTreeMap::new();
-        for ((_, key), (id, _value)) in items.iter().map(|id| (*id, self.asts.get(*id))).tuples() {
-            let Some(symbol) = key.as_symbol() else {
-                return Value::Error("Expected symbol as struct key".to_string());
-            };
-            let key = symbol.trim_start_matches(':');
-            let value = self.quote(&id);
-            dbg!(&value);
-            // let value = Value::SExp(id);
-            map.insert(key.to_string(), Box::new(value));
+        let mut items = items.to_vec().into_iter();
+
+        self.envs.push();
+
+        while let Some(item_id) = items.next() {
+            let item = self.asts.get(item_id).clone();
+            match item {
+                SExp::Symbol(key) => {
+                    eprintln!("Processing pair: {key}");
+                    let key = key.trim_start_matches(':');
+                    let Some(value) = items.next() else {
+                        self.envs.pop();
+                        return Value::Error("Expected value".to_string());
+                    };
+                    let value = self.eval(value);
+                    // let value = self.quote(&value);
+                    map.insert(key.to_string(), Box::new(value));
+                }
+                SExp::List(list) => {
+                    eprintln!("Processing list: {list:?}");
+                    let Some(first) = list.first() else {
+                        self.envs.pop();
+                        return Value::Error("Expected list".to_string());
+                    };
+                    let Some(first) = self.asts.get(*first).as_symbol().map(ToOwned::to_owned)
+                    else {
+                        self.envs.pop();
+                        return Value::Error("Expected symbol".to_string());
+                    };
+                    match first.as_str() {
+                        "let" => {
+                            if let Err(e) = self.object_let(&list[1..]) {
+                                self.envs.pop();
+                                return Value::Error(e);
+                            }
+                        }
+                        _ => {
+                            self.envs.pop();
+                            return Value::Error(format!("Unknown symbol: {}", first));
+                        }
+                    }
+                }
+                _ => {
+                    self.envs.pop();
+                    return Value::Error("Expected symbol or list".to_string());
+                }
+            }
         }
+
+        self.envs.pop();
         Value::Object(map)
     }
 
@@ -101,12 +144,11 @@ impl Runtime {
 
     fn quote(&self, id: &SExpId) -> Value {
         let sexp = self.asts.get(*id);
-        dbg!(&sexp);
         match sexp {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
-            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::Error => Value::Error("Quote: AST Error".to_string()),
             SExp::List(_) => Value::SExp(*id),
         }
     }
@@ -117,7 +159,7 @@ impl Runtime {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
-            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
             SExp::List(_) => {
                 let mut new_ast = AST::default();
                 self.traverse_unquote(&mut new_ast, id);
@@ -170,6 +212,7 @@ impl Runtime {
         let mut sum = 0.0;
         for item in items {
             let value = self.eval(*item);
+            dbg!(&value);
             if let Some(n) = value.as_number() {
                 sum += n;
             } else {
@@ -177,6 +220,24 @@ impl Runtime {
             }
         }
         Value::Number(sum)
+    }
+
+    fn object_let(&mut self, items: &[SExpId]) -> Result<(), String> {
+        let Some(ident) = items.first() else {
+            return Err("Expected SExpression".to_string());
+        };
+        let ident = self.asts.get(*ident).clone();
+        let Some(ident) = ident.as_symbol() else {
+            return Err("Expected symbol".to_string());
+        };
+
+        let Some(value) = items.get(1) else {
+            return Err("Expected value".to_string());
+        };
+        let value = self.eval(*value);
+        eprintln!("Setting {ident} to {value:?}");
+        self.envs.set(ident, value);
+        Ok(())
     }
 
     fn _let(&mut self, items: &[SExpId]) -> Value {
@@ -204,10 +265,12 @@ impl Runtime {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Env {
     vars: BTreeMap<String, Value>,
 }
+
+#[derive(Debug)]
 pub struct Envs {
     envs: Vec<Env>,
 }
@@ -265,8 +328,7 @@ impl Runtime {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
-            SExp::Symbol(s) => self
-                .envs
+            SExp::Symbol(s) => dbg!(&self.envs)
                 .get(s.as_str())
                 .cloned()
                 .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
@@ -327,6 +389,7 @@ mod tests {
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
+            eprintln!("---");
             let ast = crate::ast::AST::parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let mut runtime = Runtime::new(ast);

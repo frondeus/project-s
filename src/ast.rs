@@ -246,7 +246,7 @@ impl SExpParser {
         node: tree_sitter::Node,
         source: &str,
     ) -> Result<SExpId, ParseError> {
-        match dbg!(node.kind()) {
+        match node.kind() {
             "float" | "integer" => {
                 let text = node
                     .utf8_text(source.as_bytes())

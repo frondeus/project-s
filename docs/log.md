@@ -345,7 +345,7 @@ The problem is:
 
 ```
 (struct `(
-  :key (+ 1 2)
+  :key '(+ 1 2)
 ))
 ```
 
@@ -367,3 +367,30 @@ the AST is lost. So we have a dangling pointer of sorts.
 Ok fixed.
 The only downside is - it's going to leak memory over time.
 But we need GC anyway...
+
+Ok, going back to let expressions
+
+```
+(struct `(
+  (let x 5)
+  :key (+ 1 x)
+  :another '(+ 1 x)
+))
+```
+
+```json
+{
+  "another": "(+ 1 x)",
+  "key": 6.0
+}
+```
+
+Oooh, I get why this is not working.
+
+The problem is, that unquoting happens BEFORE we start digesting struct.
+Which fucking make sense. That is intended behaviour.
+We do quasiquote and only AFTER that we pass that to the struct function
+in order to generate struct from SExp.
+
+The only thing i can do is to reverse the inner quoting.
+Bingo.
