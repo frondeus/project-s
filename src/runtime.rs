@@ -24,10 +24,17 @@ impl Value {
             _ => None,
         }
     }
+
+    fn as_number(&self) -> Option<f64> {
+        match self {
+            Value::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
 }
 
 fn make_struct(ast: &AST, items: &[SExpId]) -> Value {
-    let Some(sexp) = items.get(1) else {
+    let Some(sexp) = items.first() else {
         return Value::Error("Expected SExpression".to_string());
     };
     let sexp = ast.get(*sexp);
@@ -51,14 +58,14 @@ fn make_struct(ast: &AST, items: &[SExpId]) -> Value {
 }
 
 fn is_type(ast: &AST, items: &[SExpId]) -> Value {
-    let Some(sexp) = items.get(1) else {
+    let Some(sexp) = items.first() else {
         return Value::Error("Expected SExpression".to_string());
     };
     let mut env = TypeEnv::default();
     let infered = env.infer(ast, *sexp);
     let result = env.get(infered);
 
-    let Some(ty) = items.get(2) else {
+    let Some(ty) = items.get(1) else {
         return Value::Error("Expected type".to_string());
     };
     let ty = ast.get(*ty);
@@ -87,6 +94,19 @@ fn quote(ast: &AST, id: &SExpId) -> Value {
     }
 }
 
+fn add(ast: &AST, items: &[SExpId]) -> Value {
+    let mut sum = 0.0;
+    for item in items {
+        let value = eval(ast, ast.get(*item));
+        if let Some(n) = value.as_number() {
+            sum += n;
+        } else {
+            return Value::Error("Expected number".to_string());
+        }
+    }
+    Value::Number(sum)
+}
+
 pub fn eval(ast: &AST, sexp: &SExp) -> Value {
     match sexp {
         SExp::Error => Value::Error("AST Error".to_string()),
@@ -97,11 +117,13 @@ pub fn eval(ast: &AST, sexp: &SExp) -> Value {
             // Check for (struct ...)
             if let Some(SExp::Symbol(tag)) = ast.maybe_get(items.first().copied()) {
                 if tag == "struct" {
-                    return make_struct(ast, items);
+                    return make_struct(ast, &items[1..]);
                 } else if tag == "is-type" {
-                    return is_type(ast, items);
+                    return is_type(ast, &items[1..]);
                 } else if tag == "quote" {
                     return quote(ast, items.get(1).unwrap());
+                } else if tag == "+" {
+                    return add(ast, &items[1..]);
                 }
             }
             // Otherwise, just return error for now

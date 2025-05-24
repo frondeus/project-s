@@ -219,3 +219,14 @@ and have it compiled to
   "surname": "Surname"
 }
 ```
+
+Ok. Cool, this is nice and shit, but this language is useless if we cannot do any operation.
+Let's for now add hardcoded add operator
+
+```
+(+ 1 2)
+```
+
+```json
+3.0
+```
