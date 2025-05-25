@@ -533,7 +533,7 @@ Does it work with accessing self?
   "another": 4.0,
   "key": {
     "a": 1.0,
-    "b": "<Error: Unknown value: Error(\"Undefined key: key\")>"
+    "b": "<Error: Undefined key: key>"
   }
 }
 ```
@@ -934,4 +934,52 @@ What if in order to make it lazy, i would pass a quoted struct?
     "c": 3.0
   }
 }
+```
+
+Macros:
+
+So, I guess the next step would be to have a macro
+
+
+```
+(
+  (macro (x y) `(+ ,x ,y))
+  1 2
+)
+```
+
+```json
+3.0
+```
+
+Ok, does it work?
+
+```
+(
+  let var (macro (name value body) `(let ,name ,value ,body))
+  (var x 4.2 x)
+)
+```
+
+```json
+4.2
+```
+
+The problem is, we are evaluating arguments which is counterpoint of macros.
+
+Ok. Fixed.
+
+Ok, out of curiosity. Will that work :D
+
+```
+(
+  let macrodef (macro (name args body in) `(let ,name (macro ,args ,body) ,in))
+  (macrodef var (name value body) `(let ,name ,value ,body)
+    (var x 4.2 x)
+  )
+)
+```
+
+```json
+4.2
 ```

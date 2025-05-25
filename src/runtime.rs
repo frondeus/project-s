@@ -13,8 +13,15 @@ pub enum Value {
     Object(BTreeMap<String, Box<Value>>),
     Symbol(String),
     SExp(SExpId),
+    Macro(Macro),
     /// For error handling
     Error(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct Macro {
+    pub signature: Vec<String>,
+    pub body: SExpId,
 }
 
 macro_rules! try_err {
@@ -69,6 +76,9 @@ impl Value {
             Value::Symbol(s) => target.add_node(SExp::Symbol(s.clone())),
             Value::Object(_btree_map) => {
                 todo!("Could not convert Object to SExp: {:?}", self)
+            }
+            Value::Macro(macro_) => {
+                todo!("Could not convert Macro to SExp: {:?}", macro_)
             }
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {
@@ -419,6 +429,169 @@ impl Runtime {
         self.make_struct_inner(items)?;
         Ok(())
     }
+
+    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
+    #[allow(clippy::unnecessary_to_owned)]
+    fn macro_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        let signature = items
+            .first()
+            .ok_or_else(|| "Expected signature".to_string())?;
+
+        let signature = self.asts.get(*signature);
+        let Some(signature) = signature.as_list() else {
+            return Err("Expected list".to_string());
+        };
+        let signature = signature
+            .to_vec()
+            .into_iter()
+            .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
+            .collect();
+        let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
+
+        Ok(Value::Macro(Macro {
+            signature,
+            body: *body,
+        }))
+    }
+
+    fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<Value, String> {
+        let Macro { signature, body } = macro_;
+
+        self.envs.push();
+
+        for (sig, arg) in signature.iter().zip(args) {
+            self.envs.set(sig, Value::SExp(*arg));
+        }
+
+        let result = self.eval(body);
+
+        self.envs.pop();
+
+        let result = result
+            .as_sexp()
+            .ok_or_else(|| "Expected SExpression".to_string())?;
+        let result = self.eval(*result);
+        Ok(result)
+    }
+
+    pub fn new(ast: AST) -> Self {
+        let mut runtime = Self::default();
+        runtime.asts.add_ast(ast);
+        runtime
+    }
+
+    pub fn eval(&mut self, sexp: SExpId) -> Value {
+        let sexp = self.asts.get(sexp).clone();
+        match sexp {
+            SExp::Error => Value::Error("AST Error".to_string()),
+            SExp::Number(n) => Value::Number(n),
+            SExp::String(s) => Value::String(s.clone()),
+            SExp::Bool(b) => Value::Bool(b),
+            SExp::Symbol(s) if s == "self" => {
+                let Some(map) = self.structs._self() else {
+                    return Value::Error("self used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
+            SExp::Symbol(s) if s == "root" => {
+                let Some(map) = self.structs.root() else {
+                    return Value::Error("root used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
+            SExp::Symbol(s) if s == "super" => {
+                let Some(map) = self.supers._self() else {
+                    return Value::Error("super used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
+            SExp::Symbol(s) if s.starts_with(":") => {
+                let s = s.trim_start_matches(':');
+                Value::Symbol(s.to_string())
+            }
+            SExp::Symbol(s) => dbg!(&self.envs)
+                .get(s.as_str())
+                .cloned()
+                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
+            SExp::List(items) => {
+                let first_id = items.first().copied();
+                let first = self.asts.maybe_get(first_id);
+                let Some(first) = first else {
+                    todo!("Empty tuple");
+                };
+                let first_id = first_id.unwrap();
+                match first {
+                    SExp::Symbol(tag) if tag == "macro" => {
+                        self.macro_def(&items[1..]).unwrap_or_else(Value::Error)
+                    }
+                    SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
+                    SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
+                    SExp::Symbol(tag) if tag == "quote" => {
+                        let Some(item) = items.get(1) else {
+                            return Value::Error("Expected item after quote".to_string());
+                        };
+                        self.quote(item)
+                    }
+                    SExp::Symbol(tag) if tag == "+" => self.add(&items[1..]),
+                    SExp::Symbol(tag) if tag == "quasiquote" => {
+                        let Some(item) = items.get(1) else {
+                            return Value::Error("Expected item after quasiquote".to_string());
+                        };
+                        self.quasiquote(item)
+                    }
+                    SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
+                    SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
+                    _first => {
+                        let first = self.eval(first_id);
+
+                        match first {
+                            Value::Error(e) => Value::Error(e),
+                            Value::Object(map) => {
+                                let Some(key) = items.get(1) else {
+                                    return Value::Error("Expected key".to_string());
+                                };
+                                let key = self.eval(*key);
+                                let Some(key) = key.as_symbol() else {
+                                    return Value::Error("Expected symbol".to_string());
+                                };
+
+                                map.get(key).cloned().map(|v| *v).unwrap_or_else(|| {
+                                    Value::Error(format!("Undefined key: {}", key))
+                                })
+                            }
+                            Value::Macro(macro_) => self
+                                .macro_call(macro_, &items[1..])
+                                .unwrap_or_else(Value::Error),
+                            _ => Value::Error(format!("Invalid caller: {:?}", first)),
+                        }
+                    }
+                }
+                // Otherwise, just return error for now
+            }
+        }
+    }
+    pub fn to_json(&self, value: Value) -> serde_json::Value {
+        match value {
+            Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
+            Value::String(s) => serde_json::Value::String(s),
+            Value::Symbol(s) => serde_json::Value::String(format!("<Symbol: {s}>")),
+            Value::Bool(b) => serde_json::Value::Bool(b),
+            Value::Object(map) => {
+                let mut obj = serde_json::Map::new();
+                for (k, v) in map {
+                    obj.insert(k, self.to_json(*v));
+                }
+                serde_json::Value::Object(obj)
+            }
+            Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
+            Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
+            Value::SExp(id) => {
+                let ast = self.asts.get_ast(id);
+                let sexp = ast.get(id).fmt(&self.asts).to_string();
+                serde_json::Value::String(sexp)
+            }
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -510,119 +683,6 @@ impl Structs {
 
     fn root(&self) -> Option<&BTreeMap<String, Box<Value>>> {
         self.stack.first()
-    }
-}
-
-impl Runtime {
-    pub fn new(ast: AST) -> Self {
-        let mut runtime = Self::default();
-        runtime.asts.add_ast(ast);
-        runtime
-    }
-
-    pub fn eval(&mut self, sexp: SExpId) -> Value {
-        let sexp = self.asts.get(sexp).clone();
-        match sexp {
-            SExp::Error => Value::Error("AST Error".to_string()),
-            SExp::Number(n) => Value::Number(n),
-            SExp::String(s) => Value::String(s.clone()),
-            SExp::Bool(b) => Value::Bool(b),
-            SExp::Symbol(s) if s == "self" => {
-                let Some(map) = self.structs._self() else {
-                    return Value::Error("self used outside of object".to_string());
-                };
-                Value::Object(map.clone())
-            }
-            SExp::Symbol(s) if s == "root" => {
-                let Some(map) = self.structs.root() else {
-                    return Value::Error("root used outside of object".to_string());
-                };
-                Value::Object(map.clone())
-            }
-            SExp::Symbol(s) if s == "super" => {
-                let Some(map) = self.supers._self() else {
-                    return Value::Error("super used outside of object".to_string());
-                };
-                Value::Object(map.clone())
-            }
-            SExp::Symbol(s) if s.starts_with(":") => {
-                let s = s.trim_start_matches(':');
-                Value::Symbol(s.to_string())
-            }
-            SExp::Symbol(s) => dbg!(&self.envs)
-                .get(s.as_str())
-                .cloned()
-                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
-            SExp::List(items) => {
-                let first_id = items.first().copied();
-                let first = self.asts.maybe_get(first_id);
-                let Some(first) = first else {
-                    todo!("Empty tuple");
-                };
-                let first_id = first_id.unwrap();
-                match first {
-                    SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
-                    SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
-                    SExp::Symbol(tag) if tag == "quote" => {
-                        let Some(item) = items.get(1) else {
-                            return Value::Error("Expected item after quote".to_string());
-                        };
-                        self.quote(item)
-                    }
-                    SExp::Symbol(tag) if tag == "+" => self.add(&items[1..]),
-                    SExp::Symbol(tag) if tag == "quasiquote" => {
-                        let Some(item) = items.get(1) else {
-                            return Value::Error("Expected item after quasiquote".to_string());
-                        };
-                        self.quasiquote(item)
-                    }
-                    SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
-                    SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
-                    _first => {
-                        let first = self.eval(first_id);
-
-                        match first {
-                            Value::Object(map) => {
-                                let Some(key) = items.get(1) else {
-                                    return Value::Error("Expected key".to_string());
-                                };
-                                let key = self.eval(*key);
-                                let Some(key) = key.as_symbol() else {
-                                    return Value::Error("Expected symbol".to_string());
-                                };
-
-                                map.get(key).cloned().map(|v| *v).unwrap_or_else(|| {
-                                    Value::Error(format!("Undefined key: {}", key))
-                                })
-                            }
-                            _ => Value::Error(format!("Unknown value: {:?}", first)),
-                        }
-                    }
-                }
-                // Otherwise, just return error for now
-            }
-        }
-    }
-    pub fn to_json(&self, value: Value) -> serde_json::Value {
-        match value {
-            Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
-            Value::String(s) => serde_json::Value::String(s),
-            Value::Symbol(s) => serde_json::Value::String(format!("<Symbol: {s}>")),
-            Value::Bool(b) => serde_json::Value::Bool(b),
-            Value::Object(map) => {
-                let mut obj = serde_json::Map::new();
-                for (k, v) in map {
-                    obj.insert(k, self.to_json(*v));
-                }
-                serde_json::Value::Object(obj)
-            }
-            Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
-            Value::SExp(id) => {
-                let ast = self.asts.get_ast(id);
-                let sexp = ast.get(id).fmt(&self.asts).to_string();
-                serde_json::Value::String(sexp)
-            }
-        }
     }
 }
 
