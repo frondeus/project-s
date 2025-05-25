@@ -39,6 +39,13 @@ impl Value {
         }
     }
 
+    fn as_object(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+        match self {
+            Value::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
     fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
@@ -222,17 +229,41 @@ impl Runtime {
     }
 
     fn add(&mut self, items: &[SExpId]) -> Value {
-        let mut sum = 0.0;
-        for item in items {
-            let value = self.eval(*item);
-            try_err!(value);
-            if let Some(n) = value.as_number() {
-                sum += n;
-            } else {
-                return Value::Error("Expected number".to_string());
-            }
+        if items.is_empty() {
+            return Value::Error("Expected at least one argument".to_string());
         }
-        Value::Number(sum)
+
+        let first = items.first().unwrap();
+
+        let mut first = self.eval(*first);
+        try_err!(first);
+
+        match &mut first {
+            Value::Number(sum) => {
+                for item in items.iter().skip(1) {
+                    let right = self.eval(*item);
+                    try_err!(right);
+                    let Some(n) = right.as_number() else {
+                        return Value::Error("Expected number".to_string());
+                    };
+                    *sum += n;
+                }
+            }
+            Value::Object(left) => {
+                for item in items.iter().skip(1) {
+                    let right = self.eval(*item);
+                    try_err!(right);
+                    let Some(right) = right.as_object() else {
+                        return Value::Error("Expected object".to_string());
+                    };
+                    for (key, value) in right {
+                        left.insert(key.clone(), value.clone());
+                    }
+                }
+            }
+            _ => return Value::Error("Expected number".to_string()),
+        }
+        first
     }
 
     fn object_let(&mut self, items: &[SExpId]) -> Result<(), String> {

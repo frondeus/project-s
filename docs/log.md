@@ -562,3 +562,48 @@ Ok, now i want to have another reader shortcut
   }
 }
 ```
+
+# 25.05
+
+Okay. What else am I missing?
+
+I guess one reason I started this project is to be able to add two structs
+together like in the JSONnet.
+
+So... Let's maybe focus on it.
+
+```
+(+ {
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+})
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0
+  }
+}
+```
+
+Oooh... Okay. I see.
+It is returning `b` = `5.0` because overriding `another` doesn't really
+change `b`. Because `b` was already calculated in the left side.
+And since `b` is not lazy... 
+
+So I expected a 10.0 but that is impossible with the current lang.
+Damn. That's why jsonnet is a lazy language, right?
+
+Okay let's not focus right now on it. Maybe it won't be such an issue.
+I want to add `super`!
