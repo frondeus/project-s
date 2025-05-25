@@ -50,7 +50,7 @@ impl Value {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
-            Value::Bool(_b) => todo!(),
+            Value::Bool(b) => target.add_node(SExp::Bool(*b)),
             Value::Object(_btree_map) => todo!(),
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {
@@ -168,6 +168,7 @@ impl Runtime {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Bool(b) => Value::Bool(*b),
             SExp::Error => Value::Error("Quote: AST Error".to_string()),
             SExp::List(_) => Value::SExp(*id),
         }
@@ -179,6 +180,7 @@ impl Runtime {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Bool(b) => Value::Bool(*b),
             SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
             SExp::List(_) => {
                 let mut new_ast = AST::default();
@@ -418,6 +420,7 @@ impl Runtime {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
+            SExp::Bool(b) => Value::Bool(b),
             SExp::Symbol(s) if s == "self" => {
                 let Some(map) = self.structs._self() else {
                     return Value::Error("self used outside of object".to_string());

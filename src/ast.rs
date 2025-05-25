@@ -127,6 +127,7 @@ impl SExpId {
 pub enum SExp {
     Number(f64),
     String(String),
+    Bool(bool),
     Symbol(String),
     List(Vec<SExpId>),
 
@@ -181,6 +182,7 @@ impl std::fmt::Debug for SExpFmt<'_> {
             SExp::Number(n) => f.debug_tuple("Number").field(n).finish(),
             SExp::String(s) => f.debug_tuple("String").field(s).finish(),
             SExp::Symbol(s) => f.debug_tuple("Symbol").field(s).finish(),
+            SExp::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
             SExp::Error => f.debug_tuple("Error").finish(),
             SExp::List(items) => f
                 .debug_tuple("List")
@@ -198,6 +200,7 @@ impl std::fmt::Display for SExpFmt<'_> {
             SExp::Number(n) => write!(f, "{}", n),
             SExp::String(s) => write!(f, "\"{}\"", s),
             SExp::Symbol(s) => write!(f, "{}", s),
+            SExp::Bool(b) => write!(f, "{}", b),
             SExp::Error => write!(f, "<Error>"),
             SExp::List(items) => {
                 write!(f, "(")?;
@@ -255,6 +258,13 @@ impl SExpParser {
                     .parse::<f64>()
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(self.ast.add_node(SExp::Number(value)))
+            }
+            "boolean" => {
+                let text = node
+                    .utf8_text(source.as_bytes())
+                    .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+                let value = text == "true";
+                Ok(self.ast.add_node(SExp::Bool(value)))
             }
             "string" => {
                 let inner = node

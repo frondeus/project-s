@@ -8,6 +8,10 @@
       "required": false,
       "types": [
         {
+          "type": "boolean",
+          "named": true
+        },
+        {
           "type": "float",
           "named": true
         },
@@ -54,6 +58,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "boolean",
+            "named": true
+          },
           {
             "type": "float",
             "named": true
@@ -103,6 +111,10 @@
         "required": true,
         "types": [
           {
+            "type": "boolean",
+            "named": true
+          },
+          {
             "type": "float",
             "named": true
           },
@@ -151,6 +163,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "boolean",
+          "named": true
+        },
         {
           "type": "float",
           "named": true
@@ -215,6 +231,10 @@
       "required": false,
       "types": [
         {
+          "type": "boolean",
+          "named": true
+        },
+        {
           "type": "float",
           "named": true
         },
@@ -261,6 +281,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "boolean",
+            "named": true
+          },
           {
             "type": "float",
             "named": true
@@ -324,6 +348,10 @@
   {
     "type": "`",
     "named": false
+  },
+  {
+    "type": "boolean",
+    "named": true
   },
   {
     "type": "float",

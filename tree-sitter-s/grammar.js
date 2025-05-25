@@ -29,6 +29,7 @@ module.exports = grammar({
       $.float,
       $.integer,
       $.string,
+      $.boolean,
       $.symbol,
       $.list
     ),
@@ -66,6 +67,10 @@ module.exports = grammar({
       field("inner", $.string_inner),
       '"'
     ),
+    boolean: $ => token(prec(2, choice(
+      "true",
+      "false"
+    ))),
     string_inner: $ => /[^"]*/,
     symbol: $ =>  token(prec(1, /[^\s()'"`,{}]+/)),
     float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),

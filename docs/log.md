@@ -667,3 +667,25 @@ Okay, what if I override nested struct?
 ```
 
 Makes sense.
+
+Okay. Next thing is - If i want to have a partial adding of the struct,
+I need to have conditionals on the keys.
+
+That means, I need proper booleans.
+
+
+```
+true
+```
+
+```json
+true
+```
+
+```
+false
+```
+
+```json
+false
+```
