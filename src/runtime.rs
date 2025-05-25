@@ -11,6 +11,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Object(BTreeMap<String, Box<Value>>),
+    Symbol(String),
     SExp(SExpId),
     /// For error handling
     Error(String),
@@ -39,6 +40,13 @@ impl Value {
         }
     }
 
+    fn as_symbol(&self) -> Option<&str> {
+        match self {
+            Value::Symbol(s) => Some(s),
+            _ => None,
+        }
+    }
+
     fn as_object(&self) -> Option<&BTreeMap<String, Box<Value>>> {
         match self {
             Value::Object(map) => Some(map),
@@ -51,6 +59,7 @@ impl Value {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
+            Value::Symbol(s) => target.add_node(SExp::Symbol(s.clone())),
             Value::Object(_btree_map) => todo!(),
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {
@@ -68,7 +77,6 @@ impl Runtime {
         items: &mut impl Iterator<Item = SExpId>,
     ) -> Result<(), String> {
         eprintln!("Processing pair: {key}");
-        let key = key.trim_start_matches(':');
         let Some(value) = items.next() else {
             return Err("Expected value".to_string());
         };
@@ -84,9 +92,6 @@ impl Runtime {
         while let Some(item_id) = items.next() {
             let item = self.asts.get(item_id).clone();
             match item {
-                SExp::Symbol(key) => {
-                    self.insert_to_struct(&key, &mut items)?;
-                }
                 SExp::List(list) => {
                     eprintln!("Processing list: {list:?}");
                     let first = list.first().ok_or_else(|| "Expected list".to_string())?;
@@ -109,7 +114,15 @@ impl Runtime {
                     }
                 }
                 _ => {
-                    return Err("Expected symbol or list".to_string());
+                    let key = self.eval(item_id);
+                    let key = match key {
+                        Value::Symbol(key) => key,
+                        Value::String(key) => key,
+                        _ => {
+                            return Err("Expected symbol or string".to_string());
+                        }
+                    };
+                    self.insert_to_struct(&key, &mut items)?;
                 }
             }
         }
@@ -280,6 +293,27 @@ impl Runtime {
             _ => return Value::Error("Expected number".to_string()),
         }
         first
+    }
+
+    fn has_obj(&mut self, items: &[SExpId]) -> Value {
+        let Some(obj) = items.first() else {
+            return Value::Error("Expected object".to_string());
+        };
+        let obj = self.eval(*obj);
+        let Some(obj) = obj.as_object() else {
+            return Value::Error("Expected object".to_string());
+        };
+
+        let Some(key) = items.get(1) else {
+            return Value::Error("Expected key".to_string());
+        };
+
+        let key = self.eval(*key);
+        let Some(key) = key.as_symbol() else {
+            return Value::Error("Expected symbol".to_string());
+        };
+
+        Value::Bool(obj.contains_key(key))
     }
 
     fn object_let(&mut self, items: &[SExpId]) -> Result<(), String> {
@@ -487,6 +521,10 @@ impl Runtime {
                 };
                 Value::Object(map.clone())
             }
+            SExp::Symbol(s) if s.starts_with(":") => {
+                let s = s.trim_start_matches(':');
+                Value::Symbol(s.to_string())
+            }
             SExp::Symbol(s) => dbg!(&self.envs)
                 .get(s.as_str())
                 .cloned()
@@ -515,7 +553,7 @@ impl Runtime {
                         self.quasiquote(item)
                     }
                     SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
-                    // SExp::Symbol(s) => Value::Error(format!("Unknown symbol: {}", s)),
+                    SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
                         let first = self.eval(first_id);
 
@@ -524,11 +562,10 @@ impl Runtime {
                                 let Some(key) = items.get(1) else {
                                     return Value::Error("Expected key".to_string());
                                 };
-                                let key = self.asts.get(*key).clone();
+                                let key = self.eval(*key);
                                 let Some(key) = key.as_symbol() else {
                                     return Value::Error("Expected symbol".to_string());
                                 };
-                                let key = key.trim_start_matches(':');
 
                                 map.get(key).cloned().map(|v| *v).unwrap_or_else(|| {
                                     Value::Error(format!("Undefined key: {}", key))
@@ -546,6 +583,7 @@ impl Runtime {
         match value {
             Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
             Value::String(s) => serde_json::Value::String(s),
+            Value::Symbol(s) => serde_json::Value::String(format!("<Symbol: {s}>")),
             Value::Bool(b) => serde_json::Value::Bool(b),
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();

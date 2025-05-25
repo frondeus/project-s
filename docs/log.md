@@ -706,3 +706,29 @@ Ok now the conditionals inside of objects
   "key": 42.0
 }
 ```
+
+Okay, now the only missing element is `has?` operator.
+
+```
+(let x {
+  :key 42.0
+}
+  (has? x :key)
+)
+```
+
+```json
+true
+```
+
+```
+(let x {
+  :key 42.0
+}
+  (has? x :another)
+)
+```
+
+```json
+false
+```
