@@ -54,6 +54,13 @@ impl Value {
         }
     }
 
+    fn into_object(self) -> Option<BTreeMap<String, Box<Value>>> {
+        match self {
+            Value::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
     fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
@@ -138,6 +145,7 @@ impl Runtime {
             return Value::Error("Expected SExpression. Found None".to_string());
         };
         let evaled = self.eval(*sexp);
+        try_err!(evaled);
         let Some(sexp) = evaled.as_sexp() else {
             return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
         };
@@ -283,11 +291,21 @@ impl Runtime {
                 for item in items.iter().skip(1) {
                     let right = self.eval(*item);
                     try_err!(right);
-                    let Some(right) = right.as_object() else {
-                        return Value::Error("Expected object".to_string());
+                    let right = match right {
+                        Value::Object(right) => right,
+                        Value::SExp(id) => {
+                            let right = self.eval(id).into_object();
+                            let Some(right) = right else {
+                                return Value::Error("Expected quoted object".to_string());
+                            };
+                            right
+                        }
+                        _ => {
+                            return Value::Error("Expected object".to_string());
+                        }
                     };
                     for (key, value) in right {
-                        left.insert(key.clone(), value.clone());
+                        left.insert(key, value);
                     }
                 }
                 self.supers.pop();
@@ -302,6 +320,7 @@ impl Runtime {
             return Value::Error("Expected object".to_string());
         };
         let obj = self.eval(*obj);
+        try_err!(obj);
         let Some(obj) = obj.as_object() else {
             return Value::Error("Expected object".to_string());
         };
@@ -311,6 +330,7 @@ impl Runtime {
         };
 
         let key = self.eval(*key);
+        try_err!(key);
         let Some(key) = key.as_symbol() else {
             return Value::Error("Expected symbol".to_string());
         };
@@ -331,7 +351,6 @@ impl Runtime {
             return Err("Expected value".to_string());
         };
         let value = self.eval(*value);
-        eprintln!("Setting {ident} to {value:?}");
         self.envs.set(ident, value);
         Ok(())
     }
@@ -368,6 +387,9 @@ impl Runtime {
             return Err("Expected condition".to_string());
         };
         let condition = self.eval(*condition);
+        if let Value::Error(e) = condition {
+            return Err(e);
+        }
         let Value::Bool(b) = condition else {
             return Err("Expected boolean".to_string());
         };

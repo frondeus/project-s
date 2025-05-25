@@ -1,0 +1,8 @@
+--- log.md
++++ json-043
+@@ -888,4 +888,5 @@
+ ```
+ 
+ ```json
++"<Error: super used outside of object>"
+ ```
