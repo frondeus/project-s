@@ -62,6 +62,60 @@ impl Value {
 }
 
 impl Runtime {
+    fn insert_to_struct(
+        &mut self,
+        key: &str,
+        items: &mut impl Iterator<Item = SExpId>,
+    ) -> Result<(), String> {
+        eprintln!("Processing pair: {key}");
+        let key = key.trim_start_matches(':');
+        let Some(value) = items.next() else {
+            return Err("Expected value".to_string());
+        };
+        let value = self.eval(value);
+        self.structs
+            .mut_self()
+            .unwrap()
+            .insert(key.to_string(), Box::new(value));
+        Ok(())
+    }
+
+    fn make_struct_inner(&mut self, mut items: impl Iterator<Item = SExpId>) -> Result<(), String> {
+        while let Some(item_id) = items.next() {
+            let item = self.asts.get(item_id).clone();
+            match item {
+                SExp::Symbol(key) => {
+                    self.insert_to_struct(&key, &mut items)?;
+                }
+                SExp::List(list) => {
+                    eprintln!("Processing list: {list:?}");
+                    let first = list.first().ok_or_else(|| "Expected list".to_string())?;
+                    let first = self
+                        .asts
+                        .get(*first)
+                        .as_symbol()
+                        .map(ToOwned::to_owned)
+                        .ok_or_else(|| "Expected symbol".to_string())?;
+                    match first.as_str() {
+                        "let" => {
+                            self.object_let(&list[1..])?;
+                        }
+                        "if" => {
+                            self.object_if(&list[1..])?;
+                        }
+                        _ => {
+                            return Err(format!("Unknown symbol: {}", first));
+                        }
+                    }
+                }
+                _ => {
+                    return Err("Expected symbol or list".to_string());
+                }
+            }
+        }
+        Ok(())
+    }
+
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
     #[allow(clippy::unnecessary_to_owned)]
     fn make_struct(&mut self, items: &[SExpId]) -> Value {
@@ -78,57 +132,14 @@ impl Runtime {
         };
 
         // let mut map = BTreeMap::new();
-        let mut items = items.to_vec().into_iter();
+        let items = items.to_vec().into_iter();
         self.structs.push_default();
-
         self.envs.push();
 
-        while let Some(item_id) = items.next() {
-            let item = self.asts.get(item_id).clone();
-            match item {
-                SExp::Symbol(key) => {
-                    eprintln!("Processing pair: {key}");
-                    let key = key.trim_start_matches(':');
-                    let Some(value) = items.next() else {
-                        self.envs.pop();
-                        return Value::Error("Expected value".to_string());
-                    };
-                    let value = self.eval(value);
-                    // let value = self.quote(&value);
-                    self.structs
-                        .mut_self()
-                        .unwrap()
-                        .insert(key.to_string(), Box::new(value));
-                }
-                SExp::List(list) => {
-                    eprintln!("Processing list: {list:?}");
-                    let Some(first) = list.first() else {
-                        self.envs.pop();
-                        return Value::Error("Expected list".to_string());
-                    };
-                    let Some(first) = self.asts.get(*first).as_symbol().map(ToOwned::to_owned)
-                    else {
-                        self.envs.pop();
-                        return Value::Error("Expected symbol".to_string());
-                    };
-                    match first.as_str() {
-                        "let" => {
-                            if let Err(e) = self.object_let(&list[1..]) {
-                                self.envs.pop();
-                                return Value::Error(e);
-                            }
-                        }
-                        _ => {
-                            self.envs.pop();
-                            return Value::Error(format!("Unknown symbol: {}", first));
-                        }
-                    }
-                }
-                _ => {
-                    self.envs.pop();
-                    return Value::Error("Expected symbol or list".to_string());
-                }
-            }
+        if let Err(e) = self.make_struct_inner(items) {
+            self.envs.pop();
+            self.structs.pop();
+            return Value::Error(e);
         }
 
         self.envs.pop();
@@ -312,6 +323,43 @@ impl Runtime {
         let result = self.eval(*body);
         self.envs.pop();
         result
+    }
+
+    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
+    #[allow(clippy::unnecessary_to_owned)]
+    fn object_if(&mut self, items: &[SExpId]) -> Result<(), String> {
+        let Some(condition) = items.first() else {
+            return Err("Expected condition".to_string());
+        };
+        let condition = self.eval(*condition);
+        let Value::Bool(b) = condition else {
+            return Err("Expected boolean".to_string());
+        };
+
+        let Some(then) = items.get(1) else {
+            return Err("Expected then".to_string());
+        };
+        let else_ = items.get(2);
+
+        let branch = if b { Some(then) } else { else_ };
+
+        let Some(branch) = branch else {
+            return Ok(());
+        };
+
+        let evaled = self.eval(*branch);
+
+        let Some(sexp) = evaled.as_sexp() else {
+            return Err(format!("Expected SExpression. Found {evaled:?}"));
+        };
+        let sexp = self.asts.get(*sexp);
+        let Some(items) = sexp.as_list() else {
+            return Err("Expected list".to_string());
+        };
+        let items = items.to_vec().into_iter();
+
+        self.make_struct_inner(items)?;
+        Ok(())
     }
 }
 

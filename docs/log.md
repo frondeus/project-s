@@ -689,3 +689,20 @@ false
 ```json
 false
 ```
+
+Ok now the conditionals inside of objects
+
+```
+{
+  (if true '(:key 42))
+  (if false '(:false 13))
+  (if false '(:true 10) '(:else 12))
+}
+```
+
+```json
+{
+  "else": 12.0,
+  "key": 42.0
+}
+```
