@@ -607,3 +607,63 @@ Damn. That's why jsonnet is a lazy language, right?
 
 Okay let's not focus right now on it. Maybe it won't be such an issue.
 I want to add `super`!
+
+```
+(+ {
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+  :self (+ 1 (self :another))
+  :super (+ 1 (super :another))
+})
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0
+  },
+  "self": 10.0,
+  "super": 5.0
+}
+```
+
+For now we are cloning supers over and over. That should
+change but I don't have time or energy to do it now.
+Maybe what we need is some kind of reference value in the future.
+
+Okay, what if I override nested struct?
+
+```
+(+ {
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+  :key 10
+})
+```
+
+```json
+{
+  "another": 9.0,
+  "key": 10.0
+}
+```
+
+Makes sense.

@@ -79,7 +79,7 @@ impl Runtime {
 
         // let mut map = BTreeMap::new();
         let mut items = items.to_vec().into_iter();
-        self.objs.push();
+        self.structs.push_default();
 
         self.envs.push();
 
@@ -95,7 +95,7 @@ impl Runtime {
                     };
                     let value = self.eval(value);
                     // let value = self.quote(&value);
-                    self.objs
+                    self.structs
                         .mut_self()
                         .unwrap()
                         .insert(key.to_string(), Box::new(value));
@@ -132,7 +132,7 @@ impl Runtime {
         }
 
         self.envs.pop();
-        let map = self.objs.pop();
+        let map = self.structs.pop();
         Value::Object(map)
     }
 
@@ -250,6 +250,8 @@ impl Runtime {
                 }
             }
             Value::Object(left) => {
+                let _super = left.clone();
+                self.supers.push(_super);
                 for item in items.iter().skip(1) {
                     let right = self.eval(*item);
                     try_err!(right);
@@ -260,6 +262,7 @@ impl Runtime {
                         left.insert(key.clone(), value.clone());
                     }
                 }
+                self.supers.pop();
             }
             _ => return Value::Error("Expected number".to_string()),
         }
@@ -367,18 +370,22 @@ impl Envs {
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
-    objs: Objects,
+    structs: Structs,
+    supers: Structs,
     asts: ASTS,
 }
 
 #[derive(Default)]
-struct Objects {
+struct Structs {
     stack: Vec<BTreeMap<String, Box<Value>>>,
 }
 
-impl Objects {
-    fn push(&mut self) {
+impl Structs {
+    fn push_default(&mut self) {
         self.stack.push(BTreeMap::new());
+    }
+    fn push(&mut self, strukt: BTreeMap<String, Box<Value>>) {
+        self.stack.push(strukt);
     }
 
     fn pop(&mut self) -> BTreeMap<String, Box<Value>> {
@@ -412,14 +419,20 @@ impl Runtime {
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(s) if s == "self" => {
-                let Some(map) = self.objs._self() else {
+                let Some(map) = self.structs._self() else {
                     return Value::Error("self used outside of object".to_string());
                 };
                 Value::Object(map.clone())
             }
             SExp::Symbol(s) if s == "root" => {
-                let Some(map) = self.objs.root() else {
+                let Some(map) = self.structs.root() else {
                     return Value::Error("root used outside of object".to_string());
+                };
+                Value::Object(map.clone())
+            }
+            SExp::Symbol(s) if s == "super" => {
+                let Some(map) = self.supers._self() else {
+                    return Value::Error("super used outside of object".to_string());
                 };
                 Value::Object(map.clone())
             }
