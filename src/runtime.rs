@@ -60,7 +60,9 @@ impl Value {
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
             Value::Symbol(s) => target.add_node(SExp::Symbol(s.clone())),
-            Value::Object(_btree_map) => todo!(),
+            Value::Object(_btree_map) => {
+                todo!("Could not convert Object to SExp: {:?}", self)
+            }
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {
                 println!("Error: {err}");

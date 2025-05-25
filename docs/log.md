@@ -732,3 +732,84 @@ true
 ```json
 false
 ```
+
+Okay, now we should be able to emulate jsonnet behaviour:
+
+```
+(+ {
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+  
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) {
+        :c 3
+      })
+    )
+    '(:key {:c 3})
+  )
+
+})
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
+```
+
+Yay! It works. Now what I need is some kind of macro to hide that ugliness
+
+Question - how is the "super" behaving. Is it more like a `root` but for previous struct?
+or `self`?
+
+```
+(+ {
+  (let x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+  
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) {
+        :c (+ (super :a) 3)
+      })
+    )
+    '(:key {:c 3})
+  )
+
+})
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 4.0
+  }
+}
+```
+
+It.. works as intended! Yay
