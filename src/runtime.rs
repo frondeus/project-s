@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
@@ -90,13 +90,9 @@ impl Value {
 }
 
 impl Runtime {
-    fn insert_to_struct(
-        &mut self,
-        key: &str,
-        items: &mut impl Iterator<Item = SExpId>,
-    ) -> Result<(), String> {
+    fn insert_to_struct(&mut self, key: &str, items: &mut VecDeque<SExpId>) -> Result<(), String> {
         eprintln!("Processing pair: {key}");
-        let Some(value) = items.next() else {
+        let Some(value) = items.pop_front() else {
             return Err("Expected value".to_string());
         };
         let value = self.eval(value);
@@ -107,16 +103,18 @@ impl Runtime {
         Ok(())
     }
 
-    fn make_struct_inner(&mut self, mut items: impl Iterator<Item = SExpId>) -> Result<(), String> {
-        while let Some(item_id) = items.next() {
+    fn make_struct_inner(&mut self, items: impl Iterator<Item = SExpId>) -> Result<(), String> {
+        let mut items = items.collect::<VecDeque<_>>();
+
+        while let Some(item_id) = items.pop_front() {
             let item = self.asts.get(item_id).clone();
             match item {
                 SExp::List(list) => {
                     eprintln!("Processing list: {list:?}");
-                    let first = list.first().ok_or_else(|| "Expected list".to_string())?;
+                    let first_id = list.first().ok_or_else(|| "Expected list".to_string())?;
                     let first = self
                         .asts
-                        .get(*first)
+                        .get(*first_id)
                         .as_symbol()
                         .map(ToOwned::to_owned)
                         .ok_or_else(|| "Expected symbol".to_string())?;
@@ -128,7 +126,18 @@ impl Runtime {
                             self.object_if(&list[1..])?;
                         }
                         _ => {
-                            return Err(format!("Unknown symbol: {}", first));
+                            let first = self.eval(*first_id);
+                            match first {
+                                Value::Error(e) => return Err(e),
+                                Value::Macro(macro_) => {
+                                    let result = self.macro_call(macro_, &list[1..])?;
+                                    items.push_front(result);
+                                    continue;
+                                }
+                                _ => {
+                                    return Err(format!("Invalid struct caller: {:?}", first));
+                                }
+                            }
                         }
                     }
                 }
@@ -454,7 +463,7 @@ impl Runtime {
         }))
     }
 
-    fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<Value, String> {
+    fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<SExpId, String> {
         let Macro { signature, body } = macro_;
 
         self.envs.push();
@@ -470,8 +479,7 @@ impl Runtime {
         let result = result
             .as_sexp()
             .ok_or_else(|| "Expected SExpression".to_string())?;
-        let result = self.eval(*result);
-        Ok(result)
+        Ok(*result)
     }
 
     pub fn new(ast: AST) -> Self {
@@ -561,6 +569,7 @@ impl Runtime {
                             }
                             Value::Macro(macro_) => self
                                 .macro_call(macro_, &items[1..])
+                                .map(|id| self.eval(id))
                                 .unwrap_or_else(Value::Error),
                             _ => Value::Error(format!("Invalid caller: {:?}", first)),
                         }
