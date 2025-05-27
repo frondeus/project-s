@@ -14,12 +14,19 @@ pub enum Value {
     Symbol(String),
     SExp(SExpId),
     Macro(Macro),
+    Function(Function),
     /// For error handling
     Error(String),
 }
 
 #[derive(Debug, Clone)]
 pub struct Macro {
+    pub signature: Vec<String>,
+    pub body: SExpId,
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
     pub signature: Vec<String>,
     pub body: SExpId,
 }
@@ -79,6 +86,9 @@ impl Value {
             }
             Value::Macro(macro_) => {
                 todo!("Could not convert Macro to SExp: {:?}", macro_)
+            }
+            Value::Function(function) => {
+                todo!("Could not convert Function to SExp: {:?}", function)
             }
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {
@@ -441,6 +451,45 @@ impl Runtime {
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
     #[allow(clippy::unnecessary_to_owned)]
+    fn function_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        let signature = items
+            .first()
+            .ok_or_else(|| "Expected signature".to_string())?;
+
+        let signature = self.asts.get(*signature);
+        let Some(signature) = signature.as_list() else {
+            return Err("Expected list".to_string());
+        };
+        let signature = signature
+            .to_vec()
+            .into_iter()
+            .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
+            .collect();
+        let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
+
+        Ok(Value::Function(Function {
+            signature,
+            body: *body,
+        }))
+    }
+
+    fn function_call(&mut self, function: Function, args: &[SExpId]) -> Value {
+        let Function { signature, body } = function;
+
+        self.envs.push();
+        for (sig, arg) in signature.iter().zip(args) {
+            let arg = self.eval(*arg);
+            try_err!(arg);
+            self.envs.set(sig, arg);
+        }
+
+        let result = self.eval(body);
+        self.envs.pop();
+        result
+    }
+
+    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
+    #[allow(clippy::unnecessary_to_owned)]
     fn macro_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
         let signature = items
             .first()
@@ -532,6 +581,9 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "macro" => {
                         self.macro_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
+                    SExp::Symbol(tag) if tag == "fn" => {
+                        self.function_def(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
@@ -567,6 +619,7 @@ impl Runtime {
                                     Value::Error(format!("Undefined key: {}", key))
                                 })
                             }
+                            Value::Function(function) => self.function_call(function, &items[1..]),
                             Value::Macro(macro_) => self
                                 .macro_call(macro_, &items[1..])
                                 .map(|id| self.eval(id))
@@ -591,6 +644,9 @@ impl Runtime {
                     obj.insert(k, self.to_json(*v));
                 }
                 serde_json::Value::Object(obj)
+            }
+            Value::Function(function) => {
+                serde_json::Value::String(format!("<Function: {:?}>", function))
             }
             Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),

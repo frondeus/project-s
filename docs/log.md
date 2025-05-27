@@ -1048,3 +1048,32 @@ Ok, now we should be able to clean the object adding.
 ```
 
 NICE
+
+What's else missing?
+* [ ] Loops
+* [x] Functions
+  * [ ] Closures!
+  * [ ] Rust functions
+  * [ ] Rust macros?
+* [ ] Imports
+* [ ] If else in normal places
+
+Nice to have
+* [ ] Destructuring
+* [ ] Arrays
+* [ ] Better strings
+
+Probably a lot of more lol.
+Like vertical stack
+* [ ] LSP
+* [ ] Type checker!
+
+Let's focus on Functions
+
+```
+((fn (x y) (+ x y)) 1 2)
+```
+
+```json
+3.0
+```
