@@ -1078,6 +1078,8 @@ Let's focus on Functions
 3.0
 ```
 
+# 27.05
+
 Ok lets see if native functions also work.
 I added prelude with `-`.
 
@@ -1090,3 +1092,11 @@ I added prelude with `-`.
 ```
 
 Great! Now I can move some of the code to functions.
+
+Unfortunately we cannot use `+` yet because we are too
+eager to eval arguments before setting up `super`.
+
+Can i make it work?
+Either:
+* Use native macro instead
+* Or maybe even better, pass iterator, not a vector?

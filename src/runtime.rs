@@ -8,6 +8,8 @@ use crate::{
     types::{Type, TypeEnv},
 };
 
+mod s_std;
+
 #[derive(Debug, Clone)]
 pub enum Value {
     Number(f64),
@@ -28,6 +30,8 @@ pub struct Macro {
     pub body: SExpId,
 }
 
+pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
+
 #[derive(Clone)]
 pub enum Function {
     Lisp {
@@ -35,7 +39,7 @@ pub enum Function {
         body: SExpId,
     },
     Rust {
-        body: Rc<dyn Fn(Vec<Value>) -> Value>,
+        body: NativeFn,
     },
 }
 
@@ -61,6 +65,14 @@ macro_rules! try_err {
 }
 
 impl Value {
+    fn ok(self) -> Result<Self, String> {
+        if let Value::Error(e) = self {
+            Err(e)
+        } else {
+            Ok(self)
+        }
+    }
+
     fn as_sexp(&self) -> Option<&SExpId> {
         match self {
             Value::SExp(id) => Some(id),
@@ -510,7 +522,7 @@ impl Runtime {
             }
             Function::Rust { body } => {
                 let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
-                body(args)
+                body(self, args)
             }
         }
     }
@@ -564,30 +576,11 @@ impl Runtime {
         runtime
     }
 
-    pub fn with_prelude(&mut self) {
-        self.with_fn("-", |args| {
-            let mut args = args.into_iter();
-            let Some(mut a) = args.next() else {
-                return Value::Error("Expected at least one argument".to_string());
-            };
-
-            match &mut a {
-                Value::Number(a) => {
-                    for arg in args {
-                        let Some(b) = arg.as_number() else {
-                            return Value::Error("Expected number".to_string());
-                        };
-                        *a -= b;
-                    }
-                }
-                _ => return Value::Error("Expected number".to_string()),
-            }
-
-            a
-        });
-    }
-
-    pub fn with_fn(&mut self, name: &str, body: impl Fn(Vec<Value>) -> Value + 'static) {
+    pub fn with_fn(
+        &mut self,
+        name: &str,
+        body: impl Fn(&mut Runtime, Vec<Value>) -> Value + 'static,
+    ) {
         self.envs.set(
             name,
             Value::Function(Function::Rust {
