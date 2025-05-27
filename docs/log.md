@@ -1053,7 +1053,7 @@ What's else missing?
 * [ ] Loops
 * [x] Functions
   * [ ] Closures!
-  * [ ] Rust functions
+  * [x] Rust functions
   * [ ] Rust macros?
 * [ ] Imports
 * [ ] If else in normal places
@@ -1077,3 +1077,16 @@ Let's focus on Functions
 ```json
 3.0
 ```
+
+Ok lets see if native functions also work.
+I added prelude with `-`.
+
+```
+(- 3 2)
+```
+
+```json
+1.0
+```
+
+Great! Now I can move some of the code to functions.

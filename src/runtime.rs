@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    rc::Rc,
+};
 
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
@@ -25,10 +28,28 @@ pub struct Macro {
     pub body: SExpId,
 }
 
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub signature: Vec<String>,
-    pub body: SExpId,
+#[derive(Clone)]
+pub enum Function {
+    Lisp {
+        signature: Vec<String>,
+        body: SExpId,
+    },
+    Rust {
+        body: Rc<dyn Fn(Vec<Value>) -> Value>,
+    },
+}
+
+impl std::fmt::Debug for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Lisp { signature, body } => f
+                .debug_struct("Lisp")
+                .field("signature", signature)
+                .field("body", body)
+                .finish(),
+            Self::Rust { .. } => f.debug_struct("RustFn").finish(),
+        }
+    }
 }
 
 macro_rules! try_err {
@@ -467,25 +488,31 @@ impl Runtime {
             .collect();
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
-        Ok(Value::Function(Function {
+        Ok(Value::Function(Function::Lisp {
             signature,
             body: *body,
         }))
     }
 
     fn function_call(&mut self, function: Function, args: &[SExpId]) -> Value {
-        let Function { signature, body } = function;
+        match function {
+            Function::Lisp { signature, body } => {
+                self.envs.push();
+                for (sig, arg) in signature.iter().zip(args) {
+                    let arg = self.eval(*arg);
+                    try_err!(arg);
+                    self.envs.set(sig, arg);
+                }
 
-        self.envs.push();
-        for (sig, arg) in signature.iter().zip(args) {
-            let arg = self.eval(*arg);
-            try_err!(arg);
-            self.envs.set(sig, arg);
+                let result = self.eval(body);
+                self.envs.pop();
+                result
+            }
+            Function::Rust { body } => {
+                let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
+                body(args)
+            }
         }
-
-        let result = self.eval(body);
-        self.envs.pop();
-        result
     }
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
@@ -535,6 +562,38 @@ impl Runtime {
         let mut runtime = Self::default();
         runtime.asts.add_ast(ast);
         runtime
+    }
+
+    pub fn with_prelude(&mut self) {
+        self.with_fn("-", |args| {
+            let mut args = args.into_iter();
+            let Some(mut a) = args.next() else {
+                return Value::Error("Expected at least one argument".to_string());
+            };
+
+            match &mut a {
+                Value::Number(a) => {
+                    for arg in args {
+                        let Some(b) = arg.as_number() else {
+                            return Value::Error("Expected number".to_string());
+                        };
+                        *a -= b;
+                    }
+                }
+                _ => return Value::Error("Expected number".to_string()),
+            }
+
+            a
+        });
+    }
+
+    pub fn with_fn(&mut self, name: &str, body: impl Fn(Vec<Value>) -> Value + 'static) {
+        self.envs.set(
+            name,
+            Value::Function(Function::Rust {
+                body: Rc::new(body),
+            }),
+        );
     }
 
     pub fn eval(&mut self, sexp: SExpId) -> Value {
@@ -762,6 +821,7 @@ mod tests {
             let ast = crate::ast::AST::parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let mut runtime = Runtime::new(ast);
+            runtime.with_prelude();
             let value = runtime.eval(root_id);
             println!("value: {value:?}");
             let value = runtime.to_json(value);
