@@ -24,12 +24,31 @@ pub enum Value {
     Error(String),
 }
 
-#[derive(Debug, Clone)]
-pub struct Macro {
-    pub signature: Vec<String>,
-    pub body: SExpId,
+#[derive(Clone)]
+pub enum Macro {
+    Lisp {
+        signature: Vec<String>,
+        body: SExpId,
+    },
+    Rust {
+        body: NativeMacro,
+    },
 }
 
+impl std::fmt::Debug for Macro {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Lisp { signature, body } => f
+                .debug_struct("LispMacro")
+                .field("signature", signature)
+                .field("body", body)
+                .finish(),
+            Self::Rust { .. } => f.debug_struct("RustMacro").finish(),
+        }
+    }
+}
+
+pub type NativeMacro = Rc<dyn Fn(&mut Runtime, Vec<SExpId>) -> SExpId>;
 pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
 
 #[derive(Clone)]
@@ -47,7 +66,7 @@ impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Lisp { signature, body } => f
-                .debug_struct("Lisp")
+                .debug_struct("LispFn")
                 .field("signature", signature)
                 .field("body", body)
                 .finish(),
@@ -326,6 +345,7 @@ impl Runtime {
         }
     }
 
+    #[allow(dead_code)]
     fn add(&mut self, items: &[SExpId]) -> Value {
         if items.is_empty() {
             return Value::Error("Expected at least one argument".to_string());
@@ -436,7 +456,6 @@ impl Runtime {
 
         self.envs.push();
         self.envs.set(ident, value);
-        dbg!(&self.envs);
         let result = self.eval(*body);
         self.envs.pop();
         result
@@ -545,35 +564,55 @@ impl Runtime {
             .collect();
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
-        Ok(Value::Macro(Macro {
+        Ok(Value::Macro(Macro::Lisp {
             signature,
             body: *body,
         }))
     }
 
     fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<SExpId, String> {
-        let Macro { signature, body } = macro_;
+        match macro_ {
+            Macro::Lisp { signature, body } => {
+                self.envs.push();
 
-        self.envs.push();
+                for (sig, arg) in signature.iter().zip(args) {
+                    self.envs.set(sig, Value::SExp(*arg));
+                }
 
-        for (sig, arg) in signature.iter().zip(args) {
-            self.envs.set(sig, Value::SExp(*arg));
+                let result = self.eval(body);
+
+                self.envs.pop();
+
+                let result = result
+                    .as_sexp()
+                    .ok_or_else(|| "Expected SExpression".to_string())?;
+                Ok(*result)
+            }
+            Macro::Rust { body } => {
+                let args = args.to_vec();
+                let result = body(self, args);
+                Ok(result)
+            }
         }
-
-        let result = self.eval(body);
-
-        self.envs.pop();
-
-        let result = result
-            .as_sexp()
-            .ok_or_else(|| "Expected SExpression".to_string())?;
-        Ok(*result)
     }
 
     pub fn new(ast: AST) -> Self {
         let mut runtime = Self::default();
         runtime.asts.add_ast(ast);
         runtime
+    }
+
+    pub fn with_macro(
+        &mut self,
+        name: &str,
+        body: impl Fn(&mut Runtime, Vec<SExpId>) -> SExpId + 'static,
+    ) {
+        self.envs.set(
+            name,
+            Value::Macro(Macro::Rust {
+                body: Rc::new(body),
+            }),
+        );
     }
 
     pub fn with_fn(
@@ -618,7 +657,8 @@ impl Runtime {
                 let s = s.trim_start_matches(':');
                 Value::Symbol(s.to_string())
             }
-            SExp::Symbol(s) => dbg!(&self.envs)
+            SExp::Symbol(s) => self
+                .envs
                 .get(s.as_str())
                 .cloned()
                 .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),

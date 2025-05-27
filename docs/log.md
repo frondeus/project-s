@@ -1100,3 +1100,10 @@ Can i make it work?
 Either:
 * Use native macro instead
 * Or maybe even better, pass iterator, not a vector?
+  * Ah, shit, we cannot pass iterator because iterator would capture runtime that we already pass to the body...
+  * Native macro also wont work because macro returns SExpression
+  So we would need to serialize object to SExpression which might not be possible
+
+  So it seems that for now the only solution would be to:
+  * Keep it as a special form :vomit:
+  * Make arguments lazy...

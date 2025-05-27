@@ -1,3 +1,5 @@
+use crate::ast::{AST, SExp, SExpId};
+
 use super::{Runtime, Value};
 
 fn sub(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
@@ -26,18 +28,18 @@ fn sub(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 
 // For now `add` must stay a special form
 // because we want to evaluate arguments AFTER some work is done.
-fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+fn add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     let mut args = args.into_iter();
-    let Some(mut first) = args.next() else {
+    let Some(first) = args.next() else {
         return Err("Expected at least one argument".into());
     };
 
-    first = first.ok()?;
+    let mut first = rt.eval(first).ok()?;
 
     match &mut first {
         Value::Number(first) => {
             for arg in args {
-                let arg = arg.ok()?;
+                let arg = rt.eval(arg).ok()?;
                 let Some(b) = arg.as_number() else {
                     return Err("Expected number".into());
                 };
@@ -48,7 +50,8 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
             for right in args {
                 let _super = left.clone();
                 rt.supers.push(_super);
-                let right = right.ok()?;
+                let right = rt.eval(right).ok()?;
+
                 let right = match right {
                     Value::Object(right) => right,
                     Value::SExp(id) => {
@@ -66,13 +69,18 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 for (key, value) in right {
                     left.insert(key, value);
                 }
-                // self.supers.pop();
+                rt.supers.pop();
             }
         }
         _ => return Err("Expected number or object".into()),
     }
 
-    Ok(first)
+    let mut ast = AST::default();
+    first.to_sexp(&mut ast);
+    let root = ast.root_id().unwrap();
+    rt.asts.add_ast(ast);
+
+    Ok(root)
 }
 
 impl Runtime {
@@ -87,8 +95,29 @@ impl Runtime {
         });
     }
 
+    pub fn with_try_macro(
+        &mut self,
+        name: &str,
+        body: impl Fn(&mut Runtime, Vec<SExpId>) -> Result<SExpId, String> + 'static,
+    ) {
+        self.with_macro(name, move |rt, args| {
+            let result = body(rt, args);
+            match result {
+                Ok(id) => id,
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    let mut ast = AST::default();
+                    ast.add_node(SExp::Error);
+                    let root = ast.root_id().unwrap();
+                    rt.asts.add_ast(ast);
+                    root
+                }
+            }
+        });
+    }
+
     pub fn with_prelude(&mut self) {
         self.with_try_fn("-", sub);
-        self.with_try_fn("+", add);
+        self.with_try_macro("+", add);
     }
 }
