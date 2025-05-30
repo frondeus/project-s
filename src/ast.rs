@@ -39,6 +39,14 @@ impl ASTS {
     pub fn add_ast(&mut self, ast: AST) {
         self.asts.insert(ast.generation(), ast);
     }
+
+    pub fn fmt(&self, id: SExpId) -> SExpFmt<'_> {
+        self.get(id).fmt(self)
+    }
+
+    pub fn fmt_list<'a>(&'a self, list: &'a [SExpId]) -> SExpFmtList<'a> {
+        SExpFmtList { list, asts: self }
+    }
 }
 
 #[derive(Debug)]
@@ -159,9 +167,23 @@ pub struct SExpFmt<'a> {
     expr: &'a SExp,
 }
 
-struct SExpFmtList<'a> {
+pub struct SExpFmtList<'a> {
     list: &'a [SExpId],
     asts: &'a ASTS,
+}
+
+impl std::fmt::Display for SExpFmtList<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(")?;
+        for (i, item) in self.list.iter().enumerate() {
+            if i > 0 {
+                write!(f, " ")?;
+            }
+            let item = self.asts.get(*item).fmt(self.asts);
+            write!(f, "{}", item)?;
+        }
+        write!(f, ")")
+    }
 }
 
 impl std::fmt::Debug for SExpFmtList<'_> {

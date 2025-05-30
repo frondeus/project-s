@@ -1107,3 +1107,86 @@ Either:
   So it seems that for now the only solution would be to:
   * Keep it as a special form :vomit:
   * Make arguments lazy...
+
+
+  It seems that arguments about making the language lazy are coming back like a boomerang.
+
+# 30.05
+
+It seems that in order to make it work i need to create Thunks.
+And Thunks are in my opinion Closures with extra step of caching its value.
+So in the end my next step is to add closures.
+
+How to do that?
+When declaring function i need to have a separate pass that detects function declaration
+Then it should find all free variables.
+Then it should add an extra parameter to the function which would be a struct of free variables.
+And then modify the body by saying that it uses fields from that closure struct.
+
+
+Ok so ... 
+
+```
+(let c 42
+(fn (a b) (a b c)))
+```
+
+Question is that rose during implementation - do i really want to have it as a separate pass?
+Or just during the evaluation...
+
+I guess separate pass would make sense but then i need to keep track which root id is root id and not assume that the one from parsing is still one.
+
+The problem is, with that kind of lambda lifting we are kinda loosing
+information about captured context.
+
+
+```lift
+(let c 42 (cl (a b) (c) (a b (_closure c))))
+```
+
+Ok, i lifted the function into "closure declaration" that takes another list outside of
+signature which is explicit list of free variables. Also accessing free variable is now
+with `(_closure c)`.
+
+
+Also additional "problem" is, currently lambda lifting is very naive.
+If we have undefined variable, then it will be assumed to be captured!
+
+
+But we can handle it some other time lmao.
+Anyway, with that lifting I guess - we should have handling in runtime for "cl" :D
+
+Anyway x2
+
+There is also a problem of quoting
+
+```
+(fn (a b) '(+ a b c))
+```
+
+```lift
+(fn (a b) (quote (+ a b c)))
+```
+
+What about quasiquoting?
+
+```
+(fn (a b) `(+ a b c))
+```
+
+```lift
+(fn (a b) (quasiquote (+ a b c)))
+```
+
+Better. But unquote wont work...
+
+```
+(fn (a b) `(+ ,a ,b c ,d))
+```
+
+```lift
+(cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote (_closure d)))))
+```
+
+Yep, that's correct.
+Coolio.
