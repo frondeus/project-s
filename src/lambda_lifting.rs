@@ -2,6 +2,20 @@ use std::collections::HashSet;
 
 use crate::ast::{AST, ASTS, SExp, SExpId};
 
+pub const CLOSURE_SYMBOL: &str = "$$closure";
+const SPECIAL_FORMS: &[&str] = &[
+    "quasiquote",
+    "+",
+    "unquote",
+    "let",
+    "fn",
+    "cl",
+    "struct",
+    "is-type",
+    "quote",
+    "has?",
+];
+
 pub fn lift_lambdas(asts: &mut ASTS, root: SExpId) -> SExpId {
     lift_lambdas_inner(asts, root).unwrap_or(root)
 }
@@ -89,8 +103,6 @@ fn process_fn_decl(
     // todo!()
 }
 
-const SPECIAL_FORMS: &[&str] = &["quasiquote", "+", "unquote"];
-
 fn process_quasiquote(
     asts: &mut ASTS,
     sexp_ids: Vec<SExpId>,
@@ -167,8 +179,8 @@ fn process_fn_decl_body(
                 let id = ast.reserve();
                 // TODO : This is not very safe. We should have a special symbol category that is generated
                 // by the pass and does not collide with any other symbol.
-                let closure = ast.add_node(SExp::Symbol("_closure".to_string()));
-                let symbol = ast.add_node(SExp::Symbol(s.clone()));
+                let closure = ast.add_node(SExp::Symbol(CLOSURE_SYMBOL.to_string()));
+                let symbol = ast.add_node(SExp::Symbol(format!(":{s}")));
                 ast.set(id, SExp::List(vec![closure, symbol]));
                 asts.add_ast(ast);
 
@@ -179,16 +191,29 @@ fn process_fn_decl_body(
         }
         SExp::List(sexp_ids) => {
             let first = sexp_ids[0];
+            let mut skip = vec![];
             if is_symbol(first, asts, "quote") {
                 return None;
             }
             if is_symbol(first, asts, "quasiquote") {
                 return process_quasiquote(asts, sexp_ids.clone(), signature, free_vars);
             }
+            if is_symbol(first, asts, "let") {
+                skip.push(1); // Skip variable name
+            }
+            if is_symbol(first, asts, "fn") {
+                return None;
+            }
+            if is_symbol(first, asts, "cl") {
+                return None;
+            }
 
             let mut new_sexp_ids = sexp_ids.clone();
             let mut edited = false;
-            for id in &mut new_sexp_ids {
+            for (pos, id) in new_sexp_ids.iter_mut().enumerate() {
+                if skip.contains(&pos) {
+                    continue;
+                }
                 if let Some(new_id) = process_fn_decl_body(asts, *id, signature, free_vars) {
                     *id = new_id;
                     edited = true;

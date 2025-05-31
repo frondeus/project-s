@@ -10,6 +10,7 @@ use crate::{
 };
 
 mod env;
+mod functions;
 mod quotes;
 mod s_std;
 mod structs;
@@ -132,7 +133,7 @@ impl Runtime {
         };
         let ident = self.asts.get(*ident).clone();
         let Some(ident) = ident.as_symbol() else {
-            return Value::Error("Expected symbol".to_string());
+            return Value::Error("Let: Expected symbol".to_string());
         };
 
         let Some(value) = items.get(1) else {
@@ -148,51 +149,6 @@ impl Runtime {
         let result = self.eval(*body);
         self.envs.pop();
         result
-    }
-
-    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
-    #[allow(clippy::unnecessary_to_owned)]
-    fn function_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        let signature = items
-            .first()
-            .ok_or_else(|| "Expected signature".to_string())?;
-
-        let signature = self.asts.get(*signature);
-        let Some(signature) = signature.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let signature = signature
-            .to_vec()
-            .into_iter()
-            .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
-            .collect();
-        let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
-
-        Ok(Value::Function(Function::Lisp {
-            signature,
-            body: *body,
-        }))
-    }
-
-    fn function_call(&mut self, function: Function, args: &[SExpId]) -> Value {
-        match function {
-            Function::Lisp { signature, body } => {
-                self.envs.push();
-                for (sig, arg) in signature.iter().zip(args) {
-                    let arg = self.eval(*arg);
-                    try_err!(arg);
-                    self.envs.set(sig, arg);
-                }
-
-                let result = self.eval(body);
-                self.envs.pop();
-                result
-            }
-            Function::Rust { body } => {
-                let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
-                body(self, args)
-            }
-        }
     }
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
@@ -326,6 +282,9 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "fn" => {
                         self.function_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
+                    SExp::Symbol(tag) if tag == "cl" => {
+                        self.closure_def(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
@@ -354,13 +313,16 @@ impl Runtime {
                                 };
                                 let key = self.eval(*key);
                                 let Some(key) = key.as_symbol() else {
-                                    return Value::Error("Expected symbol".to_string());
+                                    return Value::Error(
+                                        "Access field: Expected symbol".to_string(),
+                                    );
                                 };
 
-                                map.get(key).cloned().map(|v| *v).unwrap_or_else(|| {
+                                map.get(key).cloned().unwrap_or_else(|| {
                                     Value::Error(format!("Undefined key: {}", key))
                                 })
                             }
+                            Value::Closure(closure) => self.closure_call(closure, &items[1..]),
                             Value::Function(function) => self.function_call(function, &items[1..]),
                             Value::Macro(macro_) => self
                                 .macro_call(macro_, &items[1..])
@@ -383,12 +345,15 @@ impl Runtime {
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();
                 for (k, v) in map {
-                    obj.insert(k, self.to_json(*v));
+                    obj.insert(k, self.to_json(v));
                 }
                 serde_json::Value::Object(obj)
             }
             Value::Function(function) => {
                 serde_json::Value::String(format!("<Function: {:?}>", function))
+            }
+            Value::Closure(closure) => {
+                serde_json::Value::String(format!("<Closure: {:?}>", closure))
             }
             Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),

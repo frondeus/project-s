@@ -9,11 +9,12 @@ pub enum Value {
     Number(f64),
     String(String),
     Bool(bool),
-    Object(BTreeMap<String, Box<Value>>),
+    Object(BTreeMap<String, Value>),
     Symbol(String),
     SExp(SExpId),
     Macro(Macro),
     Function(Function),
+    Closure(Closure),
     /// For error handling
     Error(String),
 }
@@ -69,6 +70,13 @@ impl std::fmt::Debug for Function {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Closure {
+    pub(crate) signature: Vec<String>,
+    pub(crate) captured: BTreeMap<String, Value>,
+    pub(crate) body: SExpId,
+}
+
 impl Value {
     pub fn ok(self) -> Result<Self, String> {
         if let Value::Error(e) = self {
@@ -99,14 +107,14 @@ impl Value {
         }
     }
 
-    pub fn as_object(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+    pub fn as_object(&self) -> Option<&BTreeMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,
         }
     }
 
-    pub fn into_object(self) -> Option<BTreeMap<String, Box<Value>>> {
+    pub fn into_object(self) -> Option<BTreeMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,
@@ -127,6 +135,9 @@ impl Value {
             }
             Value::Function(function) => {
                 todo!("Could not convert Function to SExp: {:?}", function)
+            }
+            Value::Closure(closure) => {
+                todo!("Could not convert Closure to SExp: {:?}", closure)
             }
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {

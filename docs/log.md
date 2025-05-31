@@ -1141,7 +1141,7 @@ information about captured context.
 
 
 ```lift
-(let c 42 (cl (a b) (c) (a b (_closure c))))
+(let c 42 (cl (a b) (c) (a b ($$closure :c))))
 ```
 
 Ok, i lifted the function into "closure declaration" that takes another list outside of
@@ -1185,7 +1185,7 @@ Better. But unquote wont work...
 ```
 
 ```lift
-(cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote (_closure d)))))
+(cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d)))))
 ```
 
 Yep, that's correct.
@@ -1209,6 +1209,12 @@ i can modify the runtime.
 )
 ```
 
-```json
-
+```lift
+(let top (fn () (let c 42 (cl (a b) (c) (+ a b ($$closure :c))))) ((top) 1 2))
 ```
+
+```json
+45.0
+```
+
+Bingo!

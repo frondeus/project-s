@@ -10,30 +10,30 @@ use super::Runtime;
 
 #[derive(Default)]
 pub(crate) struct Structs {
-    stack: Vec<BTreeMap<String, Box<Value>>>,
+    stack: Vec<BTreeMap<String, Value>>,
 }
 
 impl Structs {
     fn push_default(&mut self) {
         self.stack.push(BTreeMap::new());
     }
-    pub(crate) fn push(&mut self, strukt: BTreeMap<String, Box<Value>>) {
+    pub(crate) fn push(&mut self, strukt: BTreeMap<String, Value>) {
         self.stack.push(strukt);
     }
 
-    pub(crate) fn pop(&mut self) -> BTreeMap<String, Box<Value>> {
+    pub(crate) fn pop(&mut self) -> BTreeMap<String, Value> {
         self.stack.pop().unwrap()
     }
 
-    pub(crate) fn _self(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+    pub(crate) fn _self(&self) -> Option<&BTreeMap<String, Value>> {
         self.stack.last()
     }
 
-    fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Box<Value>>> {
+    fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Value>> {
         self.stack.last_mut()
     }
 
-    pub(crate) fn root(&self) -> Option<&BTreeMap<String, Box<Value>>> {
+    pub(crate) fn root(&self) -> Option<&BTreeMap<String, Value>> {
         self.stack.first()
     }
 }
@@ -48,7 +48,7 @@ impl Runtime {
         self.structs
             .mut_self()
             .unwrap()
-            .insert(key.to_string(), Box::new(value));
+            .insert(key.to_string(), value);
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl Runtime {
                         .get(*first_id)
                         .as_symbol()
                         .map(ToOwned::to_owned)
-                        .ok_or_else(|| "Expected symbol".to_string())?;
+                        .ok_or_else(|| "Create struct: Expected symbol".to_string())?;
                     match first.as_str() {
                         "let" => {
                             self.object_let(&list[1..])?;
@@ -184,7 +184,7 @@ impl Runtime {
         };
         let ident = self.asts.get(*ident).clone();
         let Some(ident) = ident.as_symbol() else {
-            return Err("Expected symbol".to_string());
+            return Err("Object let: Expected symbol".to_string());
         };
 
         let Some(value) = items.get(1) else {
