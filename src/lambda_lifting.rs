@@ -76,6 +76,60 @@ impl<'a> LambdaPass<'a> {
         result
     }
 
+    fn process_struct(
+        &mut self,
+        sexp_ids: Vec<SExpId>,
+        mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
+    ) -> Option<SExpId> {
+        println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
+        self.envs.push(EnvKind::Object);
+        let result = self.visit_mut_list(sexp_ids, |pass, id| {
+            let list = pass.asts.get(id).as_list()?;
+
+            let first = list[0];
+            if !pass.is_symbol(first, "quote") {
+                return None;
+            }
+
+            pass.process_struct_body(list.to_vec(), |pass, id| f(pass, id))
+        });
+        self.envs.pop();
+        result
+    }
+
+    fn process_struct_body(
+        &mut self,
+        sexp_ids: Vec<SExpId>,
+        mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
+    ) -> Option<SExpId> {
+        self.visit_mut_list(sexp_ids, |pass, id| {
+            let mut list = pass.asts.get(id).as_list()?.to_vec();
+            println!("processing struct body: {}", pass.asts.fmt_list(&list));
+            let mut list_iter = list.iter_mut();
+            let mut edited = false;
+            while let Some(id) = list_iter.next() {
+                if pass.asts.get(*id).as_symbol().is_some() {
+                    // Key value pair
+                    if let Some(value) = list_iter.next() {
+                        println!(
+                            "processing struct body key value: {}",
+                            pass.asts.fmt(*value)
+                        );
+                        if let Some(new_id) = f(pass, *value) {
+                            *value = new_id;
+                            edited = true;
+                        }
+                    }
+                }
+            }
+            if edited {
+                Some(pass.new_ast().add_node(SExp::List(list)))
+            } else {
+                None
+            }
+        })
+    }
+
     fn pass_inner(&mut self, root: SExpId) -> Option<SExpId> {
         if let SExp::List(sexp_ids) = self.asts.get(root) {
             let first_id = sexp_ids[0];
@@ -84,7 +138,10 @@ impl<'a> LambdaPass<'a> {
             } else if self.is_symbol(first_id, "let") {
                 let sexp_ids = sexp_ids.to_vec();
                 self.process_let(sexp_ids, |pass, id| pass.pass_inner(id))
+            } else if self.is_symbol(first_id, "struct") {
+                self.process_struct(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "fn") {
+                println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
                 let signature_id = sexp_ids[1];
                 let signature = self.asts.get(signature_id).as_list().unwrap().to_vec();
                 let signature = signature
@@ -111,6 +168,7 @@ impl<'a> LambdaPass<'a> {
                     let closure_symbol = self.new_ast().add_node(SExp::Symbol("cl".to_string()));
                     let captured_id = self.new_ast().reserve();
 
+                    dbg!(&free_vars);
                     let free_vars = free_vars
                         .into_iter()
                         .map(|v| self.new_ast().add_node(SExp::Symbol(v)))
@@ -189,6 +247,7 @@ impl<'a> LambdaPass<'a> {
             SExp::Symbol(s) if SPECIAL_FORMS.contains(&s.as_str()) => None,
             SExp::Symbol(s) => match self.envs.has(s) {
                 Some(VariableKind::Free) => {
+                    println!("free var: {}", s);
                     free_vars.insert(s.clone());
                     let s = format!(":{s}");
                     let id = self.new_ast().reserve();
@@ -214,6 +273,11 @@ impl<'a> LambdaPass<'a> {
                 if self.is_symbol(first, "let") {
                     let sexp_ids = sexp_ids.to_vec();
                     return self.process_let(sexp_ids, move |pass, id| {
+                        pass.process_fn_decl_body(id, free_vars)
+                    });
+                }
+                if self.is_symbol(first, "struct") {
+                    return self.process_struct(sexp_ids.clone(), move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
@@ -260,11 +324,11 @@ struct Envs {
     envs: Vec<Env>,
 }
 
-#[derive(Clone, Copy)]
-
+#[derive(Clone, Copy, PartialEq)]
 enum EnvKind {
     Global,
     Function,
+    Object,
     Local,
 }
 
@@ -318,7 +382,11 @@ impl Envs {
 
     pub fn has(&self, name: &str) -> Option<VariableKind> {
         let mut outcome = VariableKind::Local;
+        const OBJECT_RELATED_VARS: &[&str] = &["self", "super", "root"];
         for env in self.envs.iter().rev() {
+            if env.kind == EnvKind::Object && OBJECT_RELATED_VARS.contains(&name) {
+                return Some(outcome);
+            }
             if env.vars.contains(name) {
                 return Some(outcome);
             }

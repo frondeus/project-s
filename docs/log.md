@@ -1249,12 +1249,53 @@ One thing tho. I fixed normal `let`.
 What about let in objects?
 
 ```
-{
+(({
   :a 42.0
   :b (fn () (self :a))
-}
+} :b))
 ```
 
 ```lift
+(((struct (quote (:a 42 :b (cl () (self) (($$closure :self) :a))))) :b))
+```
+
+```json
+42.0
+```
+
+Okay, self works. Now root!
 
 ```
+((({
+  :a 42.0
+  :b {
+    :c (fn () (root :a))
+  }
+} :b) :c))
+```
+
+```lift
+((((struct (quote (:a 42 :b (struct (quote (:c (cl () (root) (($$closure :root) :a)))))))) :b) :c))
+```
+
+```json
+42.0
+```
+
+And now finally super
+
+```
+(( (+ {
+  :a 42.0
+}
+
+{
+  :a (fn () (+ (super :a) 10.0))
+}) :a))
+```
+
+```json
+52.0
+```
+
+Ok, good. Now let's clean this code a little bit!

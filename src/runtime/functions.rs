@@ -55,14 +55,10 @@ impl Runtime {
         let captured = captured
             .to_vec()
             .into_iter()
-            .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
             .map(|s| {
-                let val = self
-                    .envs
-                    .get(&s)
-                    .cloned()
-                    .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s)));
-                (s, val)
+                let name = self.asts.get(s).as_symbol().unwrap().to_string();
+                let val = self.eval(s);
+                (name, val)
             })
             .collect();
 
