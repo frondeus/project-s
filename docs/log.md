@@ -1299,3 +1299,45 @@ And now finally super
 ```
 
 Ok, good. Now let's clean this code a little bit!
+
+So now, we got closures.
+
+What's else missing?
+* [ ] Loops
+* [ ] Thunks
+* [x] Functions
+  * [x] Closures!
+  * [x] Rust functions
+  * [ ] Rust macros?
+* [ ] Imports
+* [ ] If else in normal places
+
+Nice to have
+* [ ] Destructuring
+* [ ] Arrays
+* [ ] Better strings
+
+Probably a lot of more lol.
+Like vertical stack
+* [ ] LSP
+* [ ] Type checker!
+
+A little reminder.
+Next step is a Thunk.
+Basically how i see it, a Thunk is a Closure with extra steps and differences
+First of all, it:
+* Has no signature, just captured variables
+* It has some internal state that is initiated during first evaluation that replaces itself. A.K.A. Cache.
+
+But intuition tells me, i dont want to have a Thunk EVERY time.
+I should be able to detect when a thunk is needed or not.
+Like, only if a function is called? Or when `super` `root` and `self` is used?
+
+I think i can split it into two stages.
+First, introduce `(thunk expression)` and make sure runtime supports it fully.
+Then figure out where to put it automatically with a separate pass.
+
+Also, one thing i need to remember - When evaluating the quoted content i need to first run lambda lifting pass.
+Or, all passes AFTER the AST construction.
+
+Okay, first things first!
