@@ -1,0 +1,17 @@
+```
+{
+  :a 42.0
+  :b (fn () (self :a))
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ lift-007
+@@ -1256,5 +1256,5 @@
+ ```
+ 
+ ```lift
+-
++(struct (quote (:a 42 :b (fn () (self :a)))))
+ ```
+\ No newline at end of file

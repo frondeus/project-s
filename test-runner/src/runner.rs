@@ -61,7 +61,6 @@ where
                     }
                     name if name == section_name => {
                         count += 1;
-                        // eprintln!("Processing {entry:?} - {section_name} ({count})");
                         let expected = section;
 
                         let code = previous.get("").expect("Source");

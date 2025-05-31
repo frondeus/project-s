@@ -23,6 +23,10 @@ impl ASTS {
         asts
     }
 
+    pub fn get_ast_by_generation(&mut self, generation: usize) -> &mut AST {
+        self.asts.get_mut(&generation).unwrap()
+    }
+
     pub fn get_ast(&self, id: SExpId) -> &AST {
         self.asts.get(&id.generation()).unwrap()
     }
@@ -36,8 +40,10 @@ impl ASTS {
         Some(self.get(id?))
     }
 
-    pub fn add_ast(&mut self, ast: AST) {
-        self.asts.insert(ast.generation(), ast);
+    pub fn add_ast(&mut self, ast: AST) -> usize {
+        let generation = ast.generation();
+        self.asts.insert(generation, ast);
+        generation
     }
 
     pub fn fmt(&self, id: SExpId) -> SExpFmt<'_> {

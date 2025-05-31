@@ -40,7 +40,6 @@ impl Structs {
 
 impl Runtime {
     fn insert_to_struct(&mut self, key: &str, items: &mut VecDeque<SExpId>) -> Result<(), String> {
-        eprintln!("Processing pair: {key}");
         let Some(value) = items.pop_front() else {
             return Err("Expected value".to_string());
         };
@@ -59,7 +58,6 @@ impl Runtime {
             let item = self.asts.get(item_id).clone();
             match item {
                 SExp::List(list) => {
-                    eprintln!("Processing list: {list:?}");
                     let first_id = list.first().ok_or_else(|| "Expected list".to_string())?;
                     let first = self
                         .asts

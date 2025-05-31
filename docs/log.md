@@ -1181,11 +1181,13 @@ What about quasiquoting?
 Better. But unquote wont work...
 
 ```
+(let d 42.0 
 (fn (a b) `(+ ,a ,b c ,d))
+)
 ```
 
 ```lift
-(cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d)))))
+(let d 42 (cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d))))))
 ```
 
 Yep, that's correct.
@@ -1218,3 +1220,41 @@ i can modify the runtime.
 ```
 
 Bingo!
+
+Okay, but is it fully complete?
+
+```
+(let c 42.0
+  (fn () (
+    let d 10.0
+    (+ c d)
+  ))
+)
+```
+
+```lift
+(let c 42 (cl () (c) (let d 10 (+ ($$closure :c) d))))
+```
+
+Yeah it doesnt look good.
+
+>Also additional "problem" is, currently lambda lifting is very naive.
+>If we have undefined variable, then it will be assumed to be captured!
+
+That is a cultprit. I guess we need to emulate lexical scoping in that pass.
+
+Ok. Fixed!
+
+One thing tho. I fixed normal `let`.
+What about let in objects?
+
+```
+{
+  :a 42.0
+  :b (fn () (self :a))
+}
+```
+
+```lift
+
+```

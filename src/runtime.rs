@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
-            eprintln!("---");
+            // eprintln!("---");
             let ast = crate::ast::AST::parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
 
@@ -393,7 +393,7 @@ mod tests {
             let mut runtime = Runtime::new(asts);
             runtime.with_prelude();
             let value = runtime.eval(root_id);
-            println!("value: {value:?}");
+            // println!("value: {value:?}");
             let value = runtime.to_json(value);
             serde_json::to_string_pretty(&value).unwrap()
         })
