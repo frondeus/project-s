@@ -1190,3 +1190,25 @@ Better. But unquote wont work...
 
 Yep, that's correct.
 Coolio.
+
+# 31.05
+
+Ok, now having that "lift" (is it lift tho?)
+i can modify the runtime.
+
+
+```
+(let top (
+  fn () (
+    let c 42.0
+    (fn (a b) (+ a b c))
+  )
+)
+
+((top) 1.0 2.0)
+)
+```
+
+```json
+
+```

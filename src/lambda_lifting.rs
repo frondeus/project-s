@@ -2,17 +2,20 @@ use std::collections::HashSet;
 
 use crate::ast::{AST, ASTS, SExp, SExpId};
 
-pub fn lift_lambdas(asts: &mut ASTS, root: SExpId) -> Option<SExpId> {
+pub fn lift_lambdas(asts: &mut ASTS, root: SExpId) -> SExpId {
+    lift_lambdas_inner(asts, root).unwrap_or(root)
+}
+
+fn lift_lambdas_inner(asts: &mut ASTS, root: SExpId) -> Option<SExpId> {
     if let SExp::List(sexp_ids) = asts.get(root) {
         let first_id = sexp_ids[0];
-        let first = asts.get(first_id).as_symbol().unwrap();
-        if first == "fn" {
+        if is_symbol(first_id, asts, "fn") {
             let signature_id = sexp_ids[1];
             let signature = asts.get(signature_id).as_list().unwrap().to_vec();
             let mut body = sexp_ids[2];
 
             let mut edited = false;
-            if let Some(new_body) = lift_lambdas(asts, body) {
+            if let Some(new_body) = lift_lambdas_inner(asts, body) {
                 body = new_body;
                 edited = true;
             }
@@ -49,7 +52,7 @@ pub fn lift_lambdas(asts: &mut ASTS, root: SExpId) -> Option<SExpId> {
             let mut new_sexp_ids = sexp_ids.clone();
             let mut edited = false;
             for id in &mut new_sexp_ids {
-                if let Some(new_id) = lift_lambdas(asts, *id) {
+                if let Some(new_id) = lift_lambdas_inner(asts, *id) {
                     *id = new_id;
                     edited = true;
                 }
@@ -223,7 +226,7 @@ mod tests {
             let ast = crate::ast::AST::parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let mut asts = ASTS::new(ast);
-            let new_root = lift_lambdas(&mut asts, root_id).unwrap_or(root_id);
+            let new_root = lift_lambdas(&mut asts, root_id);
             let output = asts.fmt(new_root);
             output.to_string()
         })

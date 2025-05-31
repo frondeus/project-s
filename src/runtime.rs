@@ -1,256 +1,30 @@
-use std::{
-    collections::{BTreeMap, VecDeque},
-    rc::Rc,
-};
+use std::rc::Rc;
+
+use env::Envs;
+use structs::Structs;
+use value::{Function, Macro, Value};
 
 use crate::{
-    ast::{AST, ASTS, SExp, SExpId},
+    ast::{ASTS, SExp, SExpId},
     types::{Type, TypeEnv},
 };
 
+mod env;
+mod quotes;
 mod s_std;
+mod structs;
+mod value;
 
-#[derive(Debug, Clone)]
-pub enum Value {
-    Number(f64),
-    String(String),
-    Bool(bool),
-    Object(BTreeMap<String, Box<Value>>),
-    Symbol(String),
-    SExp(SExpId),
-    Macro(Macro),
-    Function(Function),
-    /// For error handling
-    Error(String),
-}
-
-#[derive(Clone)]
-pub enum Macro {
-    Lisp {
-        signature: Vec<String>,
-        body: SExpId,
-    },
-    Rust {
-        body: NativeMacro,
-    },
-}
-
-impl std::fmt::Debug for Macro {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Lisp { signature, body } => f
-                .debug_struct("LispMacro")
-                .field("signature", signature)
-                .field("body", body)
-                .finish(),
-            Self::Rust { .. } => f.debug_struct("RustMacro").finish(),
-        }
-    }
-}
-
-pub type NativeMacro = Rc<dyn Fn(&mut Runtime, Vec<SExpId>) -> SExpId>;
-pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
-
-#[derive(Clone)]
-pub enum Function {
-    Lisp {
-        signature: Vec<String>,
-        body: SExpId,
-    },
-    Rust {
-        body: NativeFn,
-    },
-}
-
-impl std::fmt::Debug for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Lisp { signature, body } => f
-                .debug_struct("LispFn")
-                .field("signature", signature)
-                .field("body", body)
-                .finish(),
-            Self::Rust { .. } => f.debug_struct("RustFn").finish(),
-        }
-    }
-}
-
+#[macro_export]
 macro_rules! try_err {
     ($val: expr) => {
-        if let Value::Error(e) = $val {
-            return Value::Error(e);
+        if let $crate::runtime::value::Value::Error(e) = $val {
+            return $crate::runtime::value::Value::Error(e);
         };
     };
 }
 
-impl Value {
-    fn ok(self) -> Result<Self, String> {
-        if let Value::Error(e) = self {
-            Err(e)
-        } else {
-            Ok(self)
-        }
-    }
-
-    fn as_sexp(&self) -> Option<&SExpId> {
-        match self {
-            Value::SExp(id) => Some(id),
-            _ => None,
-        }
-    }
-
-    fn as_number(&self) -> Option<f64> {
-        match self {
-            Value::Number(n) => Some(*n),
-            _ => None,
-        }
-    }
-
-    fn as_symbol(&self) -> Option<&str> {
-        match self {
-            Value::Symbol(s) => Some(s),
-            _ => None,
-        }
-    }
-
-    fn as_object(&self) -> Option<&BTreeMap<String, Box<Value>>> {
-        match self {
-            Value::Object(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    fn into_object(self) -> Option<BTreeMap<String, Box<Value>>> {
-        match self {
-            Value::Object(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    fn to_sexp(&self, target: &mut AST) -> SExpId {
-        match self {
-            Value::Number(n) => target.add_node(SExp::Number(*n)),
-            Value::String(s) => target.add_node(SExp::String(s.clone())),
-            Value::Bool(b) => target.add_node(SExp::Bool(*b)),
-            Value::Symbol(s) => target.add_node(SExp::Symbol(s.clone())),
-            Value::Object(_btree_map) => {
-                todo!("Could not convert Object to SExp: {:?}", self)
-            }
-            Value::Macro(macro_) => {
-                todo!("Could not convert Macro to SExp: {:?}", macro_)
-            }
-            Value::Function(function) => {
-                todo!("Could not convert Function to SExp: {:?}", function)
-            }
-            Value::SExp(sexp_id) => *sexp_id,
-            Value::Error(err) => {
-                println!("Error: {err}");
-                target.add_node(SExp::Error)
-            }
-        }
-    }
-}
-
 impl Runtime {
-    fn insert_to_struct(&mut self, key: &str, items: &mut VecDeque<SExpId>) -> Result<(), String> {
-        eprintln!("Processing pair: {key}");
-        let Some(value) = items.pop_front() else {
-            return Err("Expected value".to_string());
-        };
-        let value = self.eval(value);
-        self.structs
-            .mut_self()
-            .unwrap()
-            .insert(key.to_string(), Box::new(value));
-        Ok(())
-    }
-
-    fn make_struct_inner(&mut self, items: impl Iterator<Item = SExpId>) -> Result<(), String> {
-        let mut items = items.collect::<VecDeque<_>>();
-
-        while let Some(item_id) = items.pop_front() {
-            let item = self.asts.get(item_id).clone();
-            match item {
-                SExp::List(list) => {
-                    eprintln!("Processing list: {list:?}");
-                    let first_id = list.first().ok_or_else(|| "Expected list".to_string())?;
-                    let first = self
-                        .asts
-                        .get(*first_id)
-                        .as_symbol()
-                        .map(ToOwned::to_owned)
-                        .ok_or_else(|| "Expected symbol".to_string())?;
-                    match first.as_str() {
-                        "let" => {
-                            self.object_let(&list[1..])?;
-                        }
-                        "if" => {
-                            self.object_if(&list[1..])?;
-                        }
-                        _ => {
-                            let first = self.eval(*first_id);
-                            match first {
-                                Value::Error(e) => return Err(e),
-                                Value::Macro(macro_) => {
-                                    let result = self.macro_call(macro_, &list[1..])?;
-                                    items.push_front(result);
-                                    continue;
-                                }
-                                _ => {
-                                    return Err(format!("Invalid struct caller: {:?}", first));
-                                }
-                            }
-                        }
-                    }
-                }
-                _ => {
-                    let key = self.eval(item_id);
-                    let key = match key {
-                        Value::Symbol(key) => key,
-                        Value::String(key) => key,
-                        _ => {
-                            return Err("Expected symbol or string".to_string());
-                        }
-                    };
-                    self.insert_to_struct(&key, &mut items)?;
-                }
-            }
-        }
-        Ok(())
-    }
-
-    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
-    #[allow(clippy::unnecessary_to_owned)]
-    fn make_struct(&mut self, items: &[SExpId]) -> Value {
-        let Some(sexp) = items.first() else {
-            return Value::Error("Expected SExpression. Found None".to_string());
-        };
-        let evaled = self.eval(*sexp);
-        try_err!(evaled);
-        let Some(sexp) = evaled.as_sexp() else {
-            return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
-        };
-        let sexp = self.asts.get(*sexp);
-        let Some(items) = sexp.as_list() else {
-            return Value::Error("Expected list".to_string());
-        };
-
-        // let mut map = BTreeMap::new();
-        let items = items.to_vec().into_iter();
-        self.structs.push_default();
-        self.envs.push();
-
-        if let Err(e) = self.make_struct_inner(items) {
-            self.envs.pop();
-            self.structs.pop();
-            return Value::Error(e);
-        }
-
-        self.envs.pop();
-        let map = self.structs.pop();
-        Value::Object(map)
-    }
-
     fn is_type(&self, items: &[SExpId]) -> Value {
         let Some(sexp) = items.first() else {
             return Value::Error("Expected SExpression".to_string());
@@ -275,74 +49,6 @@ impl Runtime {
             ty => return Value::Error(format!("Unknown type: {}", ty)),
         };
         Value::Bool(*result == ty)
-    }
-
-    fn quote(&self, id: &SExpId) -> Value {
-        let sexp = self.asts.get(*id);
-        match sexp {
-            SExp::Number(n) => Value::Number(*n),
-            SExp::String(s) => Value::String(s.clone()),
-            SExp::Symbol(_) => Value::SExp(*id),
-            SExp::Bool(b) => Value::Bool(*b),
-            SExp::Error => Value::Error("Quote: AST Error".to_string()),
-            SExp::List(_) => Value::SExp(*id),
-        }
-    }
-
-    fn quasiquote(&mut self, id: &SExpId) -> Value {
-        let sexp = self.asts.get(*id);
-        match sexp {
-            SExp::Number(n) => Value::Number(*n),
-            SExp::String(s) => Value::String(s.clone()),
-            SExp::Symbol(_) => Value::SExp(*id),
-            SExp::Bool(b) => Value::Bool(*b),
-            SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
-            SExp::List(_) => {
-                let mut new_ast = AST::default();
-                self.traverse_unquote(&mut new_ast, id);
-                let root = new_ast.root_id().unwrap();
-                self.asts.add_ast(new_ast);
-                Value::SExp(root)
-            }
-        }
-    }
-
-    fn traverse_unquote(&mut self, new_ast: &mut AST, id: &SExpId) -> SExpId {
-        match self.asts.get(*id).clone() {
-            SExp::List(items) => {
-                let Some(first) = items.first() else {
-                    return *id;
-                };
-                if self.is_unquote(first) {
-                    let Some(next) = items.get(1) else {
-                        todo!("Somehow return an error");
-                    };
-                    let evaled = self.eval(*next);
-                    evaled.to_sexp(new_ast)
-                } else {
-                    let parent = new_ast.reserve();
-                    let mut result = Vec::new();
-                    for item in &items {
-                        result.push(self.traverse_unquote(new_ast, item));
-                    }
-                    // if result == items {
-                    //     return *id;
-                    // }
-                    let new_list = SExp::List(result);
-                    new_ast.set(parent, new_list);
-                    parent
-                }
-            }
-            _ => *id,
-        }
-    }
-
-    fn is_unquote(&self, id: &SExpId) -> bool {
-        let sexp = self.asts.get(*id);
-        match sexp {
-            SExp::Symbol(s) => s == "unquote",
-            _ => false,
-        }
     }
 
     #[allow(dead_code)]
@@ -420,23 +126,6 @@ impl Runtime {
         Value::Bool(obj.contains_key(key))
     }
 
-    fn object_let(&mut self, items: &[SExpId]) -> Result<(), String> {
-        let Some(ident) = items.first() else {
-            return Err("Expected SExpression".to_string());
-        };
-        let ident = self.asts.get(*ident).clone();
-        let Some(ident) = ident.as_symbol() else {
-            return Err("Expected symbol".to_string());
-        };
-
-        let Some(value) = items.get(1) else {
-            return Err("Expected value".to_string());
-        };
-        let value = self.eval(*value);
-        self.envs.set(ident, value);
-        Ok(())
-    }
-
     fn _let(&mut self, items: &[SExpId]) -> Value {
         let Some(ident) = items.first() else {
             return Value::Error("Expected SExpression".to_string());
@@ -459,46 +148,6 @@ impl Runtime {
         let result = self.eval(*body);
         self.envs.pop();
         result
-    }
-
-    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
-    #[allow(clippy::unnecessary_to_owned)]
-    fn object_if(&mut self, items: &[SExpId]) -> Result<(), String> {
-        let Some(condition) = items.first() else {
-            return Err("Expected condition".to_string());
-        };
-        let condition = self.eval(*condition);
-        if let Value::Error(e) = condition {
-            return Err(e);
-        }
-        let Value::Bool(b) = condition else {
-            return Err("Expected boolean".to_string());
-        };
-
-        let Some(then) = items.get(1) else {
-            return Err("Expected then".to_string());
-        };
-        let else_ = items.get(2);
-
-        let branch = if b { Some(then) } else { else_ };
-
-        let Some(branch) = branch else {
-            return Ok(());
-        };
-
-        let evaled = self.eval(*branch);
-
-        let Some(sexp) = evaled.as_sexp() else {
-            return Err(format!("Expected SExpression. Found {evaled:?}"));
-        };
-        let sexp = self.asts.get(*sexp);
-        let Some(items) = sexp.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let items = items.to_vec().into_iter();
-
-        self.make_struct_inner(items)?;
-        Ok(())
     }
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
@@ -596,10 +245,11 @@ impl Runtime {
         }
     }
 
-    pub fn new(ast: AST) -> Self {
-        let mut runtime = Self::default();
-        runtime.asts.add_ast(ast);
-        runtime
+    pub fn new(asts: ASTS) -> Self {
+        Self {
+            asts,
+            ..Default::default()
+        }
     }
 
     pub fn with_macro(
@@ -751,96 +401,12 @@ impl Runtime {
     }
 }
 
-#[derive(Default, Debug)]
-pub struct Env {
-    // is_obj: bool,
-    vars: BTreeMap<String, Value>,
-}
-// impl Env {
-//     fn obj() -> Self {
-//         Self { is_obj: true, ..Default::default()}
-//     }
-// }
-
-#[derive(Debug)]
-pub struct Envs {
-    envs: Vec<Env>,
-}
-
-impl Default for Envs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Envs {
-    pub fn new() -> Self {
-        Self {
-            envs: vec![Env::default()],
-        }
-    }
-
-    fn last_mut(&mut self) -> &mut Env {
-        self.envs.last_mut().expect("No environment")
-    }
-
-    pub fn set(&mut self, name: &str, value: Value) {
-        self.last_mut().vars.insert(name.to_string(), value);
-    }
-
-    pub fn get(&self, name: &str) -> Option<&Value> {
-        self.envs.iter().rev().find_map(|env| env.vars.get(name))
-    }
-
-    pub fn push(&mut self) {
-        self.envs.push(Env::default());
-    }
-
-    pub fn pop(&mut self) {
-        self.envs.pop();
-    }
-
-    // pub fn _self(&self) -> Option<&Env> {
-    //     self.envs.iter().rev().find(|env| env.is_obj)
-    // }
-}
-
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
     structs: Structs,
     supers: Structs,
     asts: ASTS,
-}
-
-#[derive(Default)]
-struct Structs {
-    stack: Vec<BTreeMap<String, Box<Value>>>,
-}
-
-impl Structs {
-    fn push_default(&mut self) {
-        self.stack.push(BTreeMap::new());
-    }
-    fn push(&mut self, strukt: BTreeMap<String, Box<Value>>) {
-        self.stack.push(strukt);
-    }
-
-    fn pop(&mut self) -> BTreeMap<String, Box<Value>> {
-        self.stack.pop().unwrap()
-    }
-
-    fn _self(&self) -> Option<&BTreeMap<String, Box<Value>>> {
-        self.stack.last()
-    }
-
-    fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Box<Value>>> {
-        self.stack.last_mut()
-    }
-
-    fn root(&self) -> Option<&BTreeMap<String, Box<Value>>> {
-        self.stack.first()
-    }
 }
 
 #[cfg(test)]
@@ -853,7 +419,13 @@ mod tests {
             eprintln!("---");
             let ast = crate::ast::AST::parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let mut runtime = Runtime::new(ast);
+
+            let mut asts = ASTS::default();
+            asts.add_ast(ast);
+
+            let root_id = crate::lambda_lifting::lift_lambdas(&mut asts, root_id);
+
+            let mut runtime = Runtime::new(asts);
             runtime.with_prelude();
             let value = runtime.eval(root_id);
             println!("value: {value:?}");
