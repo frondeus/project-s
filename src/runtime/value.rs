@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, rc::Rc};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use crate::ast::{AST, SExp, SExpId};
 
@@ -81,8 +81,16 @@ pub struct Closure {
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Thunk {
-    pub(crate) captured: BTreeMap<String, Value>,
-    pub(crate) body: SExpId,
+    pub(crate) inner: Rc<RefCell<InnerThunk>>,
+}
+
+#[derive(Debug)]
+pub enum InnerThunk {
+    Evaluated(Value),
+    ToEvaluate {
+        captured: BTreeMap<String, Value>,
+        body: SExpId,
+    },
 }
 
 impl Value {

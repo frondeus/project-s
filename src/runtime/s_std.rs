@@ -119,5 +119,51 @@ impl Runtime {
     pub fn with_prelude(&mut self) {
         self.with_try_fn("-", sub);
         self.with_try_macro("+", add);
+        self.with_fn("print", |_rt, args| {
+            for arg in args.into_iter() {
+                eprintln!("{:?}", arg);
+            }
+
+            Value::Number(1.0)
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use crate::ast::ASTS;
+
+    use super::*;
+
+    #[test]
+    fn integration() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "log", |input, _deps| {
+            // eprintln!("---");
+            let ast = crate::ast::AST::parse(input).unwrap();
+            let root_id = ast.root_id().unwrap();
+
+            let mut asts = ASTS::default();
+            asts.add_ast(ast);
+
+            let root_id = crate::lambda_lifting::lift_lambdas(&mut asts, root_id);
+
+            let mut runtime = Runtime::new(asts);
+            runtime.with_prelude();
+            let log = Arc::new(Mutex::new(String::new()));
+            let log_clone = log.clone();
+            runtime.with_fn("print", move |_rt, args| {
+                for arg in args.into_iter() {
+                    log_clone.lock().unwrap().push_str(&format!("{:?}\n", arg));
+                }
+
+                Value::Number(1.0)
+            });
+
+            _ = runtime.eval(root_id);
+            let log = log.lock().unwrap().clone();
+            log
+        })
     }
 }

@@ -53,7 +53,7 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    #[allow(dead_code)]
+    // #[allow(dead_code)]
     fn add(&mut self, items: &[SExpId]) -> Value {
         if items.is_empty() {
             return Value::Error("Expected at least one argument".to_string());
@@ -61,16 +61,16 @@ impl Runtime {
 
         let first = items.first().unwrap();
 
-        let mut first = self.eval(*first);
+        let mut first = self.eval_eager(*first);
         try_err!(first);
 
         match &mut first {
             Value::Number(sum) => {
                 for item in items.iter().skip(1) {
-                    let right = self.eval(*item);
+                    let right = self.eval_eager(*item);
                     try_err!(right);
                     let Some(n) = right.as_number() else {
-                        return Value::Error("Expected number".to_string());
+                        return Value::Error(format!("Expected number, got: {:?}", right));
                     };
                     *sum += n;
                 }
@@ -79,7 +79,7 @@ impl Runtime {
                 let _super = left.clone();
                 self.supers.push(_super);
                 for item in items.iter().skip(1) {
-                    let right = self.eval(*item);
+                    let right = self.eval_eager(*item);
                     try_err!(right);
                     let right = match right {
                         Value::Object(right) => right,
@@ -100,7 +100,7 @@ impl Runtime {
                 }
                 self.supers.pop();
             }
-            _ => return Value::Error("Expected number".to_string()),
+            t => return Value::Error(format!("Expected number or object, got: {:?}", t)),
         }
         first
     }
@@ -233,6 +233,14 @@ impl Runtime {
                 body: Rc::new(body),
             }),
         );
+    }
+
+    pub fn eval_eager(&mut self, sexp: SExpId) -> Value {
+        let value = self.eval(sexp);
+        match value {
+            Value::Thunk(thunk) => self.thunk_call(thunk),
+            val => val,
+        }
     }
 
     pub fn eval(&mut self, sexp: SExpId) -> Value {

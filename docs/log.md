@@ -1350,7 +1350,7 @@ First argument is list of captured variables
 Next is the body
 
 ```json
-"<Thunk: Thunk { captured: {}, body: SExpId { id: 3, generation: 152 } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 154 } } } }>"
 ```
 
 Okay.
@@ -1362,7 +1362,7 @@ Okay.
 ```
 
 ```json
-"<Thunk: Thunk { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 154 } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 156 } } } }>"
 ```
 
 Cool.
@@ -1375,7 +1375,31 @@ Now what if we use it?
 ```
 
 ```json
-"<Error: Expected number>"
+43.0
 ```
 
-Ugh, not what i expected
+Ok...
+Kinda works.
+But for now it works as a `getter` kind of function.
+Because it does not cache the result.
+
+Okay. Still works, but im not sure if it really calculates once or twice.
+
+```
+(
+  let x (thunk () (print 42.0))
+    (+ x x)
+)
+
+```
+
+```log
+Number(42.0)
+
+```
+
+```json
+2.0
+```
+
+Only once! Wooho!
