@@ -132,7 +132,7 @@ impl<'a> LambdaPass<'a> {
 
     fn pass_inner(&mut self, root: SExpId) -> Option<SExpId> {
         if let SExp::List(sexp_ids) = self.asts.get(root) {
-            let first_id = sexp_ids[0];
+            let first_id = sexp_ids.first().copied()?;
             if self.is_one_of(first_id, &["quote", "quasiquote"]) {
                 None
             } else if self.is_symbol(first_id, "let") {

@@ -1341,3 +1341,41 @@ Also, one thing i need to remember - When evaluating the quoted content i need t
 Or, all passes AFTER the AST construction.
 
 Okay, first things first!
+
+```
+(thunk () 123)
+```
+
+First argument is list of captured variables
+Next is the body
+
+```json
+"<Thunk: Thunk { captured: {}, body: SExpId { id: 3, generation: 152 } }>"
+```
+
+Okay.
+
+```
+(let x 42.0 
+  (thunk (x) (+ 123 x))
+)
+```
+
+```json
+"<Thunk: Thunk { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 154 } }>"
+```
+
+Cool.
+Now what if we use it?
+
+```
+(let x (thunk () 42.0)
+  (+ x 1.0)
+)
+```
+
+```json
+"<Error: Expected number>"
+```
+
+Ugh, not what i expected

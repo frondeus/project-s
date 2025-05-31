@@ -15,6 +15,7 @@ pub enum Value {
     Macro(Macro),
     Function(Function),
     Closure(Closure),
+    Thunk(Thunk),
     /// For error handling
     Error(String),
 }
@@ -73,6 +74,13 @@ impl std::fmt::Debug for Function {
 #[derive(Clone, Debug)]
 pub struct Closure {
     pub(crate) signature: Vec<String>,
+    pub(crate) captured: BTreeMap<String, Value>,
+    pub(crate) body: SExpId,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct Thunk {
     pub(crate) captured: BTreeMap<String, Value>,
     pub(crate) body: SExpId,
 }
@@ -138,6 +146,9 @@ impl Value {
             }
             Value::Closure(closure) => {
                 todo!("Could not convert Closure to SExp: {:?}", closure)
+            }
+            Value::Thunk(thunk) => {
+                todo!("Could not convert Thunk to SExp: {:?}", thunk)
             }
             Value::SExp(sexp_id) => *sexp_id,
             Value::Error(err) => {

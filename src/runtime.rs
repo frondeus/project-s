@@ -14,6 +14,7 @@ mod functions;
 mod quotes;
 mod s_std;
 mod structs;
+mod thunks;
 mod value;
 
 #[macro_export]
@@ -276,6 +277,9 @@ impl Runtime {
                 };
                 let first_id = first_id.unwrap();
                 match first {
+                    SExp::Symbol(tag) if tag == "thunk" => {
+                        self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "macro" => {
                         self.macro_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
@@ -355,6 +359,7 @@ impl Runtime {
             Value::Closure(closure) => {
                 serde_json::Value::String(format!("<Closure: {:?}>", closure))
             }
+            Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
             Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
             Value::SExp(id) => {
