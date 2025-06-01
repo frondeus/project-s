@@ -1305,11 +1305,11 @@ So now, we got closures.
 
 What's else missing?
 * [ ] Loops
-* [ ] Thunks
+* [/] Thunks
 * [x] Functions
   * [x] Closures!
   * [x] Rust functions
-  * [ ] Rust macros?
+  * [x] Rust macros?
 * [ ] Imports
 * [ ] If else in normal places
 
@@ -1351,7 +1351,7 @@ First argument is list of captured variables
 Next is the body
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 154 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 259 } } } }>"
 ```
 
 Okay.
@@ -1363,7 +1363,7 @@ Okay.
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 156 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 261 } } } }>"
 ```
 
 Cool.
@@ -1496,7 +1496,7 @@ inject thunks when necessary.
 What are the cases?
 * Use of `self`
 * Use of `super` outside of `+` operator.
-* Making `+` an STD function instead of special form.
+* Making `+` an STD function instead of special form. [x]
 
 Can i do the latter?
 
@@ -1555,3 +1555,16 @@ Ok. I think i made it work. But does it work?
 ```
 
 Whoah!
+
+Ok. So. Thunks.
+I need to automatically insert thunks.
+
+What are the cases?
+* Use of `self` and `root`
+* Use of `super` 
+  - If there is super used, we want to make `(thunk () {})` of the whole expression
+  Let's start with that.
+
+But before we do it.
+I think its time to introduce other `.md` files.
+Going back through log.md is just cumbersome at that point

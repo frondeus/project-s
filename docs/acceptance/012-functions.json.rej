@@ -1,0 +1,15 @@
+```
+(fn (x y) (+ x y))
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ json
+@@ -4,7 +4,7 @@
+ ```
+ 
+ ```json
+-"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 5, generation: 107 } }>"
++"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 5, generation: 108 } }>"
+ ```
+ 
+ # Calling a function
