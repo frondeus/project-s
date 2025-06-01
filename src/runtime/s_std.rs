@@ -1,4 +1,7 @@
-use crate::ast::{AST, SExp, SExpId};
+use crate::{
+    ast::{AST, SExp, SExpId},
+    builder::{ASTBuilder, quote},
+};
 
 use super::{Runtime, Value};
 
@@ -64,20 +67,19 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(first)
 }
 
-fn add_obj(_rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     match &args[..] {
-        [_key, _value] => {
-            // (
-            //     symbol("if"),
-            //     (
-            //         symbol("has?"),
-            //         symbol("super"),
-            //         *key,
-            //     )
-            todo!()
-            // )
+        [key, value] => {
+            let result = (
+                "if",
+                ("has?", "super", key),
+                quote((key, ("+", ("super", key), value))),
+                quote((key, value)),
+            )
+                .build(&mut rt.asts);
+            Ok(result)
         }
-        _ => return Err("Expected two arguments".into()),
+        _ => Err("Expected two arguments".into()),
     }
 }
 

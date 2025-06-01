@@ -1519,3 +1519,39 @@ Next thing is we can take my macro for easy adding nested structs and expose it 
 
 My biggest problem right now tho is that writing any AST construction
 in Rust is PITA.
+
+Ok. I think i made it work. But does it work?
+
+```
+(let left {
+    (let x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  }
+
+(let right (thunk () {
+  :another 9
+  
+  (+obj :key {:c 3})
+})
+
+(+ left right)
+
+))
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
+```
+
+Whoah!
