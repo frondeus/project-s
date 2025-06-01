@@ -296,10 +296,6 @@ impl<'a> LambdaPass<'a> {
     }
 }
 
-pub fn lift_lambdas(asts: &mut ASTS, root: SExpId) -> SExpId {
-    LambdaPass::pass(asts, root)
-}
-
 struct Env {
     vars: BTreeSet<String>,
     kind: EnvKind,
@@ -394,7 +390,7 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let new_root = lift_lambdas(&mut asts, root_id);
+            let new_root = LambdaPass::pass(&mut asts, root_id);
             let output = asts.fmt(new_root);
             output.to_string()
         })

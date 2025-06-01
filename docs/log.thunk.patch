@@ -1,0 +1,14 @@
+```
+(+ 1 2 (+ 3 4 5) (quote 1))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ thunk
+@@ -1581,6 +1581,7 @@
+ ```
+ 
+ ```thunk
++(+ 1 2 (+ 3 4 5) (quote 1))
+ ```
+ 
+ # 02.06

@@ -402,8 +402,7 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-
-            let root_id = crate::lambda_lifting::lift_lambdas(&mut asts, root_id);
+            let root_id = crate::process_ast(&mut asts, root_id);
 
             let mut runtime = Runtime::new(asts);
             runtime.with_prelude();

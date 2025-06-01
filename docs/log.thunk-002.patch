@@ -1,0 +1,15 @@
+````
+(+ 1 2 (+ 3 4 5)
+  `(+ (+ 6 7) ,(+ 8 9) )
+)
+````
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ thunk-002
+@@ -1599,4 +1599,5 @@
+ ```
+ 
+ ```thunk
++(+ 1 2 (+ 3 4 5) (quasiquote (+ (+ 6 7) (unquote (+ 8 9)))))
+ ```
+\ No newline at end of file

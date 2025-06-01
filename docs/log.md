@@ -1568,3 +1568,41 @@ What are the cases?
 But before we do it.
 I think its time to introduce other `.md` files.
 Going back through log.md is just cumbersome at that point
+
+Ok. Done.
+Now we can focus on `super`!
+
+Okay, first thing first, i wan tot have some kind of traversal mechanism for passes
+
+So lets start with it.
+
+```
+(+ 1 2 (+ 3 4 5) (quote 1))
+```
+
+```thunk
+```
+
+# 02.06
+
+Okay. I have something but is it enough?
+Let's start first with finding every struct
+
+
+Ok visitor pattern might work.
+Let's see if it works also for unquoting:
+
+```
+(+ 1 2 (+ 3 4 5)
+  `(+ (+ 6 7) ,(+ 8 9) )
+)
+```
+
+```thunk
+```
+
+Bingo!
+
+Does it mutate?
+Lets have a pass that mutates every atom that is a "+"
+and replace it with "plus".
