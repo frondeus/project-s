@@ -53,7 +53,7 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    // #[allow(dead_code)]
+    #[allow(dead_code)]
     fn add(&mut self, items: &[SExpId]) -> Value {
         if items.is_empty() {
             return Value::Error("Expected at least one argument".to_string());
@@ -237,6 +237,10 @@ impl Runtime {
 
     pub fn eval_eager(&mut self, sexp: SExpId) -> Value {
         let value = self.eval(sexp);
+        self.to_eager(value)
+    }
+
+    pub fn to_eager(&mut self, value: Value) -> Value {
         match value {
             Value::Thunk(thunk) => self.thunk_call(thunk),
             val => val,
@@ -305,7 +309,7 @@ impl Runtime {
                         };
                         self.quote(item)
                     }
-                    SExp::Symbol(tag) if tag == "+" => self.add(&items[1..]),
+                    // SExp::Symbol(tag) if tag == "+" => self.add(&items[1..]),
                     SExp::Symbol(tag) if tag == "quasiquote" => {
                         let Some(item) = items.get(1) else {
                             return Value::Error("Expected item after quasiquote".to_string());

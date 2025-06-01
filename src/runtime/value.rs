@@ -137,6 +137,10 @@ impl Value {
         }
     }
 
+    pub fn eager(self, rt: &mut Runtime) -> Self {
+        rt.to_eager(self)
+    }
+
     pub fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),

@@ -81,7 +81,7 @@ impl<'a> LambdaPass<'a> {
         sexp_ids: Vec<SExpId>,
         mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
-        println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
+        // println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
         self.envs.push(EnvKind::Object);
         let result = self.visit_mut_list(sexp_ids, |pass, id| {
             let list = pass.asts.get(id).as_list()?;
@@ -104,17 +104,17 @@ impl<'a> LambdaPass<'a> {
     ) -> Option<SExpId> {
         self.visit_mut_list(sexp_ids, |pass, id| {
             let mut list = pass.asts.get(id).as_list()?.to_vec();
-            println!("processing struct body: {}", pass.asts.fmt_list(&list));
+            // println!("processing struct body: {}", pass.asts.fmt_list(&list));
             let mut list_iter = list.iter_mut();
             let mut edited = false;
             while let Some(id) = list_iter.next() {
                 if pass.asts.get(*id).as_symbol().is_some() {
                     // Key value pair
                     if let Some(value) = list_iter.next() {
-                        println!(
-                            "processing struct body key value: {}",
-                            pass.asts.fmt(*value)
-                        );
+                        // println!(
+                        //     "processing struct body key value: {}",
+                        //     pass.asts.fmt(*value)
+                        // );
                         if let Some(new_id) = f(pass, *value) {
                             *value = new_id;
                             edited = true;
@@ -141,7 +141,7 @@ impl<'a> LambdaPass<'a> {
             } else if self.is_symbol(first_id, "struct") {
                 self.process_struct(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "fn") {
-                println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
+                // println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
                 let signature_id = sexp_ids[1];
                 let signature = self.asts.get(signature_id).as_list().unwrap().to_vec();
                 let signature = signature

@@ -26,21 +26,18 @@ fn sub(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(a)
 }
 
-// For now `add` must stay a special form
-// because we want to evaluate arguments AFTER some work is done.
-fn add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     let mut args = args.into_iter();
     let Some(first) = args.next() else {
         return Err("Expected at least one argument".into());
     };
 
-    let mut first = rt.eval(first).ok()?;
+    let mut first = first.eager(rt).ok()?;
 
     match &mut first {
         Value::Number(first) => {
             for arg in args {
-                let arg = rt.eval(arg).ok()?;
-                let Some(b) = arg.as_number() else {
+                let Some(b) = arg.eager(rt).ok()?.as_number() else {
                     return Err("Expected number".into());
                 };
                 *first += b;
@@ -50,20 +47,9 @@ fn add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             for right in args {
                 let _super = left.clone();
                 rt.supers.push(_super);
-                let right = rt.eval(right).ok()?;
 
-                let right = match right {
-                    Value::Object(right) => right,
-                    Value::SExp(id) => {
-                        let right = rt.eval(id).into_object();
-                        let Some(right) = right else {
-                            return Err("Expected quoted object".into());
-                        };
-                        right
-                    }
-                    _ => {
-                        return Err("Expected object or quoted object".into());
-                    }
+                let Some(right) = right.eager(rt).ok()?.into_object() else {
+                    return Err("Expected object ".into());
                 };
 
                 for (key, value) in right {
@@ -75,12 +61,24 @@ fn add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
         _ => return Err("Expected number or object".into()),
     }
 
-    let mut ast = AST::default();
-    first.to_sexp(&mut ast);
-    let root = ast.root_id().unwrap();
-    rt.asts.add_ast(ast);
+    Ok(first)
+}
 
-    Ok(root)
+fn add_obj(_rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+    match &args[..] {
+        [_key, _value] => {
+            // (
+            //     symbol("if"),
+            //     (
+            //         symbol("has?"),
+            //         symbol("super"),
+            //         *key,
+            //     )
+            todo!()
+            // )
+        }
+        _ => return Err("Expected two arguments".into()),
+    }
 }
 
 impl Runtime {
@@ -118,7 +116,8 @@ impl Runtime {
 
     pub fn with_prelude(&mut self) {
         self.with_try_fn("-", sub);
-        self.with_try_macro("+", add);
+        self.with_try_fn("+", add);
+        self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {
             for arg in args.into_iter() {
                 eprintln!("{:?}", arg);

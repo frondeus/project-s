@@ -618,11 +618,11 @@ I want to add `super`!
   }
 }
 
-{
+(thunk () {
   :another 9
   :self (+ 1 (self :another))
   :super (+ 1 (super :another))
-})
+}))
 ```
 
 ```json
@@ -745,7 +745,7 @@ Okay, now we should be able to emulate jsonnet behaviour:
   }
 }
 
-{
+(thunk () {
   :another 9
   
   (if (has? super :key)
@@ -757,7 +757,7 @@ Okay, now we should be able to emulate jsonnet behaviour:
     '(:key {:c 3})
   )
 
-})
+}))
 ```
 
 ```json
@@ -786,19 +786,19 @@ or `self`?
   }
 }
 
-{
+(thunk () {
   :another 9
   
   (if (has? super :key)
     '(:key 
-      (+ (super :key) {
+      (+ (super :key) (thunk () {
         :c (+ (super :a) 3)
-      })
+      }))
     )
     '(:key {:c 3})
   )
 
-})
+}))
 ```
 
 ```json
@@ -826,7 +826,7 @@ Ok. Does it work if the left side is in a variable?
     }
   }
 
-(+ left {
+(+ left (thunk () {
   :another 9
   
   (if (has? super :key)
@@ -838,7 +838,7 @@ Ok. Does it work if the left side is in a variable?
     '(:key {:c 3})
   )
 
-})
+}))
 
 )
 ```
@@ -895,6 +895,7 @@ Yeah...
 That makes sense since we are eager :)
 
 What if in order to make it lazy, i would pass a quoted struct?
+(EDIT from 01.06: changed it to use thunks.).
 
 ```
 (let left {
@@ -906,7 +907,7 @@ What if in order to make it lazy, i would pass a quoted struct?
     }
   }
 
-(let right '{
+(let right (thunk () {
   :another 9
   
   (if (has? super :key)
@@ -918,7 +919,7 @@ What if in order to make it lazy, i would pass a quoted struct?
     '(:key {:c 3})
   )
 
-}
+})
 
 (+ left right)
 
@@ -1025,11 +1026,11 @@ Ok, now we should be able to clean the object adding.
     }
   }
 
-(let right '{
+(let right (thunk () {
   :another 9
   
   (add-obj :key {:c 3})
-}
+})
 
 (+ left right)
 
@@ -1289,9 +1290,9 @@ And now finally super
   :a 42.0
 }
 
-{
+(thunk () {
   :a (fn () (+ (super :a) 10.0))
-}) :a))
+})) :a))
 ```
 
 ```json
@@ -1488,3 +1489,33 @@ In the future, we will be able to do it automatically, but for now:
 ```
 
 Perfect!
+
+So I guess now the only thing left is to automatically
+inject thunks when necessary.
+
+What are the cases?
+* Use of `self`
+* Use of `super` outside of `+` operator.
+* Making `+` an STD function instead of special form.
+
+Can i do the latter?
+
+Okay so I see the problem.
+If we want `+` to be an STD function then every use of
+`super` MUST be wrapped in a thunk.
+
+Yeah, okay but then the function works :)
+
+Next thing is we can take my macro for easy adding nested structs and expose it in std as well.
+
+```example
+(let add-obj (macro (key value) 
+  `(if (has? super ,key)
+    '(,key (+ (super ,key) ,value))
+    '(,key ,value)
+  )
+)
+```
+
+My biggest problem right now tho is that writing any AST construction
+in Rust is PITA.
