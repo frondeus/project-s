@@ -1403,3 +1403,88 @@ Number(42.0)
 ```
 
 Only once! Wooho!
+
+# 01.06
+
+Okay so now we have thunks but we are not automatically using them (yet).
+
+One thing we tried to emulate before thunks was adding objects.
+We used quoting for that but it felt janky. Now we have a better way:
+
+```
+(let left {
+    (let x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  }
+
+(let right {
+  :another 9
+  
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) {
+        :c 3
+      })
+    )
+    '(:key {:c 3})
+  )
+
+}
+
+(+ left right)
+
+))
+```
+
+```json
+"<Error: super used outside of object>"
+```
+
+But now, we should be able to make a right side a thunk!
+In the future, we will be able to do it automatically, but for now:
+
+```
+(let left {
+    (let x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  }
+
+(let right (thunk () {
+  :another 9
+  
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) {
+        :c 3
+      })
+    )
+    '(:key {:c 3})
+  )
+
+})
+
+(+ left right)
+
+))
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
+```
+
+Perfect!

@@ -24,7 +24,10 @@ impl Runtime {
             .into_iter()
             // .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
             .map(|s| {
-                let name = self.asts.get(s).as_symbol().unwrap().to_string();
+                let name = self.asts.get(s);
+                let name = name.as_symbol().map(|s| s.to_string()).unwrap_or_else(|| {
+                    panic!("Expected symbol, got {:?}", name);
+                });
                 let val = self.eval(s);
                 (name, val)
             })
