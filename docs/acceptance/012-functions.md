@@ -4,7 +4,7 @@
 ```
 
 ```json
-"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 5, generation: 107 } }>"
+"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 5, generation: 0 } }>"
 ```
 
 # Calling a function

@@ -5,7 +5,7 @@
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 126 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 0 } } } }>"
 ```
 
 ```
@@ -15,7 +15,7 @@
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 128 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 0 } } } }>"
 ```
 
 

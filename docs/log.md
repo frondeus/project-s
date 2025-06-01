@@ -1351,7 +1351,7 @@ First argument is list of captured variables
 Next is the body
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 259 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 0 } } } }>"
 ```
 
 Okay.
@@ -1363,7 +1363,7 @@ Okay.
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 261 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 0 } } } }>"
 ```
 
 Cool.

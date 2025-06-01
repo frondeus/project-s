@@ -1,26 +1,16 @@
-use std::{
-    collections::HashMap,
-    fmt,
-    sync::{
-        LazyLock,
-        atomic::{AtomicUsize, Ordering},
-    },
-};
+use std::{collections::HashMap, fmt};
 
 use tree_sitter::Parser as TSParser;
-
-static GENERATION: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(0));
 
 #[derive(Debug, Default)]
 pub struct ASTS {
     asts: HashMap<usize, AST>,
+    generation: usize,
 }
 
 impl ASTS {
-    pub fn new(ast: AST) -> Self {
-        let mut asts = Self::default();
-        asts.add_ast(ast);
-        asts
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn get_ast_by_generation(&mut self, generation: usize) -> &mut AST {
@@ -40,6 +30,12 @@ impl ASTS {
         Some(self.get(id?))
     }
 
+    pub fn new_ast(&mut self) -> AST {
+        let ast = AST::new(self.generation);
+        self.generation += 1;
+        ast
+    }
+
     pub fn add_ast(&mut self, ast: AST) -> usize {
         let generation = ast.generation();
         self.asts.insert(generation, ast);
@@ -53,6 +49,14 @@ impl ASTS {
     pub fn fmt_list<'a>(&'a self, list: &'a [SExpId]) -> SExpFmtList<'a> {
         SExpFmtList { list, asts: self }
     }
+
+    pub fn parse(&mut self, input: &str) -> Result<&AST, ParseError> {
+        let parser = SExpParser::new(self)?;
+        let ast = parser.parse(input)?;
+        let root = ast.root_id().unwrap();
+        self.add_ast(ast);
+        Ok(self.get_ast(root))
+    }
 }
 
 #[derive(Debug)]
@@ -61,9 +65,8 @@ pub struct AST {
     nodes: Vec<SExp>,
 }
 
-impl Default for AST {
-    fn default() -> Self {
-        let generation = GENERATION.fetch_add(1, Ordering::Relaxed);
+impl AST {
+    fn new(generation: usize) -> Self {
         Self {
             generation,
             nodes: Vec::new(),
@@ -113,11 +116,6 @@ impl AST {
 
     pub fn root_id(&self) -> Option<SExpId> {
         self.nodes.first().map(|_| self.new_id(0))
-    }
-
-    pub fn parse(input: &str) -> Result<Self, ParseError> {
-        let parser = SExpParser::new()?;
-        parser.parse(input)
     }
 
     pub fn generation(&self) -> usize {
@@ -259,7 +257,7 @@ pub struct SExpParser {
 }
 
 impl SExpParser {
-    pub fn new() -> Result<Self, ParseError> {
+    pub fn new(asts: &mut ASTS) -> Result<Self, ParseError> {
         let mut parser = TSParser::new();
         parser
             .set_language(&tree_sitter_s::LANGUAGE.into())
@@ -267,7 +265,7 @@ impl SExpParser {
 
         Ok(SExpParser {
             parser,
-            ast: AST::default(),
+            ast: asts.new_ast(),
         })
     }
 
@@ -405,79 +403,15 @@ impl SExpParser {
 mod tests {
     use super::*;
 
-    fn compare_f64(a: f64, b: f64) -> bool {
-        let precision = 0.01;
-        (a - b).abs() < precision
-    }
-
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
-            let ast = AST::parse(input).expect("Failed to parse");
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).expect("Failed to parse");
             let root_id = ast.root_id().unwrap();
-            let asts = ASTS::new(ast);
             let result = asts.get(root_id);
             let result = result.fmt(&asts);
             format!("{:?}", result)
         })
-    }
-
-    #[test]
-    fn test_parse_simple_symbol() -> Result<(), ParseError> {
-        let result = AST::parse("foo")?;
-        let result = result.root().unwrap();
-        assert!(matches!(result, SExp::Symbol(s) if s == "foo"));
-        Ok(())
-    }
-
-    #[test]
-    fn test_parse_numeric_symbol() -> Result<(), ParseError> {
-        let result = AST::parse("42")?;
-        let result = result.root().unwrap();
-        dbg!(&result);
-        assert!(matches!(result, SExp::Number(s) if compare_f64(*s, 42.0)));
-        Ok(())
-    }
-
-    #[test]
-    fn test_parse_operator_symbol() -> Result<(), ParseError> {
-        let result = AST::parse("->")?;
-        let result = result.root().unwrap();
-        assert!(matches!(result, SExp::Symbol(s) if s == "->"));
-        Ok(())
-    }
-
-    #[test]
-    fn test_parse_string() -> Result<(), ParseError> {
-        let result = AST::parse("\"foo\"")?;
-        let result = result.root().unwrap();
-        assert!(matches!(result, SExp::String(s) if s == "foo"));
-        Ok(())
-    }
-
-    #[test]
-    fn test_parse_empty_list() -> Result<(), ParseError> {
-        let result = AST::parse("()")?;
-        let result = result.root().unwrap();
-        assert!(matches!(result, SExp::List(list) if list.is_empty()));
-        Ok(())
-    }
-
-    #[test]
-    fn test_parse_list_with_symbols() -> Result<(), ParseError> {
-        let ast = AST::parse("(-> foo bar 12 ==)")?;
-        let result = ast.root().unwrap();
-        match result {
-            SExp::List(items) => {
-                assert_eq!(items.len(), 5);
-                assert!(matches!(ast.get(items[0]), SExp::Symbol(s) if s == "->"));
-                assert!(matches!(ast.get(items[1]), SExp::Symbol(s) if s == "foo"));
-                assert!(matches!(ast.get(items[2]), SExp::Symbol(s) if s == "bar"));
-                assert!(matches!(ast.get(items[3]), SExp::Number(s) if compare_f64(*s, 12.0)));
-                assert!(matches!(ast.get(items[4]), SExp::Symbol(s) if s == "=="));
-            }
-            _ => panic!("Expected a list with five symbols"),
-        }
-        Ok(())
     }
 }

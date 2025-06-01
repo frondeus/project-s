@@ -24,7 +24,7 @@ impl Runtime {
             SExp::Bool(b) => Value::Bool(*b),
             SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
             SExp::List(_) => {
-                let mut new_ast = AST::default();
+                let mut new_ast = self.asts.new_ast();
                 self.traverse_unquote(&mut new_ast, id);
                 let root = new_ast.root_id().unwrap();
                 self.asts.add_ast(new_ast);

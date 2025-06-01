@@ -28,7 +28,7 @@ pub struct LambdaPass<'a> {
 
 impl<'a> LambdaPass<'a> {
     pub fn pass(asts: &'a mut ASTS, root: SExpId) -> SExpId {
-        let new_ast = AST::default();
+        let new_ast = asts.new_ast();
         let ast_id = asts.add_ast(new_ast);
         let mut pass = Self {
             envs: Envs::new(),
@@ -391,9 +391,9 @@ mod tests {
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "lift", |input, _deps| {
             eprintln!("---");
-            let ast = crate::ast::AST::parse(input).unwrap();
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let mut asts = ASTS::new(ast);
             let new_root = lift_lambdas(&mut asts, root_id);
             let output = asts.fmt(new_root);
             output.to_string()

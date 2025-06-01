@@ -48,16 +48,17 @@ impl TypeEnv {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::AST;
+    use crate::ast::ASTS;
 
     use super::*;
 
     #[test]
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "type", |input, _deps| {
-            let ast = AST::parse(input).expect("Failed to parse");
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).expect("Failed to parse");
             let mut env = TypeEnv::default();
-            let infered = env.infer(&ast, ast.root_id().unwrap());
+            let infered = env.infer(ast, ast.root_id().unwrap());
             let result = env.get(infered);
 
             format!("{:?}", result)

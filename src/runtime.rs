@@ -399,11 +399,9 @@ mod tests {
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| {
             // eprintln!("---");
-            let ast = crate::ast::AST::parse(input).unwrap();
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-
-            let mut asts = ASTS::default();
-            asts.add_ast(ast);
 
             let root_id = crate::lambda_lifting::lift_lambdas(&mut asts, root_id);
 

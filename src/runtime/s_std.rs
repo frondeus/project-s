@@ -1,6 +1,6 @@
 use crate::{
-    ast::{AST, SExp, SExpId},
-    builder::{ASTBuilder, quote},
+    ast::SExpId,
+    builder::{ASTBuilder, error, quote},
 };
 
 use super::{Runtime, Value};
@@ -106,11 +106,7 @@ impl Runtime {
                 Ok(id) => id,
                 Err(err) => {
                     eprintln!("Error: {}", err);
-                    let mut ast = AST::default();
-                    ast.add_node(SExp::Error);
-                    let root = ast.root_id().unwrap();
-                    rt.asts.add_ast(ast);
-                    root
+                    error().build(&mut rt.asts)
                 }
             }
         });
@@ -142,11 +138,9 @@ mod tests {
     fn integration() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "log", |input, _deps| {
             // eprintln!("---");
-            let ast = crate::ast::AST::parse(input).unwrap();
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-
-            let mut asts = ASTS::default();
-            asts.add_ast(ast);
 
             let root_id = crate::lambda_lifting::lift_lambdas(&mut asts, root_id);
 

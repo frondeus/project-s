@@ -8,7 +8,7 @@ pub trait ASTBuilder {
     where
         Self: Sized,
     {
-        let mut ast = AST::default();
+        let mut ast = asts.new_ast();
         let result = self.assemble(&mut ast);
         asts.add_ast(ast);
         result
@@ -26,6 +26,10 @@ where
 
 pub fn symbol(name: &str) -> impl ASTBuilder {
     |ast: &mut AST| ast.add_node(SExp::Symbol(name.to_string()))
+}
+
+pub fn error() -> impl ASTBuilder {
+    |ast: &mut AST| ast.add_node(SExp::Error)
 }
 
 impl ASTBuilder for &str {
