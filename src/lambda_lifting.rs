@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 use std::collections::BTreeSet;
 
-use crate::ast::{AST, ASTS, SExp, SExpId};
+use crate::{
+    ast::{AST, ASTS, SExp, SExpId},
+    builder::ASTBuilder,
+};
 
 pub const CLOSURE_SYMBOL: &str = "$$closure";
 const SPECIAL_FORMS: &[&str] = &[
@@ -164,23 +167,10 @@ impl<'a> LambdaPass<'a> {
                 self.envs.pop();
 
                 if let Some((new_body, free_vars)) = maybe_new_body {
-                    let id = self.new_ast().reserve();
-                    let closure_symbol = self.new_ast().add_node(SExp::Symbol("cl".to_string()));
-                    let captured_id = self.new_ast().reserve();
+                    let closure =
+                        ("cl", signature_id, free_vars, new_body).assemble(self.new_ast());
 
-                    dbg!(&free_vars);
-                    let free_vars = free_vars
-                        .into_iter()
-                        .map(|v| self.new_ast().add_node(SExp::Symbol(v)))
-                        .collect();
-
-                    self.new_ast().set(captured_id, SExp::List(free_vars));
-
-                    self.new_ast().set(
-                        id,
-                        SExp::List(vec![closure_symbol, signature_id, captured_id, new_body]),
-                    );
-                    Some(id)
+                    Some(closure)
                 } else if edited {
                     Some(
                         self.new_ast()
@@ -250,12 +240,7 @@ impl<'a> LambdaPass<'a> {
                     println!("free var: {}", s);
                     free_vars.insert(s.clone());
                     let s = format!(":{s}");
-                    let id = self.new_ast().reserve();
-                    let closure = self
-                        .new_ast()
-                        .add_node(SExp::Symbol(CLOSURE_SYMBOL.to_string()));
-                    let symbol = self.new_ast().add_node(SExp::Symbol(s));
-                    self.new_ast().set(id, SExp::List(vec![closure, symbol]));
+                    let id = (CLOSURE_SYMBOL, s).assemble(self.new_ast());
 
                     Some(id)
                 }

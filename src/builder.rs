@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::ast::{AST, ASTS, SExp, SExpId};
 
 pub trait ASTBuilder {
@@ -32,8 +34,34 @@ impl ASTBuilder for &str {
     }
 }
 
+impl ASTBuilder for String {
+    fn assemble(self, ast: &mut AST) -> SExpId {
+        symbol(&self).assemble(ast)
+    }
+}
+
 pub fn quote(exp: impl ASTBuilder) -> impl ASTBuilder {
     (symbol("quote"), exp)
+}
+
+impl<T: ASTBuilder> ASTBuilder for BTreeSet<T> {
+    fn assemble(self, ast: &mut AST) -> SExpId {
+        let list = ast.reserve();
+        let mut items = vec![];
+        for item in self {
+            items.push(item.assemble(ast));
+        }
+        ast.set(list, SExp::List(items));
+        list
+    }
+}
+
+pub fn list() -> impl ASTBuilder {
+    |ast: &mut AST| {
+        let list = ast.reserve();
+        ast.add_node(SExp::List(vec![]));
+        list
+    }
 }
 
 impl ASTBuilder for SExpId {
