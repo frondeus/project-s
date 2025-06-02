@@ -48,6 +48,17 @@ pub fn quote(exp: impl ASTBuilder) -> impl ASTBuilder {
     (symbol("quote"), exp)
 }
 
+impl<T: ASTBuilder + Copy> ASTBuilder for &[T] {
+    fn assemble(self, ast: &mut AST) -> SExpId {
+        let list = ast.reserve();
+        let mut items = vec![];
+        for item in self {
+            items.push(item.assemble(ast));
+        }
+        ast.set(list, SExp::List(items));
+        list
+    }
+}
 impl<T: ASTBuilder> ASTBuilder for BTreeSet<T> {
     fn assemble(self, ast: &mut AST) -> SExpId {
         let list = ast.reserve();

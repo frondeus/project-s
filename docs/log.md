@@ -1581,6 +1581,7 @@ So lets start with it.
 ```
 
 ```thunk
+(plus 1 2 (plus 3 4 5) (quote 1))
 ```
 
 # 02.06
@@ -1599,10 +1600,28 @@ Let's see if it works also for unquoting:
 ```
 
 ```thunk
+(plus 1 2 (plus 3 4 5) (quasiquote (+ (+ 6 7) (unquote (plus 8 9)))))
 ```
 
 Bingo!
 
-Does it mutate?
-Lets have a pass that mutates every atom that is a "+"
-and replace it with "plus".
+
+```
+{
+  :key 42.0
+}
+```
+
+
+```thunk
+(struct (quote (:key 42)))
+```
+
+# 03.06
+
+Ugh.
+Okay. I will be honest.
+I despise how we are building structs.
+It feels wrong, a hack and it makes the whole syntax too complex.
+
+I need to revamp certain aspects of my language!

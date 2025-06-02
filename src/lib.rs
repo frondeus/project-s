@@ -4,6 +4,8 @@ use lambda_lifting::LambdaPass;
 pub mod ast;
 pub mod builder;
 
+pub mod visitor;
+
 pub mod lambda_lifting;
 pub mod thunk_inserting;
 
