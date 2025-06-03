@@ -1,48 +1,16 @@
 Basic struct construction
 
 ```
-(struct (quote (
+(struct 
     :name "Name"
     :surname "Surname"
-)))
+)
 ```
 
 ```json
 {
   "name": "Name",
   "surname": "Surname"
-}
-```
-
-Quote syntax sugar:
-```
-(struct '(
-    :name "Name"
-    :surname "Surname"
-))
-```
-
-```json
-{
-  "name": "Name",
-  "surname": "Surname"
-}
-```
-
-
-Building with quasiquotes
-
-```
-(struct `(
-  :name "John Smith"
-  :age ,(+ 20 3)
-))
-```
-
-```json
-{
-  "age": 23.0,
-  "name": "John Smith"
 }
 ```
 
@@ -50,7 +18,7 @@ Building with quasiquotes
 
 ```
 ( 
-  (struct '(:key 1 :another 2))
+  (struct :key 1 :another 2)
   :another
 )
 ```
@@ -62,7 +30,7 @@ Building with quasiquotes
 Or when struct is named
 
 ```
-(let :foo (struct '(:key 1 :another 2)))
+(let :foo (struct :key 1 :another 2))
 (foo :another)
 ```
 
@@ -76,10 +44,10 @@ Let's say that for now keys HAVE TO
 be ordered explicitly
 
 ```
-(struct `(
+(struct
   :another (+ 1 1)
   :key (+ 1 (self :another))
-))
+)
 ```
 
 ```json
@@ -94,13 +62,13 @@ be ordered explicitly
 To access top object
 
 ```
-(struct `(
+(struct 
   :another 4
-  :key (struct '(
+  :key (struct 
     :a 1
     :b (+ 1 (root :another))
-  ))
-))
+  )
+)
 ```
 
 ```json

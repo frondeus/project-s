@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, VecDeque};
 use crate::{
     ast::{SExp, SExpId},
     runtime::value::Value,
-    try_err,
 };
 
 use super::Runtime;
@@ -104,20 +103,6 @@ impl Runtime {
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
     #[allow(clippy::unnecessary_to_owned)]
     pub(crate) fn make_struct(&mut self, items: &[SExpId]) -> Value {
-        let Some(sexp) = items.first() else {
-            return Value::Error("Expected SExpression. Found None".to_string());
-        };
-        let evaled = self.eval(*sexp);
-        try_err!(evaled);
-        let Some(sexp) = evaled.as_sexp() else {
-            return Value::Error(format!("Expected SExpression. Found {evaled:?}",));
-        };
-        let sexp = self.asts.get(*sexp);
-        let Some(items) = sexp.as_list() else {
-            return Value::Error("Expected list".to_string());
-        };
-
-        // let mut map = BTreeMap::new();
         let items = items.to_vec().into_iter();
         self.structs.push_default();
         self.envs.push();

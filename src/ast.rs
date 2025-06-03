@@ -345,27 +345,14 @@ impl SExpParser {
             }
             "struct" => {
                 let strukt = self.ast.reserve();
-                let mut items = Vec::new();
-                items.push(self.ast.add_node(SExp::Symbol("struct".to_string())));
-
-                let quote = self.ast.reserve();
-                let mut quoted = Vec::new();
-                quoted.push(self.ast.add_node(SExp::Symbol("quote".to_string())));
-
-                let inner = self.ast.reserve();
-                let mut children = Vec::new();
-
                 let mut child = node.named_child(0);
+                let mut children = Vec::new();
+                children.push(self.ast.add_node(SExp::Symbol("struct".to_string())));
                 while let Some(n) = child {
                     children.push(self.node_to_sexp(n, source)?);
                     child = n.next_named_sibling();
                 }
-
-                self.ast.set(inner, SExp::List(children));
-                quoted.push(inner);
-                self.ast.set(quote, SExp::List(quoted));
-                items.push(quote);
-                self.ast.set(strukt, SExp::List(items));
+                self.ast.set(strukt, SExp::List(children));
                 Ok(strukt)
             }
             "quote" => self.shortcut(node, source, "quote"),

@@ -12,11 +12,11 @@ let {name} = {value} in {body}
 You can also use let in structs
 
 ```
-(struct `(
+(struct 
   (let :x 5)
   :key (+ 1 x)
   :another '(+ 1 x)
-))
+)
 ```
 
 ```json

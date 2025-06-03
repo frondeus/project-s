@@ -93,51 +93,62 @@ impl<'a> LambdaPass<'a> {
     ) -> Option<SExpId> {
         // println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
         self.envs.push(EnvKind::Object);
-        let result = self.visit_mut_list(sexp_ids, |pass, id| {
-            let list = pass.asts.get(id).as_list()?;
-
-            let first = list[0];
-            if !pass.is_symbol(first, "quote") {
-                return None;
-            }
-
-            pass.process_struct_body(list.to_vec(), |pass, id| f(pass, id))
-        });
+        println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
+        let result = self.process_struct_body(sexp_ids.to_vec(), |pass, id| f(pass, id));
         self.envs.pop();
         result
+
+        // let result = self.visit_mut_list(sexp_ids, |pass, id| {
+        //     let list = pass.asts.get(id).as_list()?;
+
+        //     let first = list[0];
+        //     if !pass.is_symbol(first, "quote") {
+        //         return None;
+        //     }
+
+        //     pass.process_struct_body(list.to_vec(), |pass, id| f(pass, id))
+        // });
+        // self.envs.pop();
+        // result
     }
 
     fn process_struct_body(
         &mut self,
-        sexp_ids: Vec<SExpId>,
+        mut list: Vec<SExpId>,
         mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
-        self.visit_mut_list(sexp_ids, |pass, id| {
-            let mut list = pass.asts.get(id).as_list()?.to_vec();
-            // println!("processing struct body: {}", pass.asts.fmt_list(&list));
-            let mut list_iter = list.iter_mut();
-            let mut edited = false;
-            while let Some(id) = list_iter.next() {
-                if pass.asts.get(*id).as_symbol_or_keyword().is_some() {
-                    // Key value pair
-                    if let Some(value) = list_iter.next() {
-                        // println!(
-                        //     "processing struct body key value: {}",
-                        //     pass.asts.fmt(*value)
-                        // );
-                        if let Some(new_id) = f(pass, *value) {
-                            *value = new_id;
-                            edited = true;
-                        }
+        // self.visit_mut_list(sexp_ids, |pass, id| {
+        //     let mut list = pass.asts.get(id).as_list()?.to_vec();
+        //     // println!("processing struct body: {}", pass.asts.fmt_list(&list));
+        let mut list_iter = list.iter_mut();
+        let mut edited = false;
+        list_iter.next(); // Skip struct keyword
+        while let Some(id) = list_iter.next() {
+            println!("Struct item: {}", self.asts.fmt(*id));
+            if self.asts.get(*id).as_symbol_or_keyword().is_some() {
+                // Key value pair
+                if let Some(value) = list_iter.next() {
+                    println!(
+                        "processing struct body key value: {}",
+                        self.asts.fmt(*value)
+                    );
+                    // println!(
+                    //     "processing struct body key value: {}",
+                    //     pass.asts.fmt(*value)
+                    // );
+                    if let Some(new_id) = f(self, *value) {
+                        *value = new_id;
+                        edited = true;
                     }
                 }
             }
-            if edited {
-                Some(pass.new_ast().add_node(SExp::List(list)))
-            } else {
-                None
-            }
-        })
+        }
+        if edited {
+            Some(self.new_ast().add_node(SExp::List(list)))
+        } else {
+            None
+        }
+        // })
     }
 
     fn pass_inner(&mut self, root: SExpId) -> Option<SExpId> {
@@ -197,7 +208,7 @@ impl<'a> LambdaPass<'a> {
     }
 
     fn process_fn_decl(&mut self, body: SExpId) -> Option<(SExpId, BTreeSet<String>)> {
-        // println!("processing fn decl: {}", self.asts.fmt(body));
+        println!("processing fn decl: {}", self.asts.fmt(body));
         let mut free_vars = BTreeSet::<String>::new();
 
         let body = self.process_fn_decl_body(body, &mut free_vars);

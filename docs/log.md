@@ -36,10 +36,10 @@ Okay, so what I want?
 I want to at least have
 
 ```
-(struct (quote (
+(struct
     :name "Name"
     :surname "Surname"
-)))
+)
 ```
 
 and have it compiled to 
@@ -184,10 +184,10 @@ Printing to JSON is wrapping sexp in Strings
 Now we can use this quote to actually properly construct struct
 
 ```
-(struct (quote (
+(struct 
     :name "Name"
     :surname "Surname"
-)))
+)
 ```
 
 and have it compiled to 
@@ -205,10 +205,10 @@ Later when we introduce macros, we might want to change that.
 For now, we use full `quote`. But it makes sense to expand the grammar to introduce `'`.
 
 ```
-(struct '(
+(struct 
     :name "Name"
     :surname "Surname"
-))
+)
 ```
 
 and have it compiled to 
@@ -290,19 +290,6 @@ Ok, now reader shortcut.
 
 Cool. Now can we use it in our struct definition?
 
-```
-(struct `(
-  :name "John Smith"
-  :age ,(+ 20 3)
-))
-```
-
-```json
-{
-  "age": 23.0,
-  "name": "John Smith"
-}
-```
 
 NICE.
 
@@ -344,17 +331,6 @@ Apparently we have bug in quasiquoting.
 Which isn't surprising.
 The problem is:
 
-```
-(struct `(
-  :key '(+ 1 2)
-))
-```
-
-```json
-{
-  "key": "(+ 1 2)"
-}
-```
 
 
 The quasiquote returns SExpression that is generation further
@@ -372,11 +348,11 @@ But we need GC anyway...
 Ok, going back to let expressions
 
 ```
-(struct `(
+(struct 
   (let :x 5)
   :key (+ 1 x)
   :another '(+ 1 x)
-))
+)
 ```
 
 ```json
@@ -429,7 +405,7 @@ The simplest way is to have it like this:
 
 ```
 ( 
-  (struct '(:key 1 :another 2))
+  (struct :key 1 :another 2)
   :another
 )
 ```
@@ -444,7 +420,7 @@ parameter tells you the key accessed
 It works even better if struct is named
 
 ```
-(let :foo (struct '(:key 1 :another 2)))
+(let :foo (struct :key 1 :another 2))
 (foo :another)
 ```
 
@@ -458,10 +434,10 @@ Let's say that for now keys HAVE TO
 be ordered explicitly
 
 ```
-(struct `(
+(struct 
   :another (+ 1 1)
   :key (+ 1 (self :another))
-))
+)
 ```
 
 ```json
@@ -477,10 +453,10 @@ in some Arc<_> because it is still being mutated.
 Ok, now next one has to fail, right?
 
 ```
-(struct `(
+(struct 
   :key (+ 1 (self :another))
   :another (+ 1 1)
-))
+)
 ```
 
 ```json
@@ -495,13 +471,13 @@ Yep.
 Okay, now the only thing missing is "root".
 
 ```
-(struct `(
+(struct 
   :another 4
-  :key (struct '(
+  :key (struct 
     :a 1
     :b (+ 1 (root :another))
-  ))
-))
+  )
+)
 ```
 
 ```json
@@ -519,13 +495,13 @@ Damn, that's cool!
 Does it work with accessing self?
 
 ```
-(struct `(
+(struct 
   :another 4
-  :key (struct '(
+  :key (struct 
     :a 1
     :b (+ 1 ((root :key) :a))
-  ))
-))
+  )
+)
 ```
 
 ```json
@@ -1242,7 +1218,7 @@ What about let in objects?
 ```
 
 ```lift
-(do (((struct (quote (:a 42 :b (cl () (self) (($$closure :self) :a))))) :b)))
+(do (((struct :a 42 :b (cl () (self) (($$closure :self) :a))) :b)))
 ```
 
 ```json
@@ -1261,7 +1237,7 @@ Okay, self works. Now root!
 ```
 
 ```lift
-(do ((((struct (quote (:a 42 :b (struct (quote (:c (cl () (root) (($$closure :root) :a)))))))) :b) :c)))
+(do ((((struct :a 42 :b (struct :c (cl () (root) (($$closure :root) :a)))) :b) :c)))
 ```
 
 ```json
@@ -1591,7 +1567,7 @@ Bingo!
 
 
 ```thunk
-(do (struct (quote (:key 42))))
+(do (struct :key 42))
 ```
 
 # 03.06
@@ -1621,3 +1597,10 @@ We need a new special form `(do 1 2 3)` which takes any number of parameters, ev
 It also creates a new lexical scope.
 
 Great!
+
+Okay, next and last big "ick" in my language is
+`struct`. WHY ON EARTH it takes a quoted content?
+It isnt a function and **IT SHOULDNT BE A FUNCTION**.
+Let's rewrite the fuck of it.
+
+Muuuch better.
