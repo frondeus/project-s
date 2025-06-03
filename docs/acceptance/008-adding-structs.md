@@ -92,17 +92,15 @@ because left side of the `+` was already calculated.
       :a 1
       :b (+ 1 (root :another))
     }
-  }
+  })
 
 (let :right (thunk () {
   :another 9
   
   (+obj :key {:c 3})
-})
+}))
 
 (+ left right)
-
-))
 ```
 
 ```json

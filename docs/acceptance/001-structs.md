@@ -62,9 +62,8 @@ Building with quasiquotes
 Or when struct is named
 
 ```
-(let :foo (struct '(:key 1 :another 2))
-  (foo :another)
-)
+(let :foo (struct '(:key 1 :another 2)))
+(foo :another)
 ```
 
 ```json
@@ -142,9 +141,8 @@ To access top object
 ```
 (let :x {
   :key 42.0
-}
+})
   (has? x :key)
-)
 ```
 
 ```json
@@ -154,9 +152,8 @@ true
 ```
 (let :x {
   :key 42.0
-}
+})
   (has? x :another)
-)
 ```
 
 ```json

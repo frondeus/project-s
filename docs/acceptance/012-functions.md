@@ -4,7 +4,7 @@
 ```
 
 ```json
-"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 5, generation: 0 } }>"
+"<Function: LispFn { signature: [\"x\", \"y\"], body: SExpId { id: 6, generation: 0 } }>"
 ```
 
 # Calling a function
@@ -25,14 +25,13 @@ It captures the context by copying it. There are no references
 
 ```
 (let :top (
-  fn () (
-    let :c 42.0
+  fn () (do 
+    (let :c 42.0)
     (fn (a b) (+ a b c))
   )
-)
+))
 
 ((top) 1.0 2.0)
-)
 ```
 
 ```json

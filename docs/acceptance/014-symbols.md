@@ -3,7 +3,7 @@ symbol
 ```
 
 ```cst
-Symbol("symbol")
+List([Symbol("do"), Symbol("symbol")])
 ```
 
 this evaluates immediately to its variable
@@ -17,7 +17,7 @@ this evaluates immediately to its variable
 ```
 
 ```cst
-List([Symbol("quote"), Symbol("symbol")])
+List([Symbol("do"), List([Symbol("quote"), Symbol("symbol")])])
 ```
 
 This is quoted
@@ -31,7 +31,7 @@ This is quoted
 ```
 
 ```cst
-Keyword("symbol")
+List([Symbol("do"), Keyword("symbol")])
 ```
 
 This as well

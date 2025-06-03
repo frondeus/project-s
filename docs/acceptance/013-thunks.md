@@ -5,26 +5,24 @@
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 3, generation: 0 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 4, generation: 0 } } } }>"
 ```
 
 ```
-(let :x 42.0 
+(let :x 42.0 )
   (thunk (x) (+ 123 x))
-)
 ```
 
 ```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 8, generation: 0 } } } }>"
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 9, generation: 0 } } } }>"
 ```
 
 
 # Thunk usage
 
 ```
-(let :x (thunk () 42.0)
+(let :x (thunk () 42.0))
   (+ x 1.0)
-)
 ```
 
 ```json
@@ -36,8 +34,8 @@
 ```
 (
   let :x (thunk () (print 42.0))
-    (+ x x)
 )
+    (+ x x)
 
 ```
 

@@ -132,27 +132,19 @@ impl Runtime {
     }
 
     fn _let(&mut self, items: &[SExpId]) -> Value {
-        let Some(ident) = items.first() else {
-            return Value::Error("Expected SExpression".to_string());
-        };
-        let ident = self.asts.get(*ident).clone();
-        let Some(ident) = ident.as_keyword() else {
-            return Value::Error("Let: Expected keyword".to_string());
-        };
+        match items {
+            [ident, value] => {
+                let ident = self.asts.get(*ident).clone();
+                let Some(ident) = ident.as_keyword() else {
+                    return Value::Error("Let: Expected keyword".to_string());
+                };
 
-        let Some(value) = items.get(1) else {
-            return Value::Error("Expected value".to_string());
-        };
-        let Some(body) = items.get(2) else {
-            return Value::Error("Expected body".to_string());
-        };
-        let value = self.eval(*value);
-
-        self.envs.push();
-        self.envs.set(ident, value);
-        let result = self.eval(*body);
-        self.envs.pop();
-        result
+                let value = self.eval(*value);
+                self.envs.set(ident, value.clone());
+                value
+            }
+            _ => Value::Error(format!("Expected 2 arguments, found: {}", items.len())),
+        }
     }
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
@@ -203,6 +195,15 @@ impl Runtime {
                 Ok(result)
             }
         }
+    }
+
+    fn do_(&mut self, items: &[SExpId]) -> Value {
+        let mut result = None;
+        self.envs.push();
+        for item in items {
+            result = Some(self.eval(*item));
+        }
+        result.unwrap_or_else(|| Value::Error("Expected at least one argument".to_string()))
     }
 
     pub fn new(asts: ASTS) -> Self {
@@ -313,6 +314,7 @@ impl Runtime {
                 };
                 let first_id = first_id.unwrap();
                 match first {
+                    SExp::Symbol(tag) if tag == "do" => self.do_(&items[1..]),
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)
                     }

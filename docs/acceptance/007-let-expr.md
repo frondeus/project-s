@@ -1,5 +1,6 @@
 ```
-(let :x 2 (+ x x))
+(let :x 2)
+(+ x x)
 ```
 
 let {name} = {value} in {body}

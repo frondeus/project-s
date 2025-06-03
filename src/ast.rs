@@ -419,7 +419,19 @@ impl SExpParser {
             return Err(ParseError::UnexpectedNode("Empty source file".to_string()));
         }
 
-        self.node_to_sexp(cursor.node(), input)?;
+        let do_list = self.ast.reserve();
+        let mut ids = Vec::new();
+        loop {
+            let node = cursor.node();
+            let id = self.node_to_sexp(node, input)?;
+            ids.push(id);
+            if !cursor.goto_next_sibling() {
+                break;
+            }
+        }
+        let do_symbol = self.ast.add_node(SExp::Symbol("do".to_string()));
+        ids.insert(0, do_symbol);
+        self.ast.set(do_list, SExp::List(ids));
         Ok(self.ast)
     }
 }
