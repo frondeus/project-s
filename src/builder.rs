@@ -25,7 +25,14 @@ where
 }
 
 pub fn symbol(name: &str) -> impl ASTBuilder {
-    |ast: &mut AST| ast.add_node(SExp::Symbol(name.to_string()))
+    |ast: &mut AST| {
+        if name.starts_with(":") {
+            let name = name.trim_start_matches(':');
+            ast.add_node(SExp::Keyword(name.to_string()))
+        } else {
+            ast.add_node(SExp::Symbol(name.to_string()))
+        }
+    }
 }
 
 pub fn error() -> impl ASTBuilder {

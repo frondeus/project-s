@@ -1,6 +1,6 @@
 ```
 (+ {
-  (let x 4)
+  (let :x 4)
   :another x
   :key {
     :a 1
@@ -30,7 +30,7 @@ because left side of the `+` was already calculated.
 
 ```
 (+ {
-  (let x 4)
+  (let :x 4)
   :another x
   :key {
     :a 1
@@ -61,7 +61,7 @@ because left side of the `+` was already calculated.
 
 ```
 (+ {
-  (let x 4)
+  (let :x 4)
   :another x
   :key {
     :a 1
@@ -85,8 +85,8 @@ because left side of the `+` was already calculated.
 # Deep merging
 
 ```
-(let left {
-    (let x 4)
+(let :left {
+    (let :x 4)
     :another x
     :key {
       :a 1
@@ -94,7 +94,7 @@ because left side of the `+` was already calculated.
     }
   }
 
-(let right (thunk () {
+(let :right (thunk () {
   :another 9
   
   (+obj :key {:c 3})

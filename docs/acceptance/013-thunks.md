@@ -9,7 +9,7 @@
 ```
 
 ```
-(let x 42.0 
+(let :x 42.0 
   (thunk (x) (+ 123 x))
 )
 ```
@@ -22,7 +22,7 @@
 # Thunk usage
 
 ```
-(let x (thunk () 42.0)
+(let :x (thunk () 42.0)
   (+ x 1.0)
 )
 ```
@@ -35,7 +35,7 @@
 
 ```
 (
-  let x (thunk () (print 42.0))
+  let :x (thunk () (print 42.0))
     (+ x x)
 )
 

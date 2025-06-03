@@ -30,6 +30,7 @@ module.exports = grammar({
       $.integer,
       $.string,
       $.boolean,
+      $.keyword,
       $.symbol,
       $.list
     ),
@@ -72,7 +73,8 @@ module.exports = grammar({
       "false"
     ))),
     string_inner: $ => /[^"]*/,
-    symbol: $ =>  token(prec(1, /[^\s()'"`,{}]+/)),
+    keyword: $ => token(prec(2, /:[^\s()'"`,{}]+/)),
+    symbol: $ =>  token(prec(1, /[^\s()'"`,{}:]+/)),
     float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),
     integer: $ => token(prec(2, /[+-]?[0-9]+/)),
   }

@@ -141,6 +141,7 @@ pub enum SExp {
     String(String),
     Bool(bool),
     Symbol(String),
+    Keyword(String), // Symbol that starts with :
     List(Vec<SExpId>),
 
     Error,
@@ -151,9 +152,24 @@ impl SExp {
         SExpFmt { asts, expr: self }
     }
 
+    pub fn as_keyword(&self) -> Option<&str> {
+        match self {
+            SExp::Keyword(s) => Some(s),
+            _ => None,
+        }
+    }
+
     pub fn as_symbol(&self) -> Option<&str> {
         match self {
             SExp::Symbol(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn as_symbol_or_keyword(&self) -> Option<&str> {
+        match self {
+            SExp::Symbol(s) => Some(s),
+            SExp::Keyword(s) => Some(s),
             _ => None,
         }
     }
@@ -208,6 +224,7 @@ impl std::fmt::Debug for SExpFmt<'_> {
             SExp::Number(n) => f.debug_tuple("Number").field(n).finish(),
             SExp::String(s) => f.debug_tuple("String").field(s).finish(),
             SExp::Symbol(s) => f.debug_tuple("Symbol").field(s).finish(),
+            SExp::Keyword(s) => f.debug_tuple("Keyword").field(s).finish(),
             SExp::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
             SExp::Error => f.debug_tuple("Error").finish(),
             SExp::List(items) => f
@@ -226,6 +243,7 @@ impl std::fmt::Display for SExpFmt<'_> {
             SExp::Number(n) => write!(f, "{}", n),
             SExp::String(s) => write!(f, "\"{}\"", s),
             SExp::Symbol(s) => write!(f, "{}", s),
+            SExp::Keyword(s) => write!(f, ":{}", s),
             SExp::Bool(b) => write!(f, "{}", b),
             SExp::Error => write!(f, "<Error>"),
             SExp::List(items) => {
@@ -300,6 +318,13 @@ impl SExpParser {
                     .utf8_text(source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(self.ast.add_node(SExp::String(text.to_string())))
+            }
+            "keyword" => {
+                let text = node
+                    .utf8_text(source.as_bytes())
+                    .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+                let text = text.trim_start_matches(':');
+                Ok(self.ast.add_node(SExp::Keyword(text.to_string())))
             }
             "symbol" => {
                 let text = node

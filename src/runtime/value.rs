@@ -10,7 +10,6 @@ pub enum Value {
     String(String),
     Bool(bool),
     Object(BTreeMap<String, Value>),
-    Symbol(String),
     SExp(SExpId),
     Macro(Macro),
     Function(Function),
@@ -116,13 +115,6 @@ impl Value {
         }
     }
 
-    pub fn as_symbol(&self) -> Option<&str> {
-        match self {
-            Value::Symbol(s) => Some(s),
-            _ => None,
-        }
-    }
-
     pub fn as_object(&self) -> Option<&BTreeMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),
@@ -146,7 +138,6 @@ impl Value {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
-            Value::Symbol(s) => target.add_node(SExp::Symbol(s.clone())),
             Value::Object(_btree_map) => {
                 todo!("Could not convert Object to SExp: {:?}", self)
             }

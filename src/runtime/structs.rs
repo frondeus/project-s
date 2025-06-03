@@ -90,13 +90,10 @@ impl Runtime {
                 }
                 _ => {
                     let key = self.eval(item_id);
-                    let key = match key {
-                        Value::Symbol(key) => key,
-                        Value::String(key) => key,
-                        _ => {
-                            return Err("Expected symbol or string".to_string());
-                        }
-                    };
+                    let key = self
+                        .as_symbol_or_keyword_or_string(key)
+                        .ok_or_else(|| "Expected symbol or string".to_string())?
+                        .to_owned();
                     self.insert_to_struct(&key, &mut items)?;
                 }
             }
@@ -181,8 +178,8 @@ impl Runtime {
             return Err("Expected SExpression".to_string());
         };
         let ident = self.asts.get(*ident).clone();
-        let Some(ident) = ident.as_symbol() else {
-            return Err("Object let: Expected symbol".to_string());
+        let Some(ident) = ident.as_keyword() else {
+            return Err("Object let: Expected keyword".to_string());
         };
 
         let Some(value) = items.get(1) else {

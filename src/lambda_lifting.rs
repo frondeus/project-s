@@ -70,7 +70,7 @@ impl<'a> LambdaPass<'a> {
         // 1 - name
         // 2 - value
         // 3 - body
-        let name = self.asts.get(sexp_ids[1]).as_symbol().unwrap();
+        let name = self.asts.get(sexp_ids[1]).as_keyword()?;
         self.envs.push(EnvKind::Local);
         self.envs.set(name);
 
@@ -111,7 +111,7 @@ impl<'a> LambdaPass<'a> {
             let mut list_iter = list.iter_mut();
             let mut edited = false;
             while let Some(id) = list_iter.next() {
-                if pass.asts.get(*id).as_symbol().is_some() {
+                if pass.asts.get(*id).as_symbol_or_keyword().is_some() {
                     // Key value pair
                     if let Some(value) = list_iter.next() {
                         // println!(

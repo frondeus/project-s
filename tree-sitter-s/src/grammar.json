@@ -46,6 +46,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "keyword"
+        },
+        {
+          "type": "SYMBOL",
           "name": "symbol"
         },
         {
@@ -190,6 +194,17 @@
       "type": "PATTERN",
       "value": "[^\"]*"
     },
+    "keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": ":[^\\s()'\"`,{}]+"
+        }
+      }
+    },
     "symbol": {
       "type": "TOKEN",
       "content": {
@@ -197,7 +212,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "[^\\s()'\"`,{}]+"
+          "value": "[^\\s()'\"`,{}:]+"
         }
       }
     },

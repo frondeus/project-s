@@ -39,6 +39,7 @@ impl TypeEnv {
             SExp::Number(_) => self.add(Type::Number),
             SExp::String(_) => self.add(Type::String),
             SExp::Symbol(_) => self.add(Type::Symbol),
+            SExp::Keyword(_) => self.add(Type::Symbol),
             SExp::Bool(_) => self.add(Type::Bool),
             SExp::List(_) => todo!(),
             SExp::Error => self.add(Type::Error),

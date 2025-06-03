@@ -9,6 +9,7 @@ impl Runtime {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Keyword(_) => Value::SExp(*id),
             SExp::Bool(b) => Value::Bool(*b),
             SExp::Error => Value::Error("Quote: AST Error".to_string()),
             SExp::List(_) => Value::SExp(*id),
@@ -21,6 +22,7 @@ impl Runtime {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
+            SExp::Keyword(_) => Value::SExp(*id),
             SExp::Bool(b) => Value::Bool(*b),
             SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
             SExp::List(_) => {

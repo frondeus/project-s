@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "keyword",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -68,6 +72,10 @@
           },
           {
             "type": "integer",
+            "named": true
+          },
+          {
+            "type": "keyword",
             "named": true
           },
           {
@@ -123,6 +131,10 @@
             "named": true
           },
           {
+            "type": "keyword",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -173,6 +185,10 @@
         },
         {
           "type": "integer",
+          "named": true
+        },
+        {
+          "type": "keyword",
           "named": true
         },
         {
@@ -243,6 +259,10 @@
           "named": true
         },
         {
+          "type": "keyword",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -291,6 +311,10 @@
           },
           {
             "type": "integer",
+            "named": true
+          },
+          {
+            "type": "keyword",
             "named": true
           },
           {
@@ -359,6 +383,10 @@
   },
   {
     "type": "integer",
+    "named": true
+  },
+  {
+    "type": "keyword",
     "named": true
   },
   {

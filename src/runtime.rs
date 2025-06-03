@@ -35,12 +35,15 @@ impl Runtime {
         let infered = env.infer(self.asts.get_ast(*sexp), *sexp);
         let result = env.get(infered);
 
-        let Some(ty) = items.get(1) else {
+        let Some(ty_id) = items.get(1) else {
             return Value::Error("Expected type".to_string());
         };
-        let ty = self.asts.get_ast(*sexp).get(*ty);
+        let ty = self.asts.get_ast(*sexp).get(*ty_id);
         let Some(ty) = ty.as_symbol() else {
-            return Value::Error("Expected symbol".to_string());
+            return Value::Error(format!(
+                "Expected symbol. Found: {:?}",
+                self.asts.fmt(*ty_id)
+            ));
         };
         let ty = match ty {
             "Number" => Type::Number,
@@ -121,8 +124,8 @@ impl Runtime {
 
         let key = self.eval(*key);
         try_err!(key);
-        let Some(key) = key.as_symbol() else {
-            return Value::Error("Expected symbol".to_string());
+        let Some(key) = self.as_symbol_or_keyword(&key) else {
+            return Value::Error(format!("Expected symbol or keyword. Found: {:?}", key));
         };
 
         Value::Bool(obj.contains_key(key))
@@ -133,8 +136,8 @@ impl Runtime {
             return Value::Error("Expected SExpression".to_string());
         };
         let ident = self.asts.get(*ident).clone();
-        let Some(ident) = ident.as_symbol() else {
-            return Value::Error("Let: Expected symbol".to_string());
+        let Some(ident) = ident.as_keyword() else {
+            return Value::Error("Let: Expected keyword".to_string());
         };
 
         let Some(value) = items.get(1) else {
@@ -247,8 +250,29 @@ impl Runtime {
         }
     }
 
-    pub fn eval(&mut self, sexp: SExpId) -> Value {
-        let sexp = self.asts.get(sexp).clone();
+    fn as_symbol_or_keyword_or_string(&self, value: Value) -> Option<&str> {
+        let sexp = value.as_sexp()?;
+        let sexp = self.asts.get(*sexp);
+        match sexp {
+            SExp::Symbol(s) => Some(s),
+            SExp::Keyword(s) => Some(s),
+            SExp::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn as_symbol_or_keyword(&self, value: &Value) -> Option<&str> {
+        let sexp = value.as_sexp()?;
+        let sexp = self.asts.get(*sexp);
+        match sexp {
+            SExp::Symbol(s) => Some(s),
+            SExp::Keyword(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn eval(&mut self, id: SExpId) -> Value {
+        let sexp = self.asts.get(id).clone();
         match sexp {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
@@ -272,9 +296,9 @@ impl Runtime {
                 };
                 Value::Object(map.clone())
             }
+            SExp::Keyword(_s) => Value::SExp(id),
             SExp::Symbol(s) if s.starts_with(":") => {
-                let s = s.trim_start_matches(':');
-                Value::Symbol(s.to_string())
+                panic!("This should be a keyword: {}", s);
             }
             SExp::Symbol(s) => self
                 .envs
@@ -327,11 +351,14 @@ impl Runtime {
                                 let Some(key) = items.get(1) else {
                                     return Value::Error("Expected key".to_string());
                                 };
+                                println!("key: {:?}", self.asts.fmt(*key));
                                 let key = self.eval(*key);
-                                let Some(key) = key.as_symbol() else {
-                                    return Value::Error(
-                                        "Access field: Expected symbol".to_string(),
-                                    );
+                                try_err!(key);
+                                let Some(key) = self.as_symbol_or_keyword(&key) else {
+                                    return Value::Error(format!(
+                                        "Access field: Expected symbol or keyword. Found: {:?}",
+                                        key
+                                    ));
                                 };
 
                                 map.get(key).cloned().unwrap_or_else(|| {
@@ -356,7 +383,6 @@ impl Runtime {
         match value {
             Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
             Value::String(s) => serde_json::Value::String(s),
-            Value::Symbol(s) => serde_json::Value::String(format!("<Symbol: {s}>")),
             Value::Bool(b) => serde_json::Value::Bool(b),
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();

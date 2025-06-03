@@ -62,7 +62,7 @@ Building with quasiquotes
 Or when struct is named
 
 ```
-(let foo (struct '(:key 1 :another 2))
+(let :foo (struct '(:key 1 :another 2))
   (foo :another)
 )
 ```
@@ -118,7 +118,7 @@ To access top object
 
 ```
 {
-  (let x 4)
+  (let :x 4)
   :another x
   :key {
     :a 1
@@ -140,7 +140,7 @@ To access top object
 # has? function
 
 ```
-(let x {
+(let :x {
   :key 42.0
 }
   (has? x :key)
@@ -152,7 +152,7 @@ true
 ```
 
 ```
-(let x {
+(let :x {
   :key 42.0
 }
   (has? x :another)

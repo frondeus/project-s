@@ -24,9 +24,9 @@ It captures the context by copying it. There are no references
 
 
 ```
-(let top (
+(let :top (
   fn () (
-    let c 42.0
+    let :c 42.0
     (fn (a b) (+ a b c))
   )
 )
