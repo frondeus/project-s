@@ -169,7 +169,7 @@ impl<'a> LambdaPass<'a> {
                 let signature = self.asts.get(signature_id).as_list().unwrap().to_vec();
                 let signature = signature
                     .iter()
-                    .map(|id| self.asts.get(*id).as_symbol().unwrap().to_string())
+                    .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
                     .collect::<Vec<String>>();
                 self.envs.push(EnvKind::Function);
                 for var in signature {

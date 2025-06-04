@@ -1036,7 +1036,7 @@ Like vertical stack
 Let's focus on Functions
 
 ```
-((fn (x y) (+ x y)) 1 2)
+((fn (:x :y) (+ x y)) 1 2)
 ```
 
 ```json
@@ -1093,7 +1093,7 @@ Ok so ...
 
 ```
 (let :c 42 )
-(fn (a b) (a b c))
+(fn (:a :b) (a b c))
 ```
 
 Question is that rose during implementation - do i really want to have it as a separate pass?
@@ -1106,7 +1106,7 @@ information about captured context.
 
 
 ```lift
-(do (let :c 42) (cl (a b) (c) (a b ($$closure :c))))
+(do (let :c 42) (cl (:a :b) (c) (a b ($$closure :c))))
 ```
 
 Ok, i lifted the function into "closure declaration" that takes another list outside of
@@ -1126,32 +1126,32 @@ Anyway x2
 There is also a problem of quoting
 
 ```
-(fn (a b) '(+ a b c))
+(fn (:a :b) '(+ a b c))
 ```
 
 ```lift
-(do (fn (a b) (quote (+ a b c))))
+(do (fn (:a :b) (quote (+ a b c))))
 ```
 
 What about quasiquoting?
 
 ```
-(fn (a b) `(+ a b c))
+(fn (:a :b) `(+ a b c))
 ```
 
 ```lift
-(do (fn (a b) (quasiquote (+ a b c))))
+(do (fn (:a :b) (quasiquote (+ a b c))))
 ```
 
 Better. But unquote wont work...
 
 ```
 (let :d 42.0 )
-(fn (a b) `(+ ,a ,b c ,d))
+(fn (:a :b) `(+ ,a ,b c ,d))
 ```
 
 ```lift
-(do (let :d 42) (cl (a b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d))))))
+(do (let :d 42) (cl (:a :b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d))))))
 ```
 
 Yep, that's correct.
@@ -1167,7 +1167,7 @@ i can modify the runtime.
 (let :top (
   fn () (do
     (let :c 42.0)
-    (fn (a b) (+ a b c))
+    (fn (:a :b) (+ a b c))
   )
 ))
 
@@ -1175,7 +1175,7 @@ i can modify the runtime.
 ```
 
 ```lift
-(do (let :top (fn () (do (let :c 42) (cl (a b) (c) (+ a b ($$closure :c)))))) ((top) 1 2))
+(do (let :top (fn () (do (let :c 42) (cl (:a :b) (c) (+ a b ($$closure :c)))))) ((top) 1 2))
 ```
 
 ```json
@@ -1671,7 +1671,6 @@ And technically, :x doesnt need to be a thunk.
 15.0
 ```
 
-TODO: `cl` and `fn` should also take keywords as definitions.
 
 Oh, I handled the second case by mistake?
 
@@ -1733,3 +1732,7 @@ And technically, :x doesnt need to be a thunk.
 ```json-thunk
 15.0
 ```
+
+TODO: `cl` and `fn` should also take keywords as definitions.
+
+Okay!

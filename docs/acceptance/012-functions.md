@@ -1,6 +1,6 @@
 # Declaring a function
 ```
-(fn (x y) (+ x y))
+(fn (:x :y) (+ x y))
 ```
 
 ```json
@@ -10,7 +10,7 @@
 # Calling a function
 
 ```
-((fn (x y) (+ x y)) 1 2)
+((fn (:x :y) (+ x y)) 1 2)
 ```
 
 ```json
@@ -27,7 +27,7 @@ It captures the context by copying it. There are no references
 (let :top (
   fn () (do 
     (let :c 42.0)
-    (fn (a b) (+ a b c))
+    (fn (:a :b) (+ a b c))
   )
 ))
 
