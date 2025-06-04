@@ -1755,3 +1755,150 @@ I think thunks are ready to be injected?
 
 Yep!
 We can clear our examples!
+
+Oh, it doesnt work in macro expansion
+Which makes sense.
+
+```
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right {
+  :another 9
+  
+  (+obj :key {:c 3})
+})
+
+(+ left right)
+```
+
+```json
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
+```
+
+Thunk was not inserted because...
+because at that point we are expanding +obj
+
+but process_ast starts from the root of the +obj expansion
+which is `if` so we never reach `struct`!
+
+# 05.06
+
+For now i do not have time or willingness to re-do macros.
+So instead i will try to patch it as it is.
+The problem is that we use `super` inside of `+obj`.
+The simplest solution would be to always use thunks inside of them.
+
+Wait.. No.
+I HAVE to do it.
+I HAVE to revamp macros.
+
+Because if i dont, then what if:
+
+```
+(+ {
+  :a {
+    :b 1
+  }
+}
+{
+  (+obj :a { :c 1 })
+})
+```
+
+In here im using `+obj` macro expansion.
+How the heck can i properly infer type?
+Type inference MUST come after macro expansion.
+
+So macros cannot be first-class objects, right?
+
+Or... Wait?
+
+Maybe it doesnt have to change for now?
+
+```
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right {
+  :another 9
+  
+  (+obj :key {:c 3})
+})
+
+(+ left right)
+```
+
+```thunk
+(do (let :left (struct (let :x 4) :another x :key (struct :a 1 :b (+ 1 (root :another))))) (let :right (thunk () (struct :another 9 (+obj :key (struct :c 3))))) (+ left right))
+```
+
+
+Yeah, for now we can just have a special case for +obj in the pass and call it a day.
+
+Okay, now using `root` and `self`...
+
+I think `self` should be easier
+
+```
+({
+  :a 5.0
+  :b (thunk (:self) (self :a))
+} :b)
+```
+
+```json-eager
+
+```
+
+It's still outside of use of object because 
+while we catch `self` (by cloning it ugh) we set it to the env variable.
+But that is not going to work because when we see `self` symbol we
+try to fetch the object from `self.structs` structure in runtime.
+
+We could, however have a different approach to this problem.
+
+# 06.06
+
+What if, we had something like
+
+```example
+(let self (low/create-struct))
+(low/add-field self :key 4)
+(low/add-field self :another 5)
+(if true 
+  (low/add-field self :c 42.0)
+  () # Else is empty
+)
+```
+
+This basically means we would have to:
+* Add mutable references to local variables (for now Rc<>).
+* Add mutability of variables (but we probably want to anyway)
+* Transform normal declarative struct definition into that kind of
+low level representation
+
+Then, `root`, `self` and `super` probably **could** be represented as
+just variables. We wouldn't need a special treatment for them.
+
+Also, just in case we could introduce a new pass
+that would forbid `root` `self` and `super` to appear as variable/parameter name

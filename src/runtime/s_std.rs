@@ -73,11 +73,15 @@ fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             let result = (
                 "if",
                 ("has?", "super", key),
+                // quote((key, ("thunk", (), ("+", ("super", key), value)))),
                 quote((key, ("+", ("super", key), value))),
                 quote((key, value)),
-            )
-                .build(&mut rt.asts);
-            Ok(result)
+            );
+            Ok(result.build(&mut rt.asts))
+            // let result = ("thunk", (), result);
+
+            // let result = result.build(&mut rt.asts);
+            // Ok(result)
         }
         _ => Err("Expected two arguments".into()),
     }

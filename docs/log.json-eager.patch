@@ -1,0 +1,17 @@
+```
+({
+  :a 5.0
+  :b (thunk (:self) (self :a))
+} :b)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-eager
+@@ -1867,5 +1867,5 @@
+ ```
+ 
+ ```json-eager
+-
++"<Error: self used outside of object>"
+ ```
+\ No newline at end of file

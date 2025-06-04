@@ -38,11 +38,11 @@ because left side of the `+` was already calculated.
   }
 }
 
-(thunk () {
+{
   :another 9
   :self (+ 1 (self :another))
   :super (+ 1 (super :another))
-}))
+})
 ```
 
 ```json
@@ -94,11 +94,11 @@ because left side of the `+` was already calculated.
     }
   })
 
-(let :right (thunk () {
+(let :right {
   :another 9
   
   (+obj :key {:c 3})
-}))
+})
 
 (+ left right)
 ```

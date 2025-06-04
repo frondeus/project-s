@@ -1,0 +1,43 @@
+```
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right {
+  :another 9
+  
+  (+obj :key {:c 3})
+})
+
+(+ left right)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ processed
+@@ -1779,20 +1779,7 @@
+ ```
+ 
+ ```processed
+-(do 
+-  (let :left (struct 
+-    (let :x 4)
+-    :another x 
+-    :key (struct 
+-      :a 1 
+-      :b (+ 1 (root :another))))) 
+-  
+-  (let :right (struct 
+-    :another 9 
+-    (+obj :key (struct :c 3)))) 
+-    (+ left right)
+-)
+-
++(do (let :left (struct (let :x 4) :another x :key (struct :a 1 :b (+ 1 (root :another))))) (let :right (struct :another 9 (+obj :key (struct :c 3)))) (+ left right))
+ ```
+ 
+ ```json

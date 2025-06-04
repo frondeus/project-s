@@ -74,9 +74,9 @@ It captures the context by copying it. There are no references
   :a 42.0
 }
 
-(thunk () {
+{
   :a (fn () (+ (super :a) 10.0))
-})) :a))
+}) :a))
 ```
 
 ```json

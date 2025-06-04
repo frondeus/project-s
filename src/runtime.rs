@@ -172,7 +172,7 @@ impl Runtime {
     }
 
     fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<SExpId, String> {
-        match macro_ {
+        let result = match macro_ {
             Macro::Lisp { signature, body } => {
                 self.envs.push();
 
@@ -187,14 +187,15 @@ impl Runtime {
                 let result = result
                     .as_sexp()
                     .ok_or_else(|| "Expected SExpression".to_string())?;
-                Ok(*result)
+                *result
             }
             Macro::Rust { body } => {
                 let args = args.to_vec();
-                let result = body(self, args);
-                Ok(result)
+                body(self, args)
             }
-        }
+        };
+
+        Ok(crate::process_ast(&mut self.asts, result))
     }
 
     fn do_(&mut self, items: &[SExpId]) -> Value {
@@ -438,6 +439,37 @@ mod tests {
             // println!("value: {value:?}");
             let value = runtime.to_json(value);
             serde_json::to_string_pretty(&value).unwrap()
+        })
+    }
+
+    #[test]
+    fn integration_eager() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "json-eager", |input, _deps| {
+            // eprintln!("---");
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
+            let root_id = ast.root_id().unwrap();
+            let root_id = crate::process_ast(&mut asts, root_id);
+
+            let mut runtime = Runtime::new(asts);
+            runtime.with_prelude();
+            let value = runtime.eval_eager(root_id);
+            // println!("value: {value:?}");
+            let value = runtime.to_json(value);
+            serde_json::to_string_pretty(&value).unwrap()
+        })
+    }
+
+    #[test]
+    fn processed() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "processed", |input, _deps| {
+            // eprintln!("---");
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
+            let root_id = ast.root_id().unwrap();
+            let root_id = crate::process_ast(&mut asts, root_id);
+
+            asts.fmt(root_id).to_string()
         })
     }
 }

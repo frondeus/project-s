@@ -94,6 +94,14 @@ impl<'a> Visitor<'a> for StructVisitor<'a, '_> {
         }
         None
     }
+
+    fn visit_list(&mut self, mut list: List) -> Option<SExpId> {
+        if self.helper.is_special_form(&list, "+obj") {
+            self.using_super = true;
+        }
+        list.visit_children(self);
+        list.id()
+    }
 }
 
 #[cfg(test)]
