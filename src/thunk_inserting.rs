@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::{
-    ast::{ASTS, SExp, SExpId},
+    ast::{ASTS, SExpId},
     visitor::{List, Quasiquote, Visitor, VisitorHelper},
 };
 
@@ -36,10 +36,10 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
         quasiquote.visit_unquote(self)
     }
 
-    fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
-        self.helper.as_symbol(id, "+")?;
-        self.helper.then_assemble("plus")
-    }
+    // fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
+    //     self.helper.as_symbol(id, "+")?;
+    //     self.helper.then_assemble("plus")
+    // }
 
     fn visit_list(&mut self, mut list: List) -> Option<SExpId> {
         println!("Visiting list: {:?}", self.helper.asts.fmt(list.id));
@@ -49,8 +49,13 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
         if self.helper.is_special_form(&list, "struct") {
             let mut visitor = StructVisitor {
                 helper: &mut self.helper,
+                using_super: false,
             };
             list.visit_children(&mut visitor);
+            if visitor.using_super {
+                println!("Using super!");
+                return self.helper.then_assemble(("thunk", (), list.id));
+            }
             return list.id();
         }
 
@@ -60,6 +65,7 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
 
 struct StructVisitor<'a, 'b> {
     helper: &'b mut VisitorHelper<'a>,
+    using_super: bool,
 }
 
 impl<'a> Visitor<'a> for StructVisitor<'a, '_> {
@@ -70,22 +76,10 @@ impl<'a> Visitor<'a> for StructVisitor<'a, '_> {
         self.helper
     }
 
-    fn visit_quote(&mut self, mut quote: crate::visitor::Quote) -> Option<SExpId> {
-        quote.visit_quoted(self)
-    }
-
-    fn visit_list(&mut self, list: List) -> Option<SExpId> {
-        println!("Visiting list: {:?}", self.helper.asts.fmt(list.id));
-
-        let mut items = list.list.iter();
-        while let Some(id) = items.next() {
-            match self.helper.get_sexp(*id) {
-                SExp::Symbol(_) => {
-                    // Key value pair
-                    let _value = items.next()?;
-                }
-                _ => todo!(),
-            }
+    fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
+        if self.helper.is_symbol(id, "super") {
+            println!("Found super!");
+            self.using_super = true;
         }
         None
     }
@@ -105,6 +99,23 @@ mod tests {
             let new_root = ThunkPass::pass(&mut asts, root_id);
             let output = asts.fmt(new_root);
             output.to_string()
+        })
+    }
+
+    #[test]
+    fn integration_runtime() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "json-thunk", |input, _deps| {
+            eprintln!("---");
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).unwrap();
+            let root_id = ast.root_id().unwrap();
+            let root_id = crate::process_ast(&mut asts, root_id);
+            let root_id = ThunkPass::pass(&mut asts, root_id);
+            let mut runtime = crate::runtime::Runtime::new(asts);
+            runtime.with_prelude();
+            let result = runtime.eval(root_id);
+            let value = runtime.to_json(result);
+            serde_json::to_string_pretty(&value).unwrap()
         })
     }
 }

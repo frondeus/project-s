@@ -1534,7 +1534,7 @@ So lets start with it.
 ```
 
 ```thunk
-(do (plus 1 2 (plus 3 4 5) (quote 1)))
+(do (+ 1 2 (+ 3 4 5) (quote 1)))
 ```
 
 # 02.06
@@ -1553,22 +1553,10 @@ Let's see if it works also for unquoting:
 ```
 
 ```thunk
-(do (plus 1 2 (plus 3 4 5) (quasiquote (+ (+ 6 7) (unquote (plus 8 9))))))
+(do (+ 1 2 (+ 3 4 5) (quasiquote (+ (+ 6 7) (unquote (+ 8 9))))))
 ```
 
 Bingo!
-
-
-```
-{
-  :key 42.0
-}
-```
-
-
-```thunk
-(do (struct :key 42))
-```
 
 # 03.06
 
@@ -1604,3 +1592,56 @@ It isnt a function and **IT SHOULDNT BE A FUNCTION**.
 Let's rewrite the fuck of it.
 
 Muuuch better.
+
+# 04.06 
+
+Now traversing the thunks will be muuch easier
+
+```
+{
+  :key 42.0
+  :value (+ (super :value) 10.0)
+}
+```
+
+
+```thunk
+(do (thunk () (struct :key 42 :value (+ (super :value) 10))))
+```
+
+its bit too early to enable thunk pass everywhere, so lets do a hack
+
+```json-thunk
+"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 1, generation: 0 } } } }>"
+```
+
+bingo?
+
+
+```
+(let :x {
+  :key 42.0
+  :value (+ (super :value) 10.0)
+})
+
+(+ {:value 5} x)
+```
+
+```thunk
+(do (let :x (thunk () (struct :key 42 :value (+ (super :value) 10)))) (+ (struct :value 5) x))
+```
+
+```json-thunk
+{
+  "key": 42.0,
+  "value": 15.0
+}
+```
+
+BINGO!
+
+Now there are two edge cases (important!)
+
+First, nested struct
+Second, what if the struct is already wrapped in thunk.
+Let's start with the nested.

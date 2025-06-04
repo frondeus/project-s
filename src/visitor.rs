@@ -4,14 +4,12 @@ mod helper;
 mod list;
 mod quasiquote;
 mod quote;
-mod structs;
 mod unquote;
 
 pub use helper::VisitorHelper;
 pub use list::List;
 pub use quasiquote::Quasiquote;
 pub use quote::Quote;
-pub use structs::Struct;
 pub use unquote::Unquote;
 
 pub trait Visitor<'a>: Sized {
@@ -35,10 +33,6 @@ pub trait Visitor<'a>: Sized {
                         quoted: list[1],
                     };
                     return self.visit_quasiquote(quasiquote);
-                }
-                if self.helper().is_symbol(first, "struct") {
-                    let struct_ = Struct { id };
-                    return self.visit_struct(struct_);
                 }
 
                 let list = List {
@@ -71,10 +65,5 @@ pub trait Visitor<'a>: Sized {
         let new_id = self.visit_sexp(unquote.unquoted)?;
         unquote.id = self.helper_mut().assemble(("unquote", new_id));
         Some(unquote.id)
-    }
-
-    fn visit_struct(&mut self, mut struct_: Struct) -> Option<SExpId> {
-        struct_.visit_struct_values(self);
-        None
     }
 }
