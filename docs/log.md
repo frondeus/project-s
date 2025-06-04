@@ -858,7 +858,14 @@ What about right side?
 ```
 
 ```json
-"<Error: super used outside of object>"
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
 ```
 
 Yeah...
@@ -1398,7 +1405,14 @@ We used quoting for that but it felt janky. Now we have a better way:
 ```
 
 ```json
-"<Error: super used outside of object>"
+{
+  "another": 9.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0,
+    "c": 3.0
+  }
+}
 ```
 
 But now, we should be able to make a right side a thunk!
@@ -1736,3 +1750,8 @@ And technically, :x doesnt need to be a thunk.
 TODO: `cl` and `fn` should also take keywords as definitions.
 
 Okay!
+
+I think thunks are ready to be injected?
+
+Yep!
+We can clear our examples!
