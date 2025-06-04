@@ -1662,7 +1662,7 @@ Let's start with the nested.
 ```
 
 ```thunk
-(do (let :base (struct :a 5)) (let :x (thunk () (struct :key 42 :value (+ base (thunk () (struct :a (+ (super :a) 10))))))) (((+ (struct :d 1) x) :value) :a))
+(do (let :base (struct :a 5)) (let :x (struct :key 42 :value (+ base (thunk () (struct :a (+ (super :a) 10)))))) (((+ (struct :d 1) x) :value) :a))
 ```
 
 And technically, :x doesnt need to be a thunk.
@@ -1705,4 +1705,31 @@ Oh, I handled the second case by mistake?
 
 ```thunk
 (do (thunk () (do (thunk () (struct :a (+ (super a) 5))))))
+```
+
+Okay, correct.
+
+```
+(let :base {
+  :a 5.0
+})
+
+(let :x {
+  :key 42.0
+  :value (+ base {
+    :a (+ (super :a) 10.0)
+  })
+})
+
+(((+ {:d 1 } x) :value) :a)
+```
+
+```thunk
+(do (let :base (struct :a 5)) (let :x (struct :key 42 :value (+ base (thunk () (struct :a (+ (super :a) 10)))))) (((+ (struct :d 1) x) :value) :a))
+```
+
+And technically, :x doesnt need to be a thunk.
+
+```json-thunk
+15.0
 ```

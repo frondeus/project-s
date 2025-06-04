@@ -64,7 +64,7 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
                 using_super: false,
             };
             list.visit_children(&mut visitor);
-            if visitor.using_super {
+            if visitor.using_super && !list.edited {
                 return self.helper.then_assemble(("thunk", (), list.id));
             }
             return list.id();
