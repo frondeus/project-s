@@ -345,7 +345,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
-                        let first = self.eval(first_id);
+                        let first = self.eval_eager(first_id);
 
                         match first {
                             Value::Error(e) => Value::Error(e),

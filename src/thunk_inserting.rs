@@ -36,13 +36,25 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
         quasiquote.visit_unquote(self)
     }
 
-    // fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
-    //     self.helper.as_symbol(id, "+")?;
-    //     self.helper.then_assemble("plus")
-    // }
-
     fn visit_list(&mut self, mut list: List) -> Option<SExpId> {
         println!("Visiting list: {:?}", self.helper.asts.fmt(list.id));
+
+        if self.helper.is_special_form(&list, "thunk") {
+            if let [_key, _captured, body_id] = &list.list[..] {
+                let body = self.helper.get_sexp(*body_id);
+                if let Some(body) = body.as_list() {
+                    let mut list = List {
+                        id: *body_id,
+                        list: body.to_vec(),
+                        edited: false,
+                    };
+                    if self.helper.is_special_form(&list, "struct") {
+                        list.visit_children(self);
+                        return list.id();
+                    }
+                }
+            }
+        }
 
         list.visit_children(self);
 
@@ -53,7 +65,6 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
             };
             list.visit_children(&mut visitor);
             if visitor.using_super {
-                println!("Using super!");
                 return self.helper.then_assemble(("thunk", (), list.id));
             }
             return list.id();
