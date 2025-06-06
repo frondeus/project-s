@@ -280,20 +280,8 @@ impl Runtime {
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Bool(b) => Value::Bool(b),
-            SExp::Symbol(s) if s == "self" => {
-                let Some(map) = self.structs._self() else {
-                    return Value::Error("self used outside of object".to_string());
-                };
-                Value::Object(map.clone())
-            }
-            SExp::Symbol(s) if s == "root" => {
-                let Some(map) = self.structs.root() else {
-                    return Value::Error("root used outside of object".to_string());
-                };
-                Value::Object(map.clone())
-            }
             SExp::Symbol(s) if s == "super" => {
-                let Some(map) = self.supers._self() else {
+                let Some(map) = self.supers.super_() else {
                     return Value::Error("super used outside of object".to_string());
                 };
                 Value::Object(map.clone())
@@ -415,7 +403,8 @@ impl Runtime {
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
-    structs: Structs,
+    structs: usize,
+    // structs: Structs,
     supers: Structs,
     asts: ASTS,
 }

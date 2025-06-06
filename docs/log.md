@@ -1862,18 +1862,19 @@ I think `self` should be easier
 ```
 ({
   :a 5.0
-  :b (thunk (:self) (self :a))
+  :b (thunk (self) (self :a))
 } :b)
 ```
 
 ```json-eager
-
+5.0
 ```
 
 It's still outside of use of object because 
 while we catch `self` (by cloning it ugh) we set it to the env variable.
 But that is not going to work because when we see `self` symbol we
 try to fetch the object from `self.structs` structure in runtime.
+
 
 We could, however have a different approach to this problem.
 
@@ -1902,3 +1903,19 @@ just variables. We wouldn't need a special treatment for them.
 
 Also, just in case we could introduce a new pass
 that would forbid `root` `self` and `super` to appear as variable/parameter name
+
+> But that is not going to work because when we see `self` symbol we
+> try to fetch the object from `self.structs` structure in runtime.
+
+Hmm... it works for closures tho...
+It is because closures are using separate struct!
+Something that i wanted to remove in the first place...
+
+# 07.06 
+
+but do i need special cases for self/super/root?
+
+Now the problem is, we created this variable before 
+Okay. I can kinda control it.
+But the problem still persists if we want to access fields that are initialized AFTER
+because we pass the copy of `self`

@@ -4,7 +4,6 @@ use crate::{
     ast::{ASTS, SExpId},
     visitor::{List, Quasiquote, Visitor, VisitorHelper},
 };
-
 pub struct ThunkPass {}
 
 struct StructFinder<'a> {

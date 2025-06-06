@@ -115,6 +115,13 @@ impl Value {
         }
     }
 
+    pub fn as_object_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
+        match self {
+            Value::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
     pub fn as_object(&self) -> Option<&BTreeMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),

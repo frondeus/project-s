@@ -13,9 +13,6 @@ pub(crate) struct Structs {
 }
 
 impl Structs {
-    fn push_default(&mut self) {
-        self.stack.push(BTreeMap::new());
-    }
     pub(crate) fn push(&mut self, strukt: BTreeMap<String, Value>) {
         self.stack.push(strukt);
     }
@@ -24,16 +21,12 @@ impl Structs {
         self.stack.pop().unwrap()
     }
 
-    pub(crate) fn _self(&self) -> Option<&BTreeMap<String, Value>> {
+    pub(crate) fn last(&self) -> Option<&BTreeMap<String, Value>> {
         self.stack.last()
     }
 
-    fn mut_self(&mut self) -> Option<&mut BTreeMap<String, Value>> {
-        self.stack.last_mut()
-    }
-
-    pub(crate) fn root(&self) -> Option<&BTreeMap<String, Value>> {
-        self.stack.first()
+    pub(crate) fn super_(&self) -> Option<&BTreeMap<String, Value>> {
+        self.last()
     }
 }
 
@@ -43,10 +36,18 @@ impl Runtime {
             return Err("Expected value".to_string());
         };
         let value = self.eval(value);
-        self.structs
-            .mut_self()
-            .unwrap()
-            .insert(key.to_string(), value);
+        let self_ = self.envs.get_mut("self").unwrap().as_object_mut().unwrap();
+
+        self_.insert(key.to_string(), value);
+        if self.structs == 1 {
+            let root = self_.clone();
+            self.envs
+                .get_mut("root")
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .extend(root);
+        }
         Ok(())
     }
 
@@ -104,18 +105,25 @@ impl Runtime {
     #[allow(clippy::unnecessary_to_owned)]
     pub(crate) fn make_struct(&mut self, items: &[SExpId]) -> Value {
         let items = items.to_vec().into_iter();
-        self.structs.push_default();
         self.envs.push();
+        let self_ = Value::Object(BTreeMap::new());
+
+        if self.structs == 0 {
+            self.envs.set("root", self_.clone());
+        }
+        self.structs += 1;
+
+        self.envs.set("self", self_.clone());
 
         if let Err(e) = self.make_struct_inner(items) {
             self.envs.pop();
-            self.structs.pop();
+            self.structs -= 1;
             return Value::Error(e);
         }
 
-        self.envs.pop();
-        let map = self.structs.pop();
-        Value::Object(map)
+        let mut env = self.envs.pop().unwrap();
+        self.structs -= 1;
+        env.remove("self").unwrap()
     }
 
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
