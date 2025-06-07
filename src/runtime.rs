@@ -294,7 +294,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
-                        let first = self.eval_eager(first_id);
+                        let first = self.eval_eager_rec(first_id);
 
                         match first {
                             Value::Error(e) => Value::Error(e),
@@ -313,7 +313,7 @@ impl Runtime {
                                 };
 
                                 map.get(key).cloned().unwrap_or_else(|| {
-                                    Value::Error(format!("Undefined key: {}", key))
+                                    Value::Error(format!("Undefined key: {} in {:?}", key, map))
                                 })
                             }
                             Value::Closure(closure) => self.closure_call(closure, &items[1..]),
@@ -330,7 +330,10 @@ impl Runtime {
             }
         }
     }
-    pub fn to_json(&self, value: Value) -> serde_json::Value {
+    pub fn to_json(&mut self, mut value: Value, eager: bool) -> serde_json::Value {
+        if eager {
+            value = value.eager_rec(self);
+        }
         match value {
             Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
             Value::String(s) => serde_json::Value::String(s),
@@ -338,7 +341,7 @@ impl Runtime {
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();
                 for (k, v) in map {
-                    obj.insert(k, self.to_json(v));
+                    obj.insert(k, self.to_json(v, eager));
                 }
                 serde_json::Value::Object(obj)
             }
@@ -350,7 +353,7 @@ impl Runtime {
             }
             Value::Ref(rc) => {
                 let rc = rc.borrow();
-                self.to_json(rc.clone())
+                self.to_json(rc.clone(), eager)
             }
             // Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
             Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
@@ -368,8 +371,6 @@ impl Runtime {
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
-    structs: usize,
-    // structs: Structs,
     supers: Structs,
     asts: ASTS,
 }
@@ -380,7 +381,7 @@ mod tests {
 
     #[test]
     fn integration() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, _deps| {
+        test_runner::test_snapshots("docs/", "json-lazy", |input, _deps| {
             // eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
@@ -391,27 +392,30 @@ mod tests {
             runtime.with_prelude();
             let value = runtime.eval(root_id);
             // println!("value: {value:?}");
-            let value = runtime.to_json(value);
+            let value = runtime.to_json(value, false);
             serde_json::to_string_pretty(&value).unwrap()
         })
     }
 
+    fn eager_test(input: &str) -> String {
+        // eprintln!("---");
+        let mut asts = ASTS::new();
+        let ast = asts.parse(input).unwrap();
+        let root_id = ast.root_id().unwrap();
+        let root_id = crate::process_ast(&mut asts, root_id);
+
+        let mut runtime = Runtime::new(asts);
+        runtime.with_prelude();
+        let value = runtime.eval(root_id);
+        let value = runtime.to_json(value, true);
+        serde_json::to_string_pretty(&value).unwrap()
+    }
+
     #[test]
     fn integration_eager() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json-eager", |input, _deps| {
-            // eprintln!("---");
-            let mut asts = ASTS::new();
-            let ast = asts.parse(input).unwrap();
-            let root_id = ast.root_id().unwrap();
-            let root_id = crate::process_ast(&mut asts, root_id);
+        test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))?;
 
-            let mut runtime = Runtime::new(asts);
-            runtime.with_prelude();
-            let value = runtime.eval_eager(root_id);
-            // println!("value: {value:?}");
-            let value = runtime.to_json(value);
-            serde_json::to_string_pretty(&value).unwrap()
-        })
+        test_runner::test_snapshots("docs/", "json-eager", |input, _deps| eager_test(input))
     }
 
     #[test]

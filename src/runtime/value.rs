@@ -80,9 +80,15 @@ pub struct Closure {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Thunk {
     pub(crate) inner: Rc<RefCell<InnerThunk>>,
+}
+
+impl std::fmt::Debug for Thunk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Thunk").finish()
+    }
 }
 
 #[derive(Debug)]

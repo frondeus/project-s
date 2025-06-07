@@ -1,0 +1,40 @@
+```
+(+ {
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+(thunk () {
+  :another 9
+  
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) (thunk () {
+        :c (+ (super :a) 3)
+      }))
+    )
+    '(:key {:c 3})
+  )
+
+}))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-038
+@@ -779,11 +779,7 @@
+ ```json
+ {
+   "another": 9.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0,
+-    "c": 4.0
+-  }
++  "key": "<Error: super used outside of object>"
+ }
+ ```
+ 

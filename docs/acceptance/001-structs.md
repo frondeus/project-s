@@ -7,7 +7,7 @@ Basic struct construction
 )
 ```
 
-```json
+```json-eager
 {
   "name": "Name",
   "surname": "Surname"
@@ -23,7 +23,7 @@ Basic struct construction
 )
 ```
 
-```json
+```json-eager
 2.0
 ```
 
@@ -34,7 +34,7 @@ Or when struct is named
 (foo :another)
 ```
 
-```json
+```json-eager
 2.0
 ```
 
@@ -50,7 +50,7 @@ be ordered explicitly
 )
 ```
 
-```json
+```json-eager
 {
   "another": 2.0,
   "key": 3.0
@@ -71,7 +71,7 @@ To access top object
 )
 ```
 
-```json
+```json-eager
 {
   "another": 4.0,
   "key": {
@@ -94,7 +94,7 @@ To access top object
 }
 ```
 
-```json
+```json-eager
 {
   "another": 4.0,
   "key": {
@@ -113,7 +113,7 @@ To access top object
   (has? x :key)
 ```
 
-```json
+```json-eager
 true
 ```
 
@@ -124,6 +124,6 @@ true
   (has? x :another)
 ```
 
-```json
+```json-eager
 false
 ```

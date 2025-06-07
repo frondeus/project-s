@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     ast::{SExp, SExpId},
+    builder::ASTBuilder,
     runtime::value::Value,
 };
 
@@ -39,10 +40,21 @@ impl Runtime {
         let Some(value) = items.pop_front() else {
             return Err("Expected value".to_string());
         };
-        let value = self.eval(value);
+
+        let mut env = self.envs.last().keys().collect::<Vec<_>>();
+        if !env.contains(&"root") && self.envs.get("root").is_some() {
+            env.push("root");
+        }
+        if !env.contains(&"super") && self.supers.super_().is_some() {
+            env.push("super");
+        }
+        dbg!(&env);
+
+        let thunk = vec![env.build(&mut self.asts), value];
+        let value = self.thunk_def(&thunk)?;
+        println!("value: {:?}", value);
         let self_ = self.envs.get("self").unwrap().as_ref().unwrap();
 
-        // let _ = (value, self_, key);
         let mut self_ = self_.borrow_mut();
 
         let self_ = self_.as_object_mut().unwrap();
@@ -109,21 +121,18 @@ impl Runtime {
         let self_ = Value::Object(BTreeMap::new());
         let self_ = Value::Ref(Rc::new(RefCell::new(self_)));
 
-        if self.structs == 0 {
+        if self.envs.get("root").is_none() {
             self.envs.set("root", self_.clone());
         }
-        self.structs += 1;
 
         self.envs.set("self", self_.clone());
 
         if let Err(e) = self.make_struct_inner(items) {
             self.envs.pop();
-            self.structs -= 1;
             return Value::Error(e);
         }
 
         let mut env = self.envs.pop().unwrap();
-        self.structs -= 1;
         env.remove("self").unwrap()
     }
 

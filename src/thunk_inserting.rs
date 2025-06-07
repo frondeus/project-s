@@ -132,7 +132,7 @@ mod tests {
             let mut runtime = crate::runtime::Runtime::new(asts);
             runtime.with_prelude();
             let result = runtime.eval(root_id);
-            let value = runtime.to_json(result);
+            let value = runtime.to_json(result, true);
             serde_json::to_string_pretty(&value).unwrap()
         })
     }

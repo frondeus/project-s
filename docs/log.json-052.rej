@@ -1,0 +1,21 @@
+```
+(( (+ {
+  :a 42.0
+}
+
+(thunk () {
+  :a (fn () (+ (super :a) 10.0))
+})) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-052
+@@ -1265,7 +1265,7 @@
+ ```
+ 
+ ```json
+-52.0
++"<Error: super used outside of object>"
+ ```
+ 
+ Ok, good. Now let's clean this code a little bit!

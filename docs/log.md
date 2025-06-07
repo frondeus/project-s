@@ -44,7 +44,7 @@ I want to at least have
 
 and have it compiled to 
 
-```json
+```json-eager
 {
   "name": "Name",
   "surname": "Surname"
@@ -462,7 +462,7 @@ Ok, now next one has to fail, right?
 ```json
 {
   "another": 2.0,
-  "key": "<Error: Undefined key: another>"
+  "key": 3.0
 }
 ```
 
@@ -509,12 +509,13 @@ Does it work with accessing self?
   "another": 4.0,
   "key": {
     "a": 1.0,
-    "b": "<Error: Undefined key: key>"
+    "b": 2.0
   }
 }
 ```
 
 No. It doesnt because key was not created yet. Makes sense.
+EDIT (07.06): With new laziness it does!
 
 Ok, now i want to have another reader shortcut
 
@@ -1318,8 +1319,8 @@ Okay, first things first!
 First argument is list of captured variables
 Next is the body
 
-```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 4, generation: 0 } } } }>"
+```json-lazy
+"<Thunk: Thunk>"
 ```
 
 Okay.
@@ -1329,8 +1330,8 @@ Okay.
   (thunk (x) (+ 123 x))
 ```
 
-```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 9, generation: 0 } } } }>"
+```json-lazy
+"<Thunk: Thunk>"
 ```
 
 Cool.
@@ -1625,8 +1626,8 @@ Now traversing the thunks will be muuch easier
 
 its bit too early to enable thunk pass everywhere, so lets do a hack
 
-```json-thunk
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 1, generation: 0 } } } }>"
+```json-lazy
+"<Thunk: Thunk>"
 ```
 
 bingo?
@@ -1645,7 +1646,7 @@ bingo?
 (do (let :x (thunk () (struct :key 42 :value (+ (super :value) 10)))) (+ (struct :value 5) x))
 ```
 
-```json-thunk
+```json
 {
   "key": 42.0,
   "value": 15.0
@@ -1681,7 +1682,7 @@ Let's start with the nested.
 
 And technically, :x doesnt need to be a thunk.
 
-```json-thunk
+```json
 15.0
 ```
 
@@ -1743,7 +1744,7 @@ Okay, correct.
 
 And technically, :x doesnt need to be a thunk.
 
-```json-thunk
+```json
 15.0
 ```
 
@@ -1940,3 +1941,27 @@ I'm trying to solve too many things at once.
 Let's for now make every object to be initialized on a heap
 
 Good!
+
+Does it work with root?
+
+```
+(({
+  :b {
+    :c (thunk (root) (root :a))
+  }
+  :a 4.0
+} :b) :c)
+```
+
+```json-eager
+4.0
+```
+
+Yes!
+
+So, now the only missing part is inserting thunks for root and self!
+
+Okay, fuck it. Im still thinking too much about optimization
+Just make every field lazy.
+
+Ok. Self and Root works. Super is broken.

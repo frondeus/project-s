@@ -13,7 +13,7 @@
 })
 ```
 
-```json
+```json-eager
 {
   "another": 9.0,
   "key": {
@@ -45,7 +45,7 @@ because left side of the `+` was already calculated.
 })
 ```
 
-```json
+```json-eager
 {
   "another": 9.0,
   "key": {
@@ -75,7 +75,7 @@ because left side of the `+` was already calculated.
 })
 ```
 
-```json
+```json-eager
 {
   "another": 9.0,
   "key": 10.0
@@ -103,7 +103,7 @@ because left side of the `+` was already calculated.
 (+ left right)
 ```
 
-```json
+```json-eager
 {
   "another": 9.0,
   "key": {
@@ -113,3 +113,34 @@ because left side of the `+` was already calculated.
   }
 }
 ```
+
+# Lazy values
+
+Self:
+
+```
+({
+  :b (self :a)
+  :a 4.0
+} :b)
+```
+
+```json-eager
+4.0
+```
+
+Root:
+
+```
+(({
+  :b {
+    :c (root :a)
+  }
+  :a 4.0
+} :b) :c)
+```
+
+```json-eager
+4.0
+```
+

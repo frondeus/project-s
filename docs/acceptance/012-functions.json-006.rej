@@ -1,0 +1,19 @@
+```
+(( (+ {
+  :a 42.0
+}
+
+{
+  :a (fn () (+ (super :a) 10.0))
+}) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ json-006
+@@ -80,5 +80,5 @@
+ ```
+ 
+ ```json
+-52.0
++"<Error: super used outside of object>"
+ ```

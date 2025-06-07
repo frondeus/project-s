@@ -7,6 +7,11 @@ pub struct Env {
     // is_obj: bool,
     vars: BTreeMap<String, Value>,
 }
+impl Env {
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.vars.keys().map(|k| k.as_str())
+    }
+}
 // impl Env {
 //     fn obj() -> Self {
 //         Self { is_obj: true, ..Default::default()}
@@ -33,6 +38,10 @@ impl Envs {
 
     fn last_mut(&mut self) -> &mut Env {
         self.envs.last_mut().expect("No environment")
+    }
+
+    pub fn last(&self) -> &Env {
+        self.envs.last().expect("No environment")
     }
 
     pub fn set(&mut self, name: &str, value: Value) {

@@ -1,0 +1,34 @@
+```
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right {
+  :another 9
+  
+  (+obj :key {:c 3})
+})
+
+(+ left right)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-062
+@@ -1782,11 +1782,7 @@
+ ```json
+ {
+   "another": 9.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0,
+-    "c": 3.0
+-  }
++  "key": "<Error: super used outside of object>"
+ }
+ ```
+ 

@@ -4,8 +4,8 @@
 (thunk () 123)
 ```
 
-```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {}, body: SExpId { id: 4, generation: 0 } } } }>"
+```json-lazy
+"<Thunk: Thunk>"
 ```
 
 ```
@@ -13,8 +13,8 @@
   (thunk (x) (+ 123 x))
 ```
 
-```json
-"<Thunk: Thunk { inner: RefCell { value: ToEvaluate { captured: {\"x\": Number(42.0)}, body: SExpId { id: 9, generation: 0 } } } }>"
+```json-lazy
+"<Thunk: Thunk>"
 ```
 
 

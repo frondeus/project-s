@@ -19,7 +19,7 @@ You can also use let in structs
 )
 ```
 
-```json
+```json-eager
 {
   "another": "(+ 1 x)",
   "key": 6.0
