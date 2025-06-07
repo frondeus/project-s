@@ -4,10 +4,11 @@
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
     :features {
-        :stout (thunk () (+ root {
-            :is_stout true
-            :hp (+ (root :hp) 2)
-        }))
+        :stout (do 
+            (set root (+ {} {
+                :is_stout true
+            }))
+        )
     }
 })
 
@@ -25,24 +26,14 @@
 
 --- /Users/frondeus/Code/project-s/docs/frondeus.md
 +++ json
-@@ -25,6 +25,20 @@
- ```json
+@@ -27,7 +27,9 @@
  {
    "ancestry": "Dwarf",
-+  "features": {
+   "features": {
+-    "stout": "<Error: Expected symbol or string>"
 +    "stout": {
-+      "hp": "<Error: Undefined key: hp in {\"stats\": Thunk(Thunk)}>",
-+      "is_stout": true,
-+      "stats": {
-+        "cha": 13.0,
-+        "con": 13.0,
-+        "dex": 11.0,
-+        "int": 11.0,
-+        "str": 6.0,
-+        "wis": 17.0
-+      }
++      "is_stout": true
 +    }
-+  },
+   },
    "languages": [
      "Common",
-     "Dwarvish"

@@ -69,10 +69,24 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 _super = rt.new_ref_obj(left.clone());
                 rt.envs.pop();
             }
-            Ok(Value::Object(left))
+            Ok(_super)
         }
         _ => Err("Expected number or object".into()),
     }
+}
+
+fn set(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([key, value]) = TryInto::<[Value; 2]>::try_into(args) else {
+        return Err("Expected two arguments".into());
+    };
+
+    let Some(key) = key.as_ref() else {
+        return Err("Expected symbol".into());
+    };
+
+    *key.borrow_mut() = value.clone();
+
+    Ok(value)
 }
 
 fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
@@ -136,6 +150,7 @@ impl Runtime {
         self.with_try_fn("-", sub);
         self.with_try_fn("+", add);
         self.with_try_fn("ref", new_ref);
+        self.with_try_fn("set", set);
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {
             for arg in args.into_iter() {

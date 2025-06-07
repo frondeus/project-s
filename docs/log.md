@@ -2099,3 +2099,16 @@ x
 ```json-lazy
 "<Ref: RefCell { value: Number(5.0) }>"
 ```
+
+
+Ok, now we should be able to modify ref
+
+```
+(let :x (ref 5))
+(set x 6)
+x
+```
+
+```json-lazy
+"<Ref: RefCell { value: Number(6.0) }>"
+```

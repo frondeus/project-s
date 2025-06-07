@@ -3,10 +3,11 @@
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
     :features {
-        :stout (thunk () (+ root {
-            :is_stout true
-            :hp (+ (root :hp) 2)
-        }))
+        :stout (do 
+            (set root (+ {} {
+                :is_stout true
+            }))
+        )
     }
 })
 
@@ -22,9 +23,12 @@
 } dwarf)
 ```
 
-```json ignore
+```json
 {
   "ancestry": "Dwarf",
+  "features": {
+    "stout": "<Error: Expected symbol or string>"
+  },
   "languages": [
     "Common",
     "Dwarvish"
