@@ -12,28 +12,28 @@ use crate::{
 
 use super::Runtime;
 
-#[derive(Default)]
-pub(crate) struct Structs {
-    stack: Vec<BTreeMap<String, Value>>,
-}
+// #[derive(Default)]
+// pub(crate) struct Structs {
+//     stack: Vec<BTreeMap<String, Value>>,
+// }
 
-impl Structs {
-    pub(crate) fn push(&mut self, strukt: BTreeMap<String, Value>) {
-        self.stack.push(strukt);
-    }
+// impl Structs {
+//     pub(crate) fn push(&mut self, strukt: BTreeMap<String, Value>) {
+//         self.stack.push(strukt);
+//     }
 
-    pub(crate) fn pop(&mut self) -> BTreeMap<String, Value> {
-        self.stack.pop().unwrap()
-    }
+//     pub(crate) fn pop(&mut self) -> BTreeMap<String, Value> {
+//         self.stack.pop().unwrap()
+//     }
 
-    pub(crate) fn last(&self) -> Option<&BTreeMap<String, Value>> {
-        self.stack.last()
-    }
+//     pub(crate) fn last(&self) -> Option<&BTreeMap<String, Value>> {
+//         self.stack.last()
+//     }
 
-    pub(crate) fn super_(&self) -> Option<&BTreeMap<String, Value>> {
-        self.last()
-    }
-}
+//     pub(crate) fn super_(&self) -> Option<&BTreeMap<String, Value>> {
+//         self.last()
+//     }
+// }
 
 impl Runtime {
     fn insert_to_struct(&mut self, key: &str, items: &mut VecDeque<SExpId>) -> Result<(), String> {
@@ -45,11 +45,9 @@ impl Runtime {
         if !env.contains(&"root") && self.envs.get("root").is_some() {
             env.push("root");
         }
-        if !env.contains(&"super") && self.supers.super_().is_some() {
-            println!("pushing super");
+        if !env.contains(&"super") && self.envs.get("super").is_some() {
             env.push("super");
         }
-        dbg!(&env);
 
         let thunk = vec![env.build(&mut self.asts), value];
         let value = self.thunk_def(&thunk)?;
@@ -114,13 +112,17 @@ impl Runtime {
         Ok(())
     }
 
+    pub fn new_ref_obj(&self, obj: BTreeMap<String, Value>) -> Value {
+        let self_ = Value::Object(obj);
+        Value::Ref(Rc::new(RefCell::new(self_)))
+    }
+
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
     #[allow(clippy::unnecessary_to_owned)]
     pub(crate) fn make_struct(&mut self, items: &[SExpId]) -> Value {
         let items = items.to_vec().into_iter();
         self.envs.push();
-        let self_ = Value::Object(BTreeMap::new());
-        let self_ = Value::Ref(Rc::new(RefCell::new(self_)));
+        let self_ = self.new_ref_obj(BTreeMap::new());
 
         if self.envs.get("root").is_none() {
             self.envs.set("root", self_.clone());

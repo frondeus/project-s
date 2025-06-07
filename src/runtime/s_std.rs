@@ -35,21 +35,23 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         return Err("Expected at least one argument".into());
     };
 
-    let mut first = first.eager(rt).ok()?;
+    let first = first.eager_rec(rt).ok()?;
 
-    match &mut first {
-        Value::Number(first) => {
+    match first {
+        Value::Number(mut first) => {
             for arg in args {
                 let Some(b) = arg.eager(rt).ok()?.as_number() else {
                     return Err("Expected number".into());
                 };
-                *first += b;
+                first += b;
             }
+            Ok(Value::Number(first))
         }
-        Value::Object(left) => {
+        Value::Object(mut left) => {
             for right in args {
-                let _super = left.clone();
-                rt.supers.push(_super);
+                rt.envs.push();
+                let _super = rt.new_ref_obj(left.clone());
+                rt.envs.set("super", _super.clone());
 
                 let Some(right) = right.eager_rec(rt).ok()?.into_object() else {
                     return Err("+: Expected object ".into());
@@ -58,13 +60,12 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 for (key, value) in right {
                     left.insert(key, value);
                 }
-                rt.supers.pop();
+                rt.envs.pop();
             }
+            Ok(Value::Object(left))
         }
-        _ => return Err("Expected number or object".into()),
+        _ => Err("Expected number or object".into()),
     }
-
-    Ok(first)
 }
 
 fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {

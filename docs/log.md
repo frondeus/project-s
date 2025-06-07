@@ -1965,3 +1965,7 @@ Okay, fuck it. Im still thinking too much about optimization
 Just make every field lazy.
 
 Ok. Self and Root works. Super is broken.
+
+Okay. I think i just need to replace super machinery with variable.
+
+Holy, that works?
