@@ -10,6 +10,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Object(BTreeMap<String, Value>),
+    List(Vec<Value>),
     SExp(SExpId),
     Macro(Macro),
     Function(Function),
@@ -171,6 +172,9 @@ impl Value {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
+            Value::List(list) => {
+                todo!("Could not convert List to SExp: {:?}", list)
+            }
             Value::Ref(rc) => {
                 todo!("Could not convert Ref to SExp: {:?}", rc)
             }

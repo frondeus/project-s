@@ -25,6 +25,7 @@ module.exports = grammar({
       $.quasiquote,
       $.unquote,
       $.struct,
+      $.array,
 
       $.float,
       $.integer,
@@ -46,6 +47,12 @@ module.exports = grammar({
       '{',
       repeat($._sexp),
       '}'
+    ),
+
+    array: $ => seq(
+      '[',
+      repeat($._sexp),
+      ']'
     ),
 
     quasiquote: $ => seq(
@@ -73,8 +80,8 @@ module.exports = grammar({
       "false"
     ))),
     string_inner: $ => /[^"]*/,
-    keyword: $ => token(prec(2, /:[^\s()'"`,{}]+/)),
-    symbol: $ =>  token(prec(1, /[^\s()'"`,{}:]+/)),
+    keyword: $ => token(prec(2, /:[^\s()'"`,{}\[\]]+/)),
+    symbol: $ =>  token(prec(1, /[^\s()'"`,{}:\[\]]+/)),
     float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),
     integer: $ => token(prec(2, /[+-]?[0-9]+/)),
   }

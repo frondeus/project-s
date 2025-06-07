@@ -1998,7 +1998,7 @@ Holy, that works?
 
 What's else missing?
 * [ ] Loops
-* [/] Thunks
+* [x] Thunks
 * [x] Functions
   * [x] Closures!
   * [x] Rust functions
@@ -2015,3 +2015,40 @@ Probably a lot of more lol.
 Like vertical stack
 * [ ] LSP
 * [ ] Type checker!
+
+
+Okay but before I continue i think im missing one important thing.
+Project to support language!
+
+By that i mean something that is actually useful to me.
+Let's... Let's create the character for Shadowdark.
+
+Okay, so the next step is array :)
+
+For now we can have "list".
+
+```
+(list 1 2 3)
+```
+
+```json
+[
+  1.0,
+  2.0,
+  3.0
+]
+```
+
+Now the reader syntax
+
+```
+[ 1 2 3 ]
+```
+
+```json
+[
+  1.0,
+  2.0,
+  3.0
+]
+```

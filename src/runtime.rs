@@ -11,6 +11,7 @@ use crate::{
 
 mod env;
 mod functions;
+mod lists;
 mod quotes;
 mod s_std;
 mod structs;
@@ -277,6 +278,7 @@ impl Runtime {
                         self.closure_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
                     SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
+                    SExp::Symbol(tag) if tag == "list" => self.make_list(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
                         let Some(item) = items.get(1) else {
@@ -344,6 +346,13 @@ impl Runtime {
                     obj.insert(k, self.to_json(v, eager));
                 }
                 serde_json::Value::Object(obj)
+            }
+            Value::List(list) => {
+                let mut arr = vec![];
+                for value in list {
+                    arr.push(self.to_json(value, eager));
+                }
+                serde_json::Value::Array(arr)
             }
             Value::Function(function) => {
                 serde_json::Value::String(format!("<Function: {:?}>", function))

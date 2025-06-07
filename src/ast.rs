@@ -355,6 +355,18 @@ impl SExpParser {
                 self.ast.set(strukt, SExp::List(children));
                 Ok(strukt)
             }
+            "array" => {
+                let array = self.ast.reserve();
+                let mut items = Vec::new();
+                let mut child = node.named_child(0);
+                items.push(self.ast.add_node(SExp::Symbol("list".to_string())));
+                while let Some(n) = child {
+                    items.push(self.node_to_sexp(n, source)?);
+                    child = n.next_named_sibling();
+                }
+                self.ast.set(array, SExp::List(items));
+                Ok(array)
+            }
             "quote" => self.shortcut(node, source, "quote"),
             "quasiquote" => self.shortcut(node, source, "quasiquote"),
             "unquote" => self.shortcut(node, source, "unquote"),
