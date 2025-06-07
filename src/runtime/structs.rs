@@ -1,4 +1,8 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, VecDeque},
+    rc::Rc,
+};
 
 use crate::{
     ast::{SExp, SExpId},
@@ -36,18 +40,14 @@ impl Runtime {
             return Err("Expected value".to_string());
         };
         let value = self.eval(value);
-        let self_ = self.envs.get_mut("self").unwrap().as_object_mut().unwrap();
+        let self_ = self.envs.get("self").unwrap().as_ref().unwrap();
+
+        // let _ = (value, self_, key);
+        let mut self_ = self_.borrow_mut();
+
+        let self_ = self_.as_object_mut().unwrap();
 
         self_.insert(key.to_string(), value);
-        if self.structs == 1 {
-            let root = self_.clone();
-            self.envs
-                .get_mut("root")
-                .unwrap()
-                .as_object_mut()
-                .unwrap()
-                .extend(root);
-        }
         Ok(())
     }
 
@@ -107,6 +107,7 @@ impl Runtime {
         let items = items.to_vec().into_iter();
         self.envs.push();
         let self_ = Value::Object(BTreeMap::new());
+        let self_ = Value::Ref(Rc::new(RefCell::new(self_)));
 
         if self.structs == 0 {
             self.envs.set("root", self_.clone());

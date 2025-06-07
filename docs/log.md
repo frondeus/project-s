@@ -1918,4 +1918,25 @@ but do i need special cases for self/super/root?
 Now the problem is, we created this variable before 
 Okay. I can kinda control it.
 But the problem still persists if we want to access fields that are initialized AFTER
-because we pass the copy of `self`
+because we pass the copy of `self`.
+
+We need a mutable reference to self.
+
+```
+({
+  :b (thunk (self) (self :a))
+  :a 4.0
+} :b)
+```
+
+```json-eager
+4.0
+```
+
+Let's for now introduce "Ref" RC like value that lives on a heap
+
+And for now let's make it easier.
+I'm trying to solve too many things at once.
+Let's for now make every object to be initialized on a heap
+
+Good!

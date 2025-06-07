@@ -15,6 +15,8 @@ pub enum Value {
     Function(Function),
     Closure(Closure),
     Thunk(Thunk),
+    /// Mutable reference that lives on a heap
+    Ref(Rc<RefCell<Value>>),
     /// For error handling
     Error(String),
 }
@@ -101,6 +103,10 @@ impl Value {
         }
     }
 
+    pub fn is_lazy(&self) -> bool {
+        matches!(self, Value::Thunk(_) | Value::Ref(_))
+    }
+
     pub fn as_sexp(&self) -> Option<&SExpId> {
         match self {
             Value::SExp(id) => Some(id),
@@ -111,6 +117,13 @@ impl Value {
     pub fn as_number(&self) -> Option<f64> {
         match self {
             Value::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    pub fn as_ref(&self) -> Option<&RefCell<Value>> {
+        match self {
+            Value::Ref(rc) => Some(rc),
             _ => None,
         }
     }
@@ -140,11 +153,21 @@ impl Value {
         rt.to_eager(self)
     }
 
+    pub fn eager_rec(mut self, rt: &mut Runtime) -> Self {
+        while self.is_lazy() {
+            self = rt.to_eager(self);
+        }
+        self
+    }
+
     pub fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
+            Value::Ref(rc) => {
+                todo!("Could not convert Ref to SExp: {:?}", rc)
+            }
             Value::Object(_btree_map) => {
                 todo!("Could not convert Object to SExp: {:?}", self)
             }

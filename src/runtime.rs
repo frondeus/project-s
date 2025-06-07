@@ -56,79 +56,27 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    #[allow(dead_code)]
-    fn add(&mut self, items: &[SExpId]) -> Value {
-        if items.is_empty() {
-            return Value::Error("Expected at least one argument".to_string());
-        }
-
-        let first = items.first().unwrap();
-
-        let mut first = self.eval_eager(*first);
-        try_err!(first);
-
-        match &mut first {
-            Value::Number(sum) => {
-                for item in items.iter().skip(1) {
-                    let right = self.eval_eager(*item);
-                    try_err!(right);
-                    let Some(n) = right.as_number() else {
-                        return Value::Error(format!("Expected number, got: {:?}", right));
-                    };
-                    *sum += n;
-                }
-            }
-            Value::Object(left) => {
-                let _super = left.clone();
-                self.supers.push(_super);
-                for item in items.iter().skip(1) {
-                    let right = self.eval_eager(*item);
-                    try_err!(right);
-                    let right = match right {
-                        Value::Object(right) => right,
-                        Value::SExp(id) => {
-                            let right = self.eval(id).into_object();
-                            let Some(right) = right else {
-                                return Value::Error("Expected quoted object".to_string());
-                            };
-                            right
-                        }
-                        _ => {
-                            return Value::Error("Expected object".to_string());
-                        }
-                    };
-                    for (key, value) in right {
-                        left.insert(key, value);
-                    }
-                }
-                self.supers.pop();
-            }
-            t => return Value::Error(format!("Expected number or object, got: {:?}", t)),
-        }
-        first
-    }
-
     fn has_obj(&mut self, items: &[SExpId]) -> Value {
-        let Some(obj) = items.first() else {
-            return Value::Error("Expected object".to_string());
-        };
-        let obj = self.eval(*obj);
-        try_err!(obj);
-        let Some(obj) = obj.as_object() else {
-            return Value::Error("Expected object".to_string());
-        };
+        match items {
+            [obj, key] => {
+                let obj = self.eval_eager(*obj);
+                try_err!(obj);
+                let Some(obj) = obj.as_object() else {
+                    return Value::Error("has_obj: Expected object".to_string());
+                };
+                let key = self.eval(*key);
+                try_err!(key);
+                let Some(key) = self.as_symbol_or_keyword(&key) else {
+                    return Value::Error(format!("Expected symbol or keyword. Found: {:?}", key));
+                };
 
-        let Some(key) = items.get(1) else {
-            return Value::Error("Expected key".to_string());
-        };
-
-        let key = self.eval(*key);
-        try_err!(key);
-        let Some(key) = self.as_symbol_or_keyword(&key) else {
-            return Value::Error(format!("Expected symbol or keyword. Found: {:?}", key));
-        };
-
-        Value::Bool(obj.contains_key(key))
+                Value::Bool(obj.contains_key(key))
+            }
+            _ => Value::Error(format!(
+                "has_obj: Expected 2 arguments, found: {}",
+                items.len()
+            )),
+        }
     }
 
     fn _let(&mut self, items: &[SExpId]) -> Value {
@@ -240,6 +188,14 @@ impl Runtime {
         );
     }
 
+    pub fn eval_eager_rec(&mut self, sexp: SExpId) -> Value {
+        let mut value = self.eval(sexp);
+        while value.is_lazy() {
+            value = self.to_eager(value);
+        }
+        value
+    }
+
     pub fn eval_eager(&mut self, sexp: SExpId) -> Value {
         let value = self.eval(sexp);
         self.to_eager(value)
@@ -248,6 +204,10 @@ impl Runtime {
     pub fn to_eager(&mut self, value: Value) -> Value {
         match value {
             Value::Thunk(thunk) => self.thunk_call(thunk),
+            Value::Ref(rc) => {
+                let eager = rc.borrow();
+                eager.clone()
+            }
             val => val,
         }
     }
@@ -388,6 +348,11 @@ impl Runtime {
             Value::Closure(closure) => {
                 serde_json::Value::String(format!("<Closure: {:?}>", closure))
             }
+            Value::Ref(rc) => {
+                let rc = rc.borrow();
+                self.to_json(rc.clone())
+            }
+            // Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
             Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
             Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),

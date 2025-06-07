@@ -51,8 +51,8 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 let _super = left.clone();
                 rt.supers.push(_super);
 
-                let Some(right) = right.eager(rt).ok()?.into_object() else {
-                    return Err("Expected object ".into());
+                let Some(right) = right.eager_rec(rt).ok()?.into_object() else {
+                    return Err("+: Expected object ".into());
                 };
 
                 for (key, value) in right {

@@ -43,12 +43,12 @@ impl Envs {
         self.envs.iter().rev().find_map(|env| env.vars.get(name))
     }
 
-    pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
-        self.envs
-            .iter_mut()
-            .rev()
-            .find_map(|env| env.vars.get_mut(name))
-    }
+    // pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
+    //     self.envs
+    //         .iter_mut()
+    //         .rev()
+    //         .find_map(|env| env.vars.get_mut(name))
+    // }
 
     pub fn push(&mut self) {
         self.envs.push(Env::default());
