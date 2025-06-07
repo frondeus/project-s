@@ -1969,3 +1969,29 @@ Ok. Self and Root works. Super is broken.
 Okay. I think i just need to replace super machinery with variable.
 
 Holy, that works?
+
+```
+(+ {
+  :a (+ ((self :b) :c) 10.0)
+  :b {
+    :c 10.0
+  }
+}
+
+{
+  (+obj :b {
+    :d (root :a)
+  })
+})
+```
+
+```json
+{
+  "a": 20.0,
+  "b": {
+    "c": 10.0,
+    "d": 20.0
+  }
+}
+```
+

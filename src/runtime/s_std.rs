@@ -48,9 +48,13 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
             Ok(Value::Number(first))
         }
         Value::Object(mut left) => {
+            let mut _super = rt.new_ref_obj(left.clone());
+            if rt.envs.get("root").is_none() {
+                rt.envs.set("root", _super.clone());
+            }
+
             for right in args {
                 rt.envs.push();
-                let _super = rt.new_ref_obj(left.clone());
                 rt.envs.set("super", _super.clone());
 
                 let Some(right) = right.eager_rec(rt).ok()?.into_object() else {
@@ -60,6 +64,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 for (key, value) in right {
                     left.insert(key, value);
                 }
+                _super = rt.new_ref_obj(left.clone());
                 rt.envs.pop();
             }
             Ok(Value::Object(left))
