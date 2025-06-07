@@ -79,6 +79,6 @@ It captures the context by copying it. There are no references
 }) :a))
 ```
 
-```json
+```json only
 52.0
 ```

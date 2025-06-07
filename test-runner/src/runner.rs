@@ -8,11 +8,48 @@ use std::{
 };
 
 use crate::{
-    utils::{colordiff, diff, Section},
+    utils::{colordiff, diff, source_line, Section},
     Result,
 };
 use anyhow::{bail, Context};
 use pulldown_cmark::CowStr;
+
+struct TestCase<'a> {
+    // Count in the file
+    count: usize,
+    source_line: usize,
+    previous: HashMap<CowStr<'a>, &'a str>,
+    args: Vec<String>,
+    file: &'a str,
+    entry: &'a Path,
+    section: Option<Section<'a>>,
+}
+
+impl<'a> TestCase<'a> {
+    fn has_arg(&self, arg: &str) -> bool {
+        self.args.contains(&arg.to_string())
+    }
+
+    fn new(
+        file: &'a str,
+        entry: &'a Path,
+        source_line: usize,
+        first_name: CowStr<'a>,
+        section: &'a str,
+    ) -> Self {
+        let mut previous = HashMap::new();
+        previous.insert(first_name, section);
+        Self {
+            count: 0,
+            source_line,
+            previous,
+            entry,
+            file,
+            args: vec![],
+            section: None,
+        }
+    }
+}
 
 #[allow(dead_code)]
 pub fn test_snapshots<R>(root: &str, section_name: &str, test_fn: R) -> Result<()>
@@ -28,7 +65,6 @@ where
     let max_count = entries.len();
 
     let mut successes = 0;
-    let mut skipped = 0;
     let mut failed = 0;
 
     // Remove patch files
@@ -43,82 +79,82 @@ where
         std::fs::remove_file(entry)?;
     }
 
-    for entry in entries.into_iter() {
-        let file = std::fs::read_to_string(&entry).context("Could not open entry")?;
-        let md = crate::utils::load_markdown(&file)?;
+    let files = entries
+        .iter()
+        .map(|e| std::fs::read_to_string(e).context("Could not open entry"))
+        .collect::<Result<Vec<_>, _>>()?;
 
-        let mut previous = HashMap::<CowStr, &str>::new();
-        let mut md = md.into_iter();
-        let mut any_failed = false;
+    let mut test_cases: Vec<TestCase> = vec![];
+
+    for (entry_id, entry) in entries.iter().enumerate() {
+        // let file = std::fs::read_to_string(&entry).context("Could not open entry")?;
+        let md = crate::utils::load_markdown(&files[entry_id])?;
+
         let mut count = 0;
-        loop {
-            if let Some(section) = md.next() {
-                let name = section.name.to_string();
-                match name.as_str() {
-                    "" => {
-                        previous.clear();
-                        previous.insert(section.name, section.section);
-                    }
-                    name if name == section_name => {
-                        count += 1;
-                        let expected = section;
-
-                        let code = previous.get("").expect("Source");
-                        // eprintln!("{code}");
-                        let test_fn = &test_fn;
-                        let previous = &previous;
-
-                        // let (sender, receiver) = std::sync::mpsc::channel();
-                        // std::thread::scope(move |s| {
-                        //     let worker = s.spawn(move || {
-                        let actual = catch_unwind(|| test_fn(code, previous));
-                        let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
-                        //         sender.send(out).expect("Sender to be alive")
-                        //     });
-                        //     worker.join()
-                        // })
-                        // .map_err(|_| anyhow::anyhow!("Thread did not finish successfully"))?;
-
-                        // let actual = thread.unwrap_or_else(|_| "<Thread panicked>".to_string());
-                        // let actual = match receiver.recv_timeout(std::time::Duration::from_secs(5))
-                        // {
-                        //     Ok(o) => o,
-                        //     Err(RecvTimeoutError::Timeout) => "<Thread timeout>".to_owned(),
-                        //     Err(_) => "<Thread unexpected panic>".to_owned(),
-                        // };
-
-                        match assert_section(count, &entry, &file, &expected, &actual, code) {
-                            Ok(_) => {
-                                print!(".");
-                            }
-                            Err(e) => {
-                                any_failed = true;
-                                eprintln!("Error: {}", e);
-                            }
-                        }
-                    }
-                    _ => {
-                        previous.insert(section.name, section.section);
-                    }
+        for section in md {
+            let name = section.name.to_string();
+            let mut name_iter = name.split(' ');
+            let name = name_iter.next().unwrap_or_default();
+            match name {
+                "" => {
+                    let source_line = source_line(&files[entry_id], section.range.start);
+                    test_cases.push(TestCase::new(
+                        &files[entry_id],
+                        entry,
+                        source_line,
+                        section.name,
+                        section.section,
+                    ));
                 }
-            } else if count == 0 {
-                print!("s");
-                skipped += 1;
-                break;
-            } else {
-                if !any_failed {
-                    successes += 1;
-                } else {
-                    failed += 1;
+                name if name == section_name => {
+                    count += 1;
+                    let args = name_iter.map(|s| s.to_string()).collect::<Vec<_>>();
+                    test_cases.last_mut().expect("test case").section = Some(section);
+                    test_cases.last_mut().expect("test case").args = args;
+                    test_cases.last_mut().expect("test case").count = count;
                 }
-                break;
+                _ => {
+                    test_cases
+                        .last_mut()
+                        .expect("test case")
+                        .previous
+                        .insert(section.name, section.section);
+                }
             }
         }
     }
 
-    eprintln!(
-        "\nProcessed {section_name}: {max_count}, Succeded: {successes} Failed: {failed}, Skipped: {skipped}",
-    );
+    test_cases.retain(|t| t.section.is_some());
+    if test_cases.iter().any(|t| t.has_arg("only")) {
+        eprintln!("[[ Only running tests with only flag ]] ");
+        eprintln!();
+        eprintln!();
+        test_cases.retain(|t| t.has_arg("only"));
+    }
+    test_cases.retain(|t| !t.has_arg("ignore"));
+
+    for test_case in test_cases {
+        let code = test_case.previous.get("").expect("Source");
+        // eprintln!("{code}");
+        let test_fn = &test_fn;
+        let previous = &test_case.previous;
+
+        let actual = catch_unwind(|| test_fn(code, previous));
+        let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
+
+        match assert_section(section_name, test_case, &actual) {
+            Ok(_) => {
+                print!(".");
+                successes += 1;
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                failed += 1;
+            }
+        }
+    }
+
+    eprintln!("\nProcessed {section_name}: {max_count}, Succeded: {successes} Failed: {failed}",);
     if failed > 0 {
         bail!("Some tests failed");
     }
@@ -126,14 +162,14 @@ where
     Ok(())
 }
 
-fn assert_section(
-    count: usize,
-    entry: &Path,
-    file: &str,
-    expected: &Section,
-    actual: &str,
-    code: &str,
-) -> Result<()> {
+fn assert_section(name: &str, test_case: TestCase, actual: &str) -> Result<()> {
+    let code = test_case.previous.get("").expect("Source");
+    let expected = test_case.section.expect("Expected");
+    let count = test_case.count;
+    let entry = test_case.entry;
+    let file = test_case.file;
+    let source_line = test_case.source_line;
+
     let fenced_without_code = |slice: &str| -> String {
         let fin = {
             let count = slice.chars().filter(|c| *c == '`').count();
@@ -153,9 +189,9 @@ fn assert_section(
     };
 
     let expected_name = if count > 1 {
-        format!("{}-{:0>3}", expected.name, count)
+        format!("{}-{:0>3}", name, count)
     } else {
-        expected.name.to_string()
+        name.to_string()
     };
 
     if expected.section != actual {
@@ -182,6 +218,10 @@ fn assert_section(
             .create(true)
             .open(&new_file)
             .with_context(|| format!("Could create or open: {new_file:?}"))?;
+
+        new_file
+            .write_all(format!("{}:{}\n", entry.display(), source_line).as_bytes())
+            .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
         new_file
             .write_all(fenced_without_code(code).as_bytes())

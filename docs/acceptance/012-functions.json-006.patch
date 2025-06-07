@@ -1,3 +1,4 @@
+/Users/frondeus/Code/project-s/docs/acceptance/012-functions.md:72
 ```
 (( (+ {
   :a 42.0
@@ -13,7 +14,7 @@
 @@ -80,5 +80,5 @@
  ```
  
- ```json
+ ```json only
 -52.0
 +"<Error: super used outside of object>"
  ```

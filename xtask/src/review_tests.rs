@@ -46,6 +46,7 @@ pub fn run(root: &Path) -> Result {
         colordiff.wait_with_output()?;
 
         println!("-----");
+        println!("{}", actual_content.lines().next().unwrap_or_default());
 
         loop {
             println!("[Aa]ccept, [Rr]eject or [Ss]kip");

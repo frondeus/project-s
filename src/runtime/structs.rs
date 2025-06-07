@@ -46,6 +46,7 @@ impl Runtime {
             env.push("root");
         }
         if !env.contains(&"super") && self.supers.super_().is_some() {
+            println!("pushing super");
             env.push("super");
         }
         dbg!(&env);

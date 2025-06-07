@@ -118,6 +118,20 @@ pub fn colordiff(patch: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn source_line(file: &str, offset: usize) -> usize {
+    let mut start = 0;
+    file.lines()
+        .enumerate()
+        .find(|(_, line)| {
+            let is_line = start >= offset;
+            start += line.len() + 1;
+            is_line
+        })
+        .map(|(line_number, _)| line_number)
+        .unwrap_or(0)
+        + 1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
