@@ -1995,3 +1995,23 @@ Holy, that works?
 }
 ```
 
+
+What's else missing?
+* [ ] Loops
+* [/] Thunks
+* [x] Functions
+  * [x] Closures!
+  * [x] Rust functions
+  * [x] Rust macros?
+* [ ] Imports
+* [ ] If else in normal places
+
+Nice to have
+* [ ] Destructuring
+* [ ] Arrays
+* [ ] Better strings
+
+Probably a lot of more lol.
+Like vertical stack
+* [ ] LSP
+* [ ] Type checker!
