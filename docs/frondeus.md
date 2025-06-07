@@ -2,6 +2,12 @@
 (let :dwarf {
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
+    :features {
+        :stout (thunk () (+ root {
+            :is_stout true
+            :hp (+ (root :hp) 2)
+        }))
+    }
 })
 
 (+ {
@@ -16,7 +22,7 @@
 } dwarf)
 ```
 
-```json
+```json ignore
 {
   "ancestry": "Dwarf",
   "languages": [

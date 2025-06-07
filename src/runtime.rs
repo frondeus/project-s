@@ -361,8 +361,9 @@ impl Runtime {
                 serde_json::Value::String(format!("<Closure: {:?}>", closure))
             }
             Value::Ref(rc) => {
-                let rc = rc.borrow();
-                self.to_json(rc.clone(), eager)
+                serde_json::Value::String(format!("<Ref: {:?}>", rc))
+                // let rc = rc.borrow();
+                // self.to_json(rc.clone(), eager)
             }
             // Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
             Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),

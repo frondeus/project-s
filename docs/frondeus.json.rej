@@ -1,0 +1,48 @@
+/Users/frondeus/Code/project-s/docs/frondeus.md:1
+```
+(let :dwarf {
+    :ancestry "Dwarf"
+    :languages [ "Common" "Dwarvish" ]
+    :features {
+        :stout (thunk () (+ root {
+            :is_stout true
+            :hp (+ (root :hp) 2)
+        }))
+    }
+})
+
+(+ {
+    :stats {
+        :str 6
+        :dex 11
+        :con 13
+        :int 11
+        :wis 17
+        :cha 13
+    }
+} dwarf)
+```
+
+--- /Users/frondeus/Code/project-s/docs/frondeus.md
++++ json
+@@ -25,6 +25,20 @@
+ ```json
+ {
+   "ancestry": "Dwarf",
++  "features": {
++    "stout": {
++      "hp": "<Error: Undefined key: hp in {\"stats\": Thunk(Thunk)}>",
++      "is_stout": true,
++      "stats": {
++        "cha": 13.0,
++        "con": 13.0,
++        "dex": 11.0,
++        "int": 11.0,
++        "str": 6.0,
++        "wis": 17.0
++      }
++    }
++  },
+   "languages": [
+     "Common",
+     "Dwarvish"

@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
     ast::SExpId,
     builder::{ASTBuilder, error, quote},
@@ -93,6 +95,14 @@ fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     }
 }
 
+fn new_ref(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([one]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    Ok(Value::Ref(Rc::new(RefCell::new(one))))
+}
+
 impl Runtime {
     pub fn with_try_fn(
         &mut self,
@@ -125,6 +135,7 @@ impl Runtime {
     pub fn with_prelude(&mut self) {
         self.with_try_fn("-", sub);
         self.with_try_fn("+", add);
+        self.with_try_fn("ref", new_ref);
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {
             for arg in args.into_iter() {

@@ -2052,3 +2052,50 @@ Now the reader syntax
   3.0
 ]
 ```
+
+Mutating root object.
+
+Looking at this example
+```
+(let :dwarf {
+    :ancestry "Dwarf"
+    :languages [ "Common" "Dwarvish" ]
+    :features {
+        :stout (thunk () (+ root {
+            :is_stout true
+            :hp (+ (root :hp) 2)
+        }))
+    }
+})
+
+(+ {
+    :stats {
+        :str 6
+        :dex 11
+        :con 13
+        :int 11
+        :wis 17
+        :cha 13
+    }
+} dwarf)
+```
+
+I want to have a feature that affects root.
+I think the easiest way of doing it is just allowing mutating references.
+Something like
+
+```example
+(set root :hp 2)
+```
+
+But first of all to make it simpler lets make a way of creating refs.
+
+```
+(let :x (ref 5))
+x
+```
+
+
+```json-lazy
+"<Ref: RefCell { value: Number(5.0) }>"
+```
