@@ -23,7 +23,7 @@
 } dwarf)
 ```
 
-```json
+```json ignore
 {
   "ancestry": "Dwarf",
   "features": {

@@ -14,8 +14,8 @@ pub enum Value {
     SExp(SExpId),
     Macro(Macro),
     Function(Function),
-    Closure(Closure),
     Thunk(Thunk),
+    Constructor(Constructor),
     /// Mutable reference that lives on a heap
     Ref(Rc<RefCell<Value>>),
     /// For error handling
@@ -53,6 +53,7 @@ pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
 pub enum Function {
     Lisp {
         signature: Vec<String>,
+        captured: BTreeMap<String, Value>,
         body: SExpId,
     },
     Rust {
@@ -60,24 +61,31 @@ pub enum Function {
     },
 }
 
+impl<F> From<F> for Function
+where
+    F: Fn(&mut Runtime, Vec<Value>) -> Value + 'static,
+{
+    fn from(f: F) -> Self {
+        Self::Rust { body: Rc::new(f) }
+    }
+}
+
 impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Lisp { signature, body } => f
+            Self::Lisp {
+                signature,
+                body,
+                captured,
+            } => f
                 .debug_struct("LispFn")
                 .field("signature", signature)
+                .field("captured", captured)
                 .field("body", body)
                 .finish(),
             Self::Rust { .. } => f.debug_struct("RustFn").finish(),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct Closure {
-    pub(crate) signature: Vec<String>,
-    pub(crate) captured: BTreeMap<String, Value>,
-    pub(crate) body: SExpId,
 }
 
 #[allow(dead_code)]
@@ -95,10 +103,17 @@ impl std::fmt::Debug for Thunk {
 #[derive(Debug)]
 pub enum InnerThunk {
     Evaluated(Value),
+    Evaluating,
     ToEvaluate {
         captured: BTreeMap<String, Value>,
         body: SExpId,
     },
+}
+
+/// Creates a new object every time its called.
+#[derive(Clone, Debug)]
+pub struct Constructor {
+    pub(crate) constructor: Function,
 }
 
 impl Value {
@@ -110,8 +125,22 @@ impl Value {
         }
     }
 
+    pub fn ref_(val: Value) -> Self {
+        Value::Ref(Rc::new(RefCell::new(val)))
+    }
+
+    pub fn deref(&self) -> Value {
+        match self {
+            Value::Ref(rc) => rc.borrow().clone(),
+            _ => self.clone(),
+        }
+    }
+
     pub fn is_lazy(&self) -> bool {
-        matches!(self, Value::Thunk(_) | Value::Ref(_))
+        matches!(
+            self,
+            Value::Thunk(_) | Value::Ref(_) // | Value::Constructor(_)
+        )
     }
 
     pub fn as_sexp(&self) -> Option<&SExpId> {
@@ -169,9 +198,14 @@ impl Value {
 
     pub fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
+            Value::SExp(sexp_id) => *sexp_id,
             Value::Number(n) => target.add_node(SExp::Number(*n)),
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
+            Value::Error(err) => {
+                println!("Error: {err}");
+                target.add_node(SExp::Error)
+            }
             Value::List(list) => {
                 todo!("Could not convert List to SExp: {:?}", list)
             }
@@ -187,16 +221,11 @@ impl Value {
             Value::Function(function) => {
                 todo!("Could not convert Function to SExp: {:?}", function)
             }
-            Value::Closure(closure) => {
-                todo!("Could not convert Closure to SExp: {:?}", closure)
-            }
             Value::Thunk(thunk) => {
                 todo!("Could not convert Thunk to SExp: {:?}", thunk)
             }
-            Value::SExp(sexp_id) => *sexp_id,
-            Value::Error(err) => {
-                println!("Error: {err}");
-                target.add_node(SExp::Error)
+            Value::Constructor(constructor) => {
+                todo!("Could not convert Constructor to SExp: {:?}", constructor)
             }
         }
     }

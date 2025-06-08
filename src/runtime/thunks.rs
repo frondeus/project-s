@@ -45,20 +45,29 @@ impl Runtime {
 
     pub(crate) fn thunk_call(&mut self, thunk: Thunk) -> Value {
         let Thunk { inner } = thunk;
-        let mut inner = inner.borrow_mut();
-        match &mut *inner {
-            InnerThunk::Evaluated(val) => val.clone(),
-            InnerThunk::ToEvaluate { captured, body } => {
-                let captured = std::mem::take(captured);
-                self.envs.push();
-                for (name, val) in captured.into_iter() {
-                    self.envs.set(name.as_str(), val);
+        {
+            let inner_ref = inner.borrow();
+            match &*inner_ref {
+                InnerThunk::Evaluated(val) => return val.clone(),
+                InnerThunk::Evaluating => {
+                    panic!("Thunk is already evaluating");
                 }
-                let result = self.eval(*body);
-                self.envs.pop();
-                *inner = InnerThunk::Evaluated(result.clone());
-                result
+                _ => (),
             }
         }
+        let thunk = { std::mem::replace(&mut *inner.borrow_mut(), InnerThunk::Evaluating) };
+
+        let InnerThunk::ToEvaluate { captured, body } = thunk else {
+            panic!("Thunk is not to evaluate");
+        };
+
+        self.envs.push();
+        for (name, val) in captured.into_iter() {
+            self.envs.set(name.as_str(), val);
+        }
+        let result = self.eval(body);
+        self.envs.pop();
+        *inner.borrow_mut() = InnerThunk::Evaluated(result.clone());
+        result
     }
 }

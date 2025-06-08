@@ -36,7 +36,7 @@ impl<'a> Visitor<'a> for StructFinder<'a> {
     }
 
     fn visit_list(&mut self, mut list: List) -> Option<SExpId> {
-        println!("Visiting list: {:?}", self.helper.asts.fmt(list.id));
+        // println!("Visiting list: {:?}", self.helper.asts.fmt(list.id));
 
         if self.helper.is_special_form(&list, "thunk") {
             if let [_key, _captured, body_id] = &list.list[..] {

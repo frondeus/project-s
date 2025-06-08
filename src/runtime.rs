@@ -153,7 +153,7 @@ impl Runtime {
         for item in items {
             result = Some(self.eval(*item));
         }
-        result.unwrap_or_else(|| Value::Error("Expected at least one argument".to_string()))
+        result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
     }
 
     pub fn new(asts: ASTS) -> Self {
@@ -209,6 +209,7 @@ impl Runtime {
                 let eager = rc.borrow();
                 eager.clone()
             }
+            // Value::Constructor(constructor) => self.constructor_call(constructor, None),
             val => val,
         }
     }
@@ -277,6 +278,9 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "cl" => {
                         self.closure_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
+                    SExp::Symbol(tag) if tag == "obj/con" => {
+                        self.condef(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
                     SExp::Symbol(tag) if tag == "list" => self.make_list(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
@@ -296,13 +300,14 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
+                        // eprintln!("Evaling first");
                         let first = self.eval_eager_rec(first_id);
 
                         match first {
                             Value::Error(e) => Value::Error(e),
                             Value::Object(map) => {
                                 let Some(key) = items.get(1) else {
-                                    return Value::Error("Expected key".to_string());
+                                    return Value::Object(map);
                                 };
                                 println!("key: {:?}", self.asts.fmt(*key));
                                 let key = self.eval(*key);
@@ -318,8 +323,10 @@ impl Runtime {
                                     Value::Error(format!("Undefined key: {} in {:?}", key, map))
                                 })
                             }
-                            Value::Closure(closure) => self.closure_call(closure, &items[1..]),
-                            Value::Function(function) => self.function_call(function, &items[1..]),
+                            Value::Constructor(constructor) => {
+                                self.constructor_call(constructor, None)
+                            }
+                            Value::Function(function) => self.closure_call(function, &items[1..]),
                             Value::Macro(macro_) => self
                                 .macro_call(macro_, &items[1..])
                                 .map(|id| self.eval(id))
@@ -332,7 +339,20 @@ impl Runtime {
             }
         }
     }
-    pub fn to_json(&mut self, mut value: Value, eager: bool) -> serde_json::Value {
+
+    pub fn to_json(&mut self, value: Value, eager: bool) -> serde_json::Value {
+        self.to_json_inner(value, eager, 5)
+    }
+    pub fn to_json_inner(
+        &mut self,
+        mut value: Value,
+        eager: bool,
+        depth: usize,
+    ) -> serde_json::Value {
+        println!("To json");
+        if depth == 0 {
+            return serde_json::Value::String("...".to_string());
+        }
         if eager {
             value = value.eager_rec(self);
         }
@@ -343,29 +363,26 @@ impl Runtime {
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();
                 for (k, v) in map {
-                    obj.insert(k, self.to_json(v, eager));
+                    obj.insert(k, self.to_json_inner(v, eager, depth - 1));
                 }
                 serde_json::Value::Object(obj)
             }
             Value::List(list) => {
                 let mut arr = vec![];
                 for value in list {
-                    arr.push(self.to_json(value, eager));
+                    arr.push(self.to_json_inner(value, eager, depth - 1));
                 }
                 serde_json::Value::Array(arr)
             }
             Value::Function(function) => {
                 serde_json::Value::String(format!("<Function: {:?}>", function))
             }
-            Value::Closure(closure) => {
-                serde_json::Value::String(format!("<Closure: {:?}>", closure))
+            Value::Constructor(constructor) => {
+                let obj = self.constructor_call(constructor, None);
+                self.to_json_inner(obj, eager, depth - 1)
+                // serde_json::Value::String(format!("<Constructor: {:?}>", constructor))
             }
-            Value::Ref(rc) => {
-                serde_json::Value::String(format!("<Ref: {:?}>", rc))
-                // let rc = rc.borrow();
-                // self.to_json(rc.clone(), eager)
-            }
-            // Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
+            Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
             Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
             Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
@@ -381,7 +398,6 @@ impl Runtime {
 #[derive(Default)]
 pub struct Runtime {
     envs: Envs,
-    // supers: Structs,
     asts: ASTS,
 }
 
@@ -401,22 +417,24 @@ mod tests {
             let mut runtime = Runtime::new(asts);
             runtime.with_prelude();
             let value = runtime.eval(root_id);
-            // println!("value: {value:?}");
             let value = runtime.to_json(value, false);
             serde_json::to_string_pretty(&value).unwrap()
         })
     }
 
     fn eager_test(input: &str) -> String {
-        // eprintln!("---");
+        eprintln!("---");
         let mut asts = ASTS::new();
         let ast = asts.parse(input).unwrap();
         let root_id = ast.root_id().unwrap();
+        eprintln!("Before process");
         let root_id = crate::process_ast(&mut asts, root_id);
 
         let mut runtime = Runtime::new(asts);
         runtime.with_prelude();
+        eprintln!("Before eval");
         let value = runtime.eval(root_id);
+        eprintln!("Value: {value:?}");
         let value = runtime.to_json(value, true);
         serde_json::to_string_pretty(&value).unwrap()
     }

@@ -35,6 +35,14 @@ pub fn symbol(name: &str) -> impl ASTBuilder {
     }
 }
 
+pub fn rest(name: &str, mut rest: Vec<SExpId>) -> impl ASTBuilder {
+    move |ast: &mut AST| {
+        let first = name.assemble(ast);
+        rest.insert(0, first);
+        rest.assemble(ast)
+    }
+}
+
 pub fn error() -> impl ASTBuilder {
     |ast: &mut AST| ast.add_node(SExp::Error)
 }

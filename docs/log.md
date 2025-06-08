@@ -2801,3 +2801,5 @@ output(
 }
 ```
 
+
+[[./acceptance/016-low-level-struct-creation.md]]

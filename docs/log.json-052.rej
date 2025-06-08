@@ -1,0 +1,24 @@
+/Users/frondeus/Code/project-s/docs/log.md:1257
+```
+(( (+ {
+  :a 42.0
+}
+
+(thunk () {
+  :a (fn () (+ (super :a) 10.0))
+})) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-052
+@@ -1265,7 +1265,9 @@
+ ```
+ 
+ ```json
+-52.0
++{
++  "a": "<Function: LispFn { signature: [], captured: {\"super\": Error(\"Undefined variable: super\")}, body: SExpId { id: 4, generation: 1 } }>"
++}
+ ```
+ 
+ Ok, good. Now let's clean this code a little bit!

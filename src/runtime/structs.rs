@@ -10,7 +10,10 @@ use crate::{
     runtime::value::Value,
 };
 
-use super::Runtime;
+use super::{
+    Runtime, // value::{Closure, Constructor},
+    value::Constructor,
+};
 
 // #[derive(Default)]
 // pub(crate) struct Structs {
@@ -36,6 +39,51 @@ use super::Runtime;
 // }
 
 impl Runtime {
+    pub(crate) fn condef(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        match items {
+            [f] => {
+                let f = self.eval_eager_rec(*f);
+                let Value::Function(f) = f else {
+                    return Err(format!("Expected function found {f:?}"));
+                };
+
+                Ok(Value::Constructor(Constructor { constructor: f }))
+            }
+            _ => Err(format!("Expected 1 argument found {}", items.len())),
+        }
+    }
+
+    // Constructor (self)
+    pub(crate) fn constructor_call(
+        &mut self,
+        constructor: Constructor,
+        self_: Option<Value>,
+    ) -> Value {
+        // let self_ = self
+        //     .envs
+        //     .get("self")
+        //     .cloned()
+        //     .unwrap_or_else(|| self.new_ref_obj(Default::default()));
+        let self_ = self_.unwrap_or_else(|| self.new_ref_obj(Default::default()));
+
+        let root = self
+            .envs
+            .get("root")
+            .cloned()
+            .unwrap_or_else(|| self_.clone());
+
+        self.closure_call_inner(constructor.constructor, vec![self_.clone(), root]);
+        let ret = self_;
+        println!("Created object: {ret:?}");
+        match ret {
+            Value::Ref(ret) => match Rc::try_unwrap(ret) {
+                Ok(ret) => ret.into_inner(),
+                Err(ret) => Value::Ref(ret),
+            },
+            v => v,
+        }
+    }
+
     fn insert_to_struct(&mut self, key: &str, items: &mut VecDeque<SExpId>) -> Result<(), String> {
         let Some(value) = items.pop_front() else {
             return Err("Expected value".to_string());
@@ -121,6 +169,14 @@ impl Runtime {
     #[allow(clippy::unnecessary_to_owned)]
     pub(crate) fn make_struct(&mut self, items: &[SExpId]) -> Value {
         let items = items.to_vec().into_iter();
+
+        // Value::Constructor(Constructor {
+        //     closure: Closure {
+        //         signature: vec![],
+        //         captured: Default::default(),
+        //         body: todo!()
+        //     }
+        // })
         self.envs.push();
         let self_ = self.new_ref_obj(BTreeMap::new());
 

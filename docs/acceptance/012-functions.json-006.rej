@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/acceptance/012-functions.md:72
+```
+(( (+ {
+  :a 42.0
+}
+
+{
+  :a (fn () (+ (super :a) 10.0))
+}) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ json-006
+@@ -80,5 +80,7 @@
+ ```
+ 
+ ```json
+-52.0
++{
++  "a": "<Function: LispFn { signature: [], captured: {\"super\": Error(\"Undefined variable: super\")}, body: SExpId { id: 4, generation: 1 } }>"
++}
+ ```

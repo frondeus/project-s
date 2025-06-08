@@ -174,6 +174,15 @@ impl SExp {
         }
     }
 
+    pub fn as_symbol_or_keyword_or_string(&self) -> Option<&str> {
+        match self {
+            SExp::Symbol(s) => Some(s),
+            SExp::Keyword(s) => Some(s),
+            SExp::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
     pub fn as_list(&self) -> Option<&[SExpId]> {
         match self {
             SExp::List(list) => Some(list),

@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/log.md:1664
+```
+(let :base {
+  :a 5.0
+})
+
+(let :x {
+  :key 42.0
+  :value (+ base {
+    :a (+ (super :a) 10.0)
+  })
+})
+
+(((+ {:d 1 } x) :value) :a)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-060
+@@ -1683,7 +1683,7 @@
+ And technically, :x doesnt need to be a thunk.
+ 
+ ```json
+-15.0
++"<Error: Undefined key: a in {\"d\": Thunk(Thunk), \"key\": Thunk(Thunk), \"value\": Thunk(Thunk)}>"
+ ```
+ 
+ 

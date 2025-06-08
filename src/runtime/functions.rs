@@ -5,7 +5,7 @@ use crate::{ast::SExpId, lambda_lifting::CLOSURE_SYMBOL, try_err};
 
 use super::{
     Runtime,
-    value::{Closure, Function, Value},
+    value::{Function, Value},
 };
 
 impl Runtime {
@@ -27,6 +27,7 @@ impl Runtime {
 
         Ok(Value::Function(Function::Lisp {
             signature,
+            captured: Default::default(),
             body: *body,
         }))
     }
@@ -64,52 +65,37 @@ impl Runtime {
 
         let body = items.get(2).ok_or_else(|| "Expected body".to_string())?;
 
-        Ok(Value::Closure(Closure {
+        Ok(Value::Function(Function::Lisp {
             signature,
             captured,
             body: *body,
         }))
     }
 
-    pub(crate) fn function_call(&mut self, function: Function, args: &[SExpId]) -> Value {
+    pub(crate) fn closure_call_inner(&mut self, function: Function, args: Vec<Value>) -> Value {
         match function {
-            Function::Lisp { signature, body } => {
+            Function::Lisp {
+                signature,
+                body,
+                captured,
+            } => {
                 self.envs.push();
                 for (sig, arg) in signature.iter().zip(args) {
-                    let arg = self.eval(*arg);
                     try_err!(arg);
                     self.envs.set(sig, arg);
                 }
+                self.envs.set(CLOSURE_SYMBOL, Value::Object(captured));
 
                 let result = self.eval(body);
                 self.envs.pop();
                 result
             }
-            Function::Rust { body } => {
-                let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
-                body(self, args)
-            }
+            Function::Rust { body } => body(self, args),
         }
     }
 
-    pub(crate) fn closure_call(&mut self, closure: Closure, args: &[SExpId]) -> Value {
-        let Closure {
-            signature,
-            captured,
-            body,
-        } = closure;
-        self.envs.push();
-        for (sig, arg) in signature.into_iter().zip(args) {
-            let arg: Value = self.eval(*arg);
-            try_err!(arg);
-            self.envs.set(sig.as_str(), arg);
-        }
-        self.envs.set(CLOSURE_SYMBOL, Value::Object(captured));
-
-        eprintln!("Calling closure: {}", self.asts.fmt(body));
-
-        let result = self.eval(body);
-        self.envs.pop();
-        result
+    pub(crate) fn closure_call(&mut self, function: Function, args: &[SExpId]) -> Value {
+        let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
+        self.closure_call_inner(function, args)
     }
 }
