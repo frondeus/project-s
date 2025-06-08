@@ -2636,8 +2636,12 @@ The alternative is `origin`
 ```
 
 I think this is something I want to change...
+
+#### Origin
+
 I want to introduce `origin` that would be like `root` but from `super`.
 
+##### Root
 Compare (`root`):
 
 ```js
@@ -2645,14 +2649,15 @@ const { create_obj, add, output } = require("./docs/obj");
 // Root in nested left ({} -> +)
 output(
   create_obj(({self, root}) => {
-    self.set("a", 1);
+    self.set("a", "the most top a");
     self.set("b", add(
       create_obj({
-        d: 3
+        d: "left side d"
       }),
       create_obj(({self, root}) => {
-        self.set("a", 2);
+        self.set("a", "the most top a from right side");
         self.set("b", create_obj(({self, root}) => {
+          self.set("a", "the most inner a from right side");
           self.set("c", root.get("a"));
         })({root}))
       })
@@ -2664,13 +2669,135 @@ output(
 
 ```js-eval
 {
-  "a": 1,
+  "a": "the most top a",
   "b": {
-    "d": 3,
-    "a": 2,
+    "d": "left side d",
+    "a": "the most top a from right side",
     "b": {
-      "c": 2
+      "a": "the most inner a from right side",
+      "c": "the most top a from right side"
     }
   }
 }
 ```
+
+##### Super
+
+```js
+const { create_obj, add, output } = require("./docs/obj");
+// Root in nested left ({} -> +)
+output(
+  create_obj(({self, root}) => {
+    self.set("a", "the most top a");
+    self.set("b", add(
+      create_obj({
+        d: "left side d",
+        a: "left side a",
+      }),
+      create_obj(({self, root, super_}) => {
+        self.set("a", "the most top a from right side");
+        self.set("b", create_obj(({self, super_}) => {
+          self.set("a", "the most inner a from right side");
+          self.set("c", super_.get("a"));
+        })({root, super_}))
+      })
+    )({root}));
+
+  })
+)
+```
+
+```js-eval
+{
+  "a": "the most top a",
+  "b": {
+    "d": "left side d",
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "left side a"
+    }
+  }
+}
+```
+
+##### Self
+
+```js
+const { create_obj, add, output } = require("./docs/obj");
+// Root in nested left ({} -> +)
+output(
+  create_obj(({self, root}) => {
+    self.set("a", "the most top a");
+    self.set("b", add(
+      create_obj({
+        d: "left side d",
+        a: "left side a",
+      }),
+      create_obj(({self, root, super_}) => {
+        self.set("a", "the most top a from right side");
+        self.set("b", create_obj(({self, super_}) => {
+          self.set("a", "the most inner a from right side");
+          self.set("c", self.get("a"));
+        })({root, super_}))
+      })
+    )({root}));
+
+  })
+)
+```
+
+```js-eval
+{
+  "a": "the most top a",
+  "b": {
+    "d": "left side d",
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "the most inner a from right side"
+    }
+  }
+}
+```
+
+##### Origin
+
+```js
+const { create_obj, add, output } = require("./docs/obj");
+// Root in nested left ({} -> +)
+output(
+  create_obj(({self, root}) => {
+    self.set("a", "the most top a");
+    self.set("b", add(
+      create_obj({
+        d: "left side d",
+        a: "left side a",
+      }),
+      create_obj(({self, root, super_, origin}) => {
+        self.set("a", "the most top a from right side");
+        self.set("b", create_obj(({self, super_, origin}) => {
+          self.set("a", "the most inner a from right side");
+          self.set("c", origin.get("a"));
+        })({root, super_, origin}))
+      })
+    )({root}));
+
+  })
+)
+```
+
+```js-eval
+{
+  "a": "the most top a",
+  "b": {
+    "d": "left side d",
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "the most top a"
+    }
+  }
+}
+```
+

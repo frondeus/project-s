@@ -5,8 +5,9 @@ let create_obj = (constructor) => {
     let self = ctx.self ?? new Map();
     let root = ctx.root ?? self;
     let super_ = ctx.super_;
+    let origin = ctx.origin ?? self;
     if (constructor instanceof Function) {
-        constructor({self, root, super_});
+        constructor({self, root, super_, origin});
     }
     if (constructor instanceof Object) {
         for (let [key, value] of Object.entries(constructor)) {
@@ -20,7 +21,7 @@ let create_obj = (constructor) => {
 let add = (a, b) => create_obj(({self, root}) => {
     let left = a({ root, super_: self, self });
     let super_ = new Map(Object.entries(left));
-    b({ root: undefined, super_, self });
+    b({ root: undefined, super_, self, origin: root });
 });
 
 let output = (obj) => {
