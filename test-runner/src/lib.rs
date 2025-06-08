@@ -4,6 +4,6 @@ pub type Result<T = (), E = anyhow::Error> = std::result::Result<T, E>;
 
 mod runner;
 
-pub use runner::test_snapshots;
+pub use runner::{test_snapshots, test_snapshots_custom};
 
 mod utils;

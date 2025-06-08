@@ -58,6 +58,21 @@ where
     R: Send + Fn(&str, &HashMap<CowStr, &str>) -> String,
     for<'a> &'a R: Send,
 {
+    test_snapshots_custom(root, "", section_name, test_fn)
+}
+
+#[allow(dead_code)]
+pub fn test_snapshots_custom<R>(
+    root: &str,
+    source_name: &str,
+    section_name: &str,
+    test_fn: R,
+) -> Result<()>
+where
+    R: RefUnwindSafe,
+    R: Send + Fn(&str, &HashMap<CowStr, &str>) -> String,
+    for<'a> &'a R: Send,
+{
     let path = crate::utils::project_root()?;
 
     let entries = glob::glob(&format!("{}/{root}/**/*.md", path.display()))?
@@ -96,7 +111,7 @@ where
             let mut name_iter = name.split(' ');
             let name = name_iter.next().unwrap_or_default();
             match name {
-                "" => {
+                name if name == source_name => {
                     let source_line = source_line(&files[entry_id], section.range.start);
                     test_cases.push(TestCase::new(
                         &files[entry_id],
@@ -114,11 +129,10 @@ where
                     test_cases.last_mut().expect("test case").count = count;
                 }
                 _ => {
-                    test_cases
-                        .last_mut()
-                        .expect("test case")
-                        .previous
-                        .insert(section.name, section.section);
+                    let Some(test_case) = test_cases.last_mut() else {
+                        continue;
+                    };
+                    test_case.previous.insert(section.name, section.section);
                 }
             }
         }
@@ -134,7 +148,7 @@ where
     test_cases.retain(|t| !t.has_arg("ignore"));
 
     for test_case in test_cases {
-        let code = test_case.previous.get("").expect("Source");
+        let code = test_case.previous.get(source_name).expect("Source");
         // eprintln!("{code}");
         let test_fn = &test_fn;
         let previous = &test_case.previous;
@@ -142,7 +156,7 @@ where
         let actual = catch_unwind(|| test_fn(code, previous));
         let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
 
-        match assert_section(section_name, test_case, &actual) {
+        match assert_section(section_name, source_name, test_case, &actual) {
             Ok(_) => {
                 print!(".");
                 successes += 1;
@@ -162,31 +176,26 @@ where
     Ok(())
 }
 
-fn assert_section(name: &str, test_case: TestCase, actual: &str) -> Result<()> {
-    let code = test_case.previous.get("").expect("Source");
+fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &str) -> Result<()> {
+    let code = test_case.previous.get(source_name).expect("Source");
     let expected = test_case.section.expect("Expected");
     let count = test_case.count;
     let entry = test_case.entry;
     let file = test_case.file;
     let source_line = test_case.source_line;
 
-    let fenced_without_code = |slice: &str| -> String {
-        let fin = {
-            let count = slice.chars().filter(|c| *c == '`').count();
-
-            "`".repeat(count + 3)
-        };
-        format!("{fin}\n{}\n{fin}", slice)
-    };
-    let fenced = |slice: &str| -> String {
+    let fenced_with_code = |slice: &str, code: CowStr<'_>| -> String {
         let (fin, fout) = {
             let count = slice.chars().filter(|c| *c == '`').count();
 
             let backticks = "`".repeat(count + 3);
-            (format!("{}{}", backticks, expected.name), backticks)
+            (format!("{}{}", backticks, code), backticks)
         };
         format!("{fin}\n{}\n{fout}", slice)
     };
+    let fenced_without_code =
+        |slice: &str| -> String { fenced_with_code(slice, CowStr::from(source_name)) };
+    let fenced = |slice: &str| -> String { fenced_with_code(slice, expected.name) };
 
     let expected_name = if count > 1 {
         format!("{}-{:0>3}", name, count)

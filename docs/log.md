@@ -2181,3 +2181,65 @@ Well.. fuck.
 
 The problem is. The moment i use `super` or `root` the object is no longer an object.
 It becomes object constructor
+
+In javascript we would define it as:
+
+```js
+let create_obj = (constructor) => {
+  return (root) => {
+    let self = new Map();
+    constructor(self, root ?? self);
+    return Object.fromEntries(self);
+  };
+};
+
+let foo = create_obj((self, root) => {
+  self.set("b", 4);
+  self.set("a", root.get("b"));
+});
+
+let bar = create_obj((self, root) => {
+  self.set("b", 10);
+  self.set("c", foo(root));
+});
+
+({ "bar": bar(), "foo": foo() })
+```
+
+```js-eval
+{ bar: { b: 10, c: { b: 4, a: 10 } }, foo: { b: 4, a: 4 } }
+```
+
+What's worth pointing - object constructor is not a thunk!
+It's a separate being that is not cached.
+It is more similar to a function or a closure.
+
+How that would affect `super`? Super is similar. When `root` or `super` is in use
+it cannot be expressed as thunk!
+Otherwise, it would work only once!
+
+```js
+let create_obj = (constructor) => {
+  return (root) => {
+    let self = new Map();
+    constructor(self, root ?? self);
+    return Object.fromEntries(self);
+  };
+};
+
+let foo = create_obj((self, root) => {
+  self.set("b", 4);
+  self.set("a", root.get("b"));
+});
+
+let bar = create_obj((self, root) => {
+  self.set("b", 10);
+  self.set("c", foo(root));
+});
+
+({ "bar": bar(), "foo": foo() })
+```
+
+```js-eval
+{ bar: { b: 10, c: { b: 4, a: 10 } }, foo: { b: 4, a: 4 } }
+```
