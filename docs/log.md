@@ -2112,3 +2112,72 @@ x
 ```json-lazy
 "<Ref: RefCell { value: Number(6.0) }>"
 ```
+
+How do i modify root?
+Adding two objects can be expressed in javascript as
+
+```js
+let super_ =  () => {
+  a: 5
+};
+
+let right = () => ({
+  a: 6,
+  b: super_().a + 10
+});
+
+super_() + right()
+
+```
+
+# 08.06
+
+So, i need to make sure i understand difference between
+`self`, `super` and `root` in all contexts:
+
+`self` is easiest one - it doesn't change depending on the application.
+`root` always points towards... root.
+
+So if I have 
+```js
+let foo = {
+  b: 4,
+  a: root.b
+};
+```
+then `foo` on its own returns `{b: 4, a:4}` but at the same time
+`{ b: 10, c: foo }` should return `{ b: 10, c: { b: 4, a: 10 }}`!
+
+Is that a case?
+
+```
+(let :foo { :b 4 :a (root :b )})
+foo
+```
+
+```json
+{
+  "a": 4.0,
+  "b": 4.0
+}
+```
+
+```
+(let :foo { :b 4 :a (root :b )})
+{ :b 10 :c foo }
+```
+
+```json
+{
+  "b": 10.0,
+  "c": {
+    "a": 4.0,
+    "b": 4.0
+  }
+}
+```
+
+Well.. fuck.
+
+The problem is. The moment i use `super` or `root` the object is no longer an object.
+It becomes object constructor
