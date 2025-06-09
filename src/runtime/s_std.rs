@@ -48,6 +48,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
             self_: Value,
             root: Option<Value>,
             super_: Value,
+            origin: Option<Value>,
         ) -> Result<Value, String> {
             Ok(match self {
                 ObjectOrConstructor::Constructor(left) => {
@@ -57,6 +58,9 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                         rt.envs.set("root", root.clone());
                     }
                     rt.envs.set("super", super_.clone());
+                    if let Some(origin) = origin {
+                        rt.envs.set("origin", origin.clone());
+                    }
                     let res = rt.constructor_call(left, Some(self_.clone()));
                     rt.envs.pop();
                     res
@@ -75,6 +79,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         rt: &mut Runtime,
         self_: Value,
         root: Value,
+        origin: Value,
         left: ObjectOrConstructor,
         right: ObjectOrConstructor,
     ) -> Result<Value, String> {
@@ -88,15 +93,21 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         println!("Adding obj: {:?}, {:?}", left, right);
         println!("Self: {:?}", self_);
         println!("Root: {:?}", root);
-        let super_ = Value::ref_(Value::Object(BTreeMap::new()));
-        let left = left.call(rt, self_.clone(), Some(root), super_)?;
+        // let super_ = Value::ref_(Value::Object(BTreeMap::new()));
+        let left = left.call(
+            rt,
+            self_.clone(),
+            Some(root.clone()),
+            self_.clone(),
+            Some(origin),
+        )?;
         println!("Left: {:?}", left);
         let super_ = left.deref();
         // let super_ = Value::ref_(self_.clone());
         // let self_ = Value::ref_(self_.clone());
         println!("Super: {:?}", super_);
         println!("Self: {:?}", self_);
-        right.call(rt, self_.clone(), None, super_)?;
+        right.call(rt, self_.clone(), Some(self_.clone()), super_, Some(root))?;
         println!("Result: {:?}", self_);
 
         Ok(self_)
@@ -138,11 +149,11 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root]) = TryInto::<[Value; 2]>::try_into(args) else {
+                    let Ok([self_, root, origin]) = TryInto::<[Value; 3]>::try_into(args) else {
                         return Value::Error("Expected two arguments".into());
                     };
 
-                    add_obj_impl(rt, self_, root, left.clone(), right.clone())
+                    add_obj_impl(rt, self_, root, origin, left.clone(), right.clone())
                         .unwrap_or_else(Value::Error)
                 }),
             }))
@@ -166,11 +177,11 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root]) = TryInto::<[Value; 2]>::try_into(args) else {
+                    let Ok([self_, root, origin]) = TryInto::<[Value; 3]>::try_into(args) else {
                         return Value::Error("Expected two arguments".into());
                     };
 
-                    add_obj_impl(rt, self_, root, left.clone(), right.clone())
+                    add_obj_impl(rt, self_, root, origin, left.clone(), right.clone())
                         .unwrap_or_else(Value::Error)
                 }),
             }))
@@ -285,7 +296,7 @@ fn insert_to_struct(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String>
 fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     Ok((
         "obj/con",
-        ("fn", (":self", ":root"), move |ast: &mut AST| {
+        ("fn", (":self", ":root", ":origin"), move |ast: &mut AST| {
             let mut items = args;
             items.insert(0, "do".assemble(ast));
             items.push("self".assemble(ast));
@@ -293,6 +304,14 @@ fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
         }),
     )
         .build(&mut rt.asts))
+}
+
+fn objput(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+    let Ok([key, value]) = TryInto::<[SExpId; 2]>::try_into(args) else {
+        return Err("Expected two arguments".into());
+    };
+
+    Ok(("obj/insert", "self", key, value).build(&mut rt.asts))
 }
 
 impl Runtime {
@@ -332,6 +351,7 @@ impl Runtime {
 
         self.with_try_fn("obj/insert", insert_to_struct);
         self.with_try_macro("obj/condef", condef);
+        self.with_try_macro("obj/put", objput);
 
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {

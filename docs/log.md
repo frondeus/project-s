@@ -2803,3 +2803,8 @@ output(
 
 
 [[./acceptance/016-low-level-struct-creation.md]]
+
+# 09.06
+
+Found an issue with low level representation.
+`root` is ALWAYS visible because ... oh. Maybe?

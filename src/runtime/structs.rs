@@ -72,7 +72,13 @@ impl Runtime {
             .cloned()
             .unwrap_or_else(|| self_.clone());
 
-        self.closure_call_inner(constructor.constructor, vec![self_.clone(), root]);
+        let origin = self
+            .envs
+            .get("origin")
+            .cloned()
+            .unwrap_or_else(|| self_.clone());
+
+        self.closure_call_inner(constructor.constructor, vec![self_.clone(), root, origin]);
         let ret = self_;
         println!("Created object: {ret:?}");
         match ret {
