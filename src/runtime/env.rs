@@ -1,12 +1,83 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, rc::Rc};
 
-use super::value::Value;
+use crate::{
+    ast::SExpId,
+    builder::{ASTBuilder, error},
+};
+
+use super::{
+    Runtime,
+    value::{Function, Macro, Value},
+};
 
 #[derive(Default, Debug)]
 pub struct Env {
     // is_obj: bool,
     vars: BTreeMap<String, Value>,
 }
+
+impl Env {
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.vars.keys().map(|k| k.as_str())
+    }
+
+    pub fn with_fn(
+        mut self,
+        name: impl ToString,
+        body: impl Fn(&mut Runtime, Vec<Value>) -> Value + 'static,
+    ) -> Self {
+        self.vars.insert(
+            name.to_string(),
+            Value::Function(Function::Rust {
+                body: Rc::new(body),
+            }),
+        );
+        self
+    }
+
+    pub fn with_macro(
+        mut self,
+        name: impl ToString,
+        body: impl Fn(&mut Runtime, Vec<SExpId>) -> SExpId + 'static,
+    ) -> Self {
+        self.vars.insert(
+            name.to_string(),
+            Value::Macro(Macro::Rust {
+                body: Rc::new(body),
+            }),
+        );
+        self
+    }
+
+    pub fn with_try_fn(
+        self,
+        name: &str,
+        body: impl Fn(&mut Runtime, Vec<Value>) -> Result<Value, String> + 'static,
+    ) -> Self {
+        self.with_fn(name, move |rt, args| {
+            let result = body(rt, args);
+            result.unwrap_or_else(Value::Error)
+        })
+    }
+
+    pub fn with_try_macro(
+        self,
+        name: &str,
+        body: impl Fn(&mut Runtime, Vec<SExpId>) -> Result<SExpId, String> + 'static,
+    ) -> Self {
+        self.with_macro(name, move |rt, args| {
+            let result = body(rt, args);
+            match result {
+                Ok(id) => id,
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    error().build(&mut rt.asts)
+                }
+            }
+        })
+    }
+}
+
 // impl Env {
 // pub fn keys(&self) -> impl Iterator<Item = &str> {
 //     self.vars.keys().map(|k| k.as_str())
@@ -36,13 +107,18 @@ impl Envs {
         }
     }
 
+    pub fn with_env(&mut self, env: Env) {
+        self.envs.clear();
+        self.envs.push(env);
+    }
+
     fn last_mut(&mut self) -> &mut Env {
         self.envs.last_mut().expect("No environment")
     }
 
-    // pub fn last(&self) -> &Env {
-    //     self.envs.last().expect("No environment")
-    // }
+    pub fn last(&self) -> &Env {
+        self.envs.last().expect("No environment")
+    }
 
     pub fn set(&mut self, name: &str, value: Value) {
         self.last_mut().vars.insert(name.to_string(), value);

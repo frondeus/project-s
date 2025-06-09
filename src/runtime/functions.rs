@@ -23,6 +23,7 @@ impl Runtime {
             .into_iter()
             .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
             .collect();
+
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
         Ok(Value::Function(Function::Lisp {
@@ -79,6 +80,7 @@ impl Runtime {
                 body,
                 captured,
             } => {
+                eprintln!("Envs: {:#?}", self.envs);
                 self.envs.push();
                 for (sig, arg) in signature.iter().zip(args) {
                     try_err!(arg);

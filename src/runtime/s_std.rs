@@ -6,7 +6,7 @@ use crate::{
 };
 
 use super::{
-    Runtime, Value,
+    Env, Runtime, Value,
     value::{Constructor, Function},
 };
 
@@ -368,6 +368,29 @@ fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     Ok(result)
 }
 
+pub fn prelude() -> Env {
+    Env::default()
+        .with_try_fn("-", sub)
+        .with_try_fn("+", add)
+        .with_try_fn("ref", new_ref)
+        .with_try_fn("set", set)
+        .with_try_fn("obj/insert", insert_to_struct)
+        .with_try_macro("obj/condef", condef)
+        .with_try_macro("obj/put", objput)
+        .with_try_macro("obj/+", obj_add)
+        .with_try_macro("obj/struct", obj_struct)
+        .with_try_fn("obj/eval", obj_eval)
+        .with_try_macro("struct", obj_struct)
+        .with_try_macro("+obj", add_obj)
+        .with_fn("print", |_rt, args| {
+            for arg in args.into_iter() {
+                eprintln!("{:?}", arg);
+            }
+
+            Value::Number(1.0)
+        })
+}
+
 impl Runtime {
     pub fn with_try_fn(
         &mut self,
@@ -397,29 +420,12 @@ impl Runtime {
         });
     }
 
+    pub fn with_env(&mut self, env: Env) {
+        self.envs.with_env(env);
+    }
+
     pub fn with_prelude(&mut self) {
-        self.with_try_fn("-", sub);
-        self.with_try_fn("+", add);
-
-        self.with_try_fn("ref", new_ref);
-        self.with_try_fn("set", set);
-
-        self.with_try_fn("obj/insert", insert_to_struct);
-        self.with_try_macro("obj/condef", condef);
-        self.with_try_macro("obj/put", objput);
-        self.with_try_macro("obj/+", obj_add);
-        self.with_try_macro("obj/struct", obj_struct);
-        self.with_try_fn("obj/eval", obj_eval);
-        self.with_try_macro("struct", obj_struct);
-
-        self.with_try_macro("+obj", add_obj);
-        self.with_fn("print", |_rt, args| {
-            for arg in args.into_iter() {
-                eprintln!("{:?}", arg);
-            }
-
-            Value::Number(1.0)
-        });
+        self.with_env(prelude());
     }
 }
 
@@ -438,10 +444,11 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let root_id = crate::process_ast(&mut asts, root_id);
+            let prelude = prelude();
+            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
 
             let mut runtime = Runtime::new(asts);
-            runtime.with_prelude();
+            runtime.with_env(prelude);
             let log = Arc::new(Mutex::new(String::new()));
             let log_clone = log.clone();
             runtime.with_fn("print", move |_rt, args| {

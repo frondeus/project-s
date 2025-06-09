@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+pub use env::Env;
 use env::Envs;
 // use structs::Structs;
 use value::{Function, Macro, Value};
@@ -13,7 +14,7 @@ mod env;
 mod functions;
 mod lists;
 mod quotes;
-mod s_std;
+pub mod s_std;
 mod structs;
 mod thunks;
 mod value;
@@ -89,6 +90,7 @@ impl Runtime {
                 };
 
                 let value = self.eval(*value);
+                println!("Adding to env: {:?}", self.envs.last());
                 self.envs.set(ident, value.clone());
                 value
             }
@@ -145,7 +147,8 @@ impl Runtime {
         };
 
         println!("Macro call result: {}", self.asts.fmt(result));
-        let processed = crate::process_ast(&mut self.asts, result);
+        let env = self.envs.last();
+        let processed = crate::process_ast(&mut self.asts, result, env);
         println!("Processed: {}", self.asts.fmt(processed));
 
         Ok(processed)
@@ -157,6 +160,7 @@ impl Runtime {
         for item in items {
             result = Some(self.eval(*item));
         }
+        self.envs.pop();
         result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
     }
 
@@ -431,7 +435,7 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{s_std::prelude, *};
 
     #[test]
     fn integration_lazy() -> test_runner::Result {
@@ -440,10 +444,11 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let root_id = crate::process_ast(&mut asts, root_id);
+            let prelude = prelude();
+            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
 
             let mut runtime = Runtime::new(asts);
-            runtime.with_prelude();
+            runtime.with_env(prelude);
             let value = runtime.eval(root_id);
             let value = runtime.to_json(value, false);
             serde_json::to_string_pretty(&value).unwrap()
@@ -456,10 +461,11 @@ mod tests {
         let ast = asts.parse(input).unwrap();
         let root_id = ast.root_id().unwrap();
         eprintln!("Before process");
-        let root_id = crate::process_ast(&mut asts, root_id);
+        let prelude = prelude();
+        let root_id = crate::process_ast(&mut asts, root_id, &prelude);
 
         let mut runtime = Runtime::new(asts);
-        runtime.with_prelude();
+        runtime.with_env(prelude);
         eprintln!("Before eval");
         let value = runtime.eval(root_id);
         eprintln!("Value: {value:?}");
@@ -484,7 +490,8 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let root_id = crate::process_ast(&mut asts, root_id);
+            let prelude = prelude();
+            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
 
             asts.fmt(root_id).to_string()
         })

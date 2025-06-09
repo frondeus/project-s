@@ -27,11 +27,14 @@ pub struct LambdaPass<'a> {
 }
 
 impl<'a> LambdaPass<'a> {
-    pub fn pass(asts: &'a mut ASTS, root: SExpId) -> SExpId {
+    pub fn pass(asts: &'a mut ASTS, root: SExpId, env: &'a crate::runtime::Env) -> SExpId {
         let new_ast = asts.new_ast();
         let ast_id = asts.add_ast(new_ast);
+        let envs: Envs = env.into();
+        println!("Envs: {:?}", envs);
+
         let mut pass = Self {
-            envs: Envs::new(),
+            envs,
             asts,
             new_ast_id: ast_id,
         };
@@ -317,16 +320,28 @@ impl<'a> LambdaPass<'a> {
     }
 }
 
+impl From<&crate::runtime::Env> for Env {
+    fn from(env: &crate::runtime::Env) -> Self {
+        Self {
+            // Problem: This populates only with latest env.
+            vars: env.keys().map(|k| k.to_string()).collect(),
+            kind: EnvKind::Global,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct Env {
     vars: BTreeSet<String>,
     kind: EnvKind,
 }
 
+#[derive(Debug)]
 struct Envs {
     envs: Vec<Env>,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum EnvKind {
     Global,
     Function,
@@ -357,6 +372,14 @@ impl Env {
 enum VariableKind {
     Local,
     Free,
+}
+
+impl From<&crate::runtime::Env> for Envs {
+    fn from(env: &crate::runtime::Env) -> Self {
+        Self {
+            envs: vec![env.into()],
+        }
+    }
 }
 
 impl Envs {
@@ -402,6 +425,8 @@ impl Envs {
 
 #[cfg(test)]
 mod tests {
+    use crate::s_std::prelude;
+
     use super::*;
 
     #[test]
@@ -411,7 +436,8 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let new_root = LambdaPass::pass(&mut asts, root_id);
+            let prelude = prelude();
+            let new_root = LambdaPass::pass(&mut asts, root_id, &prelude);
             let output = asts.fmt(new_root);
             output.to_string()
         })

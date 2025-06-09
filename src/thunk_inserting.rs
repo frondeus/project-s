@@ -127,10 +127,11 @@ mod tests {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
-            let root_id = crate::process_ast(&mut asts, root_id);
+            let prelude = crate::s_std::prelude();
+            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
             let root_id = ThunkPass::pass(&mut asts, root_id);
             let mut runtime = crate::runtime::Runtime::new(asts);
-            runtime.with_prelude();
+            runtime.with_env(prelude);
             let result = runtime.eval(root_id);
             let value = runtime.to_json(result, true);
             serde_json::to_string_pretty(&value).unwrap()

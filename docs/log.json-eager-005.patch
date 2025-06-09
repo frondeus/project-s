@@ -4,18 +4,20 @@
 
 (let :fun (fn () (do
   (let :x 10 )
-  (fundef x)
+  (do
+  (fundef x))
 )))
 
-((fun))
+(let :outer (fun))
+(outer)
 ````
 
 --- /Users/frondeus/Code/project-s/docs/log.md
 +++ json-eager-005
-@@ -2890,5 +2890,5 @@
+@@ -2892,5 +2892,5 @@
  ```
  
  ```json-eager only
--10.0
+-10.00
 +"<Error: Undefined variable: x>"
  ```

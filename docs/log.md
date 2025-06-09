@@ -2883,10 +2883,12 @@ Example:
 
 (let :fun (fn () (do
   (let :x 10 )
-  (fundef x)
+  (do
+  (fundef x))
 )))
 
-((fun))
+(let :outer (fun))
+(outer)
 ```
 
 ```json-eager only
