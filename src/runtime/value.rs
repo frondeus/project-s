@@ -157,6 +157,13 @@ impl Value {
         }
     }
 
+    pub fn as_boolean(&self) -> Option<bool> {
+        match self {
+            Value::Bool(b) => Some(*b),
+            _ => None,
+        }
+    }
+
     pub fn as_ref(&self) -> Option<&RefCell<Value>> {
         match self {
             Value::Ref(rc) => Some(rc),

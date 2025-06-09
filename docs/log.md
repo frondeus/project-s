@@ -2808,3 +2808,49 @@ output(
 
 Found an issue with low level representation.
 `root` is ALWAYS visible because ... oh. Maybe?
+
+
+Okay... I finished low level code.
+Now what's missing is if expression.
+
+```
+(if true 4)
+```
+
+```json
+4.0
+```
+
+Note, we are not forcing directly the else branch.
+Instead we raise an error.
+That's how we can still use one-branch-if if we just need side effects.
+
+```
+(if false 4)
+```
+
+```json
+"<Error: No else branch>"
+```
+
+```
+(if false 4 5)
+```
+
+```json
+5.0
+```
+
+Problem with implementing `if` as STD function is, we always evaluate both branches.
+
+```
+(if true 4 
+  (print "false!")
+)
+```
+
+```log
+
+```
+
+[[./todo.md]]

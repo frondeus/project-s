@@ -156,6 +156,28 @@ impl Runtime {
         result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
     }
 
+    fn if_(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        match items {
+            [condition, then, else_] => {
+                let condition = self.eval(*condition);
+                Ok(if condition.as_boolean().ok_or("Expected boolean")? {
+                    self.eval(*then)
+                } else {
+                    self.eval(*else_)
+                })
+            }
+            [condition, then] => {
+                let condition = self.eval(*condition);
+                if condition.as_boolean().ok_or("Expected boolean")? {
+                    Ok(self.eval(*then))
+                } else {
+                    Err("No else branch".to_string())
+                }
+            }
+            _ => Err(format!("Expected 2 or 3 arguments, found: {}", items.len())),
+        }
+    }
+
     pub fn new(asts: ASTS) -> Self {
         Self {
             asts,
@@ -298,6 +320,9 @@ impl Runtime {
                         self.quasiquote(item)
                     }
                     SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
+                    SExp::Symbol(tag) if tag == "if" => {
+                        self.if_(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
                         // eprintln!("Evaling first");

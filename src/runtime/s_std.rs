@@ -346,6 +346,7 @@ impl Runtime {
     pub fn with_prelude(&mut self) {
         self.with_try_fn("-", sub);
         self.with_try_fn("+", add);
+
         self.with_try_fn("ref", new_ref);
         self.with_try_fn("set", set);
 
