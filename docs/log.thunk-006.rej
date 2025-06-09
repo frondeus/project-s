@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/log.md:1692
+```
+{
+  :a (+ (super a) 5.0)
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ thunk-006
+@@ -1696,7 +1696,7 @@
+ ```
+ 
+ ```thunk
+-(do (thunk () (struct :a (+ (super a) 5))))
++(do (obj/struct :a (+ (super a) 5)))
+ ```
+ 
+ ```

@@ -60,10 +60,10 @@ impl Runtime {
     fn has_obj(&mut self, items: &[SExpId]) -> Value {
         match items {
             [obj, key] => {
-                let obj = self.eval_eager(*obj);
+                let obj = self.eval_eager_rec(*obj, true);
                 try_err!(obj);
                 let Some(obj) = obj.as_object() else {
-                    return Value::Error("has_obj: Expected object".to_string());
+                    return Value::Error(format!("has_obj: Expected object, found {:?}", obj));
                 };
                 let key = self.eval(*key);
                 try_err!(key);
@@ -211,41 +211,43 @@ impl Runtime {
         );
     }
 
-    pub fn eval_eager_rec(&mut self, sexp: SExpId) -> Value {
+    pub fn eval_eager_rec(&mut self, sexp: SExpId, include_constructor: bool) -> Value {
         let mut value = self.eval(sexp);
-        while value.is_lazy() {
-            value = self.to_eager(value);
+        while value.is_lazy(include_constructor) {
+            value = self.to_eager(value, include_constructor);
         }
         value
     }
 
-    pub fn eval_eager(&mut self, sexp: SExpId) -> Value {
+    pub fn eval_eager(&mut self, sexp: SExpId, include_constructor: bool) -> Value {
         let value = self.eval(sexp);
-        self.to_eager(value)
+        self.to_eager(value, include_constructor)
     }
 
-    pub fn to_eager(&mut self, value: Value) -> Value {
+    pub fn to_eager(&mut self, value: Value, include_constructor: bool) -> Value {
         match value {
             Value::Thunk(thunk) => self.thunk_call(thunk),
             Value::Ref(rc) => {
                 let eager = rc.borrow();
                 eager.clone()
             }
-            // Value::Constructor(constructor) => self.constructor_call(constructor, None),
+            Value::Constructor(constructor) if include_constructor => {
+                self.constructor_call(constructor, None)
+            }
             val => val,
         }
     }
 
-    fn as_symbol_or_keyword_or_string(&self, value: Value) -> Option<&str> {
-        let sexp = value.as_sexp()?;
-        let sexp = self.asts.get(*sexp);
-        match sexp {
-            SExp::Symbol(s) => Some(s),
-            SExp::Keyword(s) => Some(s),
-            SExp::String(s) => Some(s),
-            _ => None,
-        }
-    }
+    // fn as_symbol_or_keyword_or_string(&self, value: Value) -> Option<&str> {
+    //     let sexp = value.as_sexp()?;
+    //     let sexp = self.asts.get(*sexp);
+    //     match sexp {
+    //         SExp::Symbol(s) => Some(s),
+    //         SExp::Keyword(s) => Some(s),
+    //         SExp::String(s) => Some(s),
+    //         _ => None,
+    //     }
+    // }
 
     fn as_symbol_or_keyword(&self, value: &Value) -> Option<&str> {
         let sexp = value.as_sexp()?;
@@ -303,7 +305,6 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "obj/con" => {
                         self.condef(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "struct" => self.make_struct(&items[1..]),
                     SExp::Symbol(tag) if tag == "list" => self.make_list(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
@@ -326,7 +327,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
                         // eprintln!("Evaling first");
-                        let first = self.eval_eager_rec(first_id);
+                        let first = self.eval_eager_rec(first_id, true);
 
                         match first {
                             Value::Error(e) => Value::Error(e),
@@ -379,7 +380,7 @@ impl Runtime {
             return serde_json::Value::String("...".to_string());
         }
         if eager {
-            value = value.eager_rec(self);
+            value = value.eager_rec(self, true);
         }
         match value {
             Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
@@ -403,9 +404,7 @@ impl Runtime {
                 serde_json::Value::String(format!("<Function: {:?}>", function))
             }
             Value::Constructor(constructor) => {
-                let obj = self.constructor_call(constructor, None);
-                self.to_json_inner(obj, eager, depth - 1)
-                // serde_json::Value::String(format!("<Constructor: {:?}>", constructor))
+                serde_json::Value::String(format!("<Constructor: {:?}>", constructor))
             }
             Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
             Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
@@ -431,7 +430,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn integration_lazy() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-lazy", |input, _deps| {
             // eprintln!("---");
             let mut asts = ASTS::new();
@@ -465,9 +464,12 @@ mod tests {
     }
 
     #[test]
-    fn integration_eager() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))?;
+    fn integration() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))
+    }
 
+    #[test]
+    fn integration_eager() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-eager", |input, _deps| eager_test(input))
     }
 

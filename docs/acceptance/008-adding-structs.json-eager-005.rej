@@ -1,0 +1,19 @@
+/Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md:121
+```
+({
+  :b (self :a)
+  :a 4.0
+} :b)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
++++ json-eager-005
+@@ -126,7 +126,7 @@
+ ```
+ 
+ ```json-eager
+-4.0
++"<Error: Undefined key: a in {}>"
+ ```
+ 
+ Root:

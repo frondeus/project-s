@@ -73,15 +73,11 @@ where
 impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Lisp {
-                signature,
-                body,
-                captured,
-            } => f
+            Self::Lisp { .. } => f
                 .debug_struct("LispFn")
-                .field("signature", signature)
-                .field("captured", captured)
-                .field("body", body)
+                // .field("signature", signature)
+                // .field("captured", captured)
+                // .field("body", body)
                 .finish(),
             Self::Rust { .. } => f.debug_struct("RustFn").finish(),
         }
@@ -136,11 +132,11 @@ impl Value {
         }
     }
 
-    pub fn is_lazy(&self) -> bool {
-        matches!(
-            self,
-            Value::Thunk(_) | Value::Ref(_) // | Value::Constructor(_)
-        )
+    pub fn is_lazy(&self, include_constructor: bool) -> bool {
+        if include_constructor && matches!(self, Value::Constructor(_)) {
+            return true;
+        }
+        matches!(self, Value::Thunk(_) | Value::Ref(_))
     }
 
     pub fn as_sexp(&self) -> Option<&SExpId> {
@@ -192,13 +188,13 @@ impl Value {
         }
     }
 
-    pub fn eager(self, rt: &mut Runtime) -> Self {
-        rt.to_eager(self)
+    pub fn eager(self, rt: &mut Runtime, include_constructor: bool) -> Self {
+        rt.to_eager(self, include_constructor)
     }
 
-    pub fn eager_rec(mut self, rt: &mut Runtime) -> Self {
-        while self.is_lazy() {
-            self = rt.to_eager(self);
+    pub fn eager_rec(mut self, rt: &mut Runtime, include_constructor: bool) -> Self {
+        while self.is_lazy(include_constructor) {
+            self = rt.to_eager(self, include_constructor);
         }
         self
     }

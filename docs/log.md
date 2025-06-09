@@ -1621,7 +1621,7 @@ Now traversing the thunks will be muuch easier
 
 
 ```thunk
-(do (thunk () (struct :key 42 :value (+ (super :value) 10))))
+(do (obj/struct :key 42 :value (+ (super :value) 10)))
 ```
 
 its bit too early to enable thunk pass everywhere, so lets do a hack
@@ -1643,7 +1643,7 @@ bingo?
 ```
 
 ```thunk
-(do (let :x (thunk () (struct :key 42 :value (+ (super :value) 10)))) (+ (struct :value 5) x))
+(do (let :x (obj/struct :key 42 :value (+ (super :value) 10))) (+ (obj/struct :value 5) x))
 ```
 
 ```json
@@ -2854,3 +2854,24 @@ Problem with implementing `if` as STD function is, we always evaluate both branc
 ```
 
 [[./todo.md]]
+
+Okay. So now i have struct macro that is expanding to low level code.
+The problem with current macro expansion is,
+it's not properly processed by our passes.
+
+That is something i have to fix anyway.
+
+There are two ways.
+First of all, introduce macro expansion pass and force that every macro must be expanded before.
+Doable, preferable but limiting expresivenes..
+
+Another option is to process generated code by macro on the fly in the runtime.
+But in order to do so, processed passess must get some kind of environment information
+of the moment of calling macro.
+
+I think ideally we want to have both.
+macro expansion for 99% cases
+runtime expansion for that 1% of cases where macro is first class citizen.
+I mean its lisp after all.
+
+For now i will focus on the runtime part since technically macro expansion is just an optimization.

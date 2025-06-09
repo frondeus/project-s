@@ -356,7 +356,7 @@ impl SExpParser {
                 let strukt = self.ast.reserve();
                 let mut child = node.named_child(0);
                 let mut children = Vec::new();
-                children.push(self.ast.add_node(SExp::Symbol("struct".to_string())));
+                children.push(self.ast.add_node(SExp::Symbol("obj/struct".to_string())));
                 while let Some(n) = child {
                     children.push(self.node_to_sexp(n, source)?);
                     child = n.next_named_sibling();

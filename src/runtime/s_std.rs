@@ -118,12 +118,12 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         return Err("Expected at least one argument".into());
     };
 
-    let first = first.eager_rec(rt).ok()?;
+    let first = first.eager_rec(rt, false).ok()?;
 
     match first {
         Value::Number(mut first) => {
             for arg in args {
-                let Some(b) = arg.eager(rt).ok()?.as_number() else {
+                let Some(b) = arg.eager(rt, false).ok()?.as_number() else {
                     return Err("Expected number".into());
                 };
                 first += b;
@@ -136,10 +136,10 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 return Err("Expected at least two arguments".into());
             };
 
-            let right = match right {
+            let right = match right.eager_rec(rt, false).ok()? {
                 Value::Object(right) => ObjectOrConstructor::Object(right),
                 Value::Constructor(right) => ObjectOrConstructor::Constructor(right),
-                _ => {
+                right => {
                     return Err(format!(
                         "+: Expected object or object constructor. Found: {:?}",
                         right
@@ -164,7 +164,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                 return Err("Expected at least two arguments".into());
             };
 
-            let right = match right.eager_rec(rt).ok()? {
+            let right = match right.eager_rec(rt, false).ok()? {
                 Value::Object(right) => ObjectOrConstructor::Object(right),
                 Value::Constructor(right) => ObjectOrConstructor::Constructor(right),
                 right => {
@@ -185,29 +185,8 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                         .unwrap_or_else(Value::Error)
                 }),
             }))
-
-            // let mut _super = rt.new_ref_obj(left.clone());
-            // if rt.envs.get("root").is_none() {
-            //     rt.envs.set("root", _super.clone());
-            // }
-
-            // for right in args {
-            //     rt.envs.push();
-            //     rt.envs.set("super", _super.clone());
-
-            //     let Some(right) = right.eager_rec(rt).ok()?.into_object() else {
-            //         return Err("+: Expected object ".into());
-            //     };
-
-            //     for (key, value) in right {
-            //         left.insert(key, value);
-            //     }
-            //     _super = rt.new_ref_obj(left.clone());
-            //     rt.envs.pop();
-            // }
-            // Ok(_super)
         }
-        _ => Err("Expected number or object".into()),
+        _ => Err(format!("+: Expected number or object. Found: {:?}", first)),
     }
 }
 
@@ -431,6 +410,7 @@ impl Runtime {
         self.with_try_macro("obj/+", obj_add);
         self.with_try_macro("obj/struct", obj_struct);
         self.with_try_fn("obj/eval", obj_eval);
+        self.with_try_macro("struct", obj_struct);
 
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {
