@@ -27,11 +27,10 @@ pub struct LambdaPass<'a> {
 }
 
 impl<'a> LambdaPass<'a> {
-    pub fn pass(asts: &'a mut ASTS, root: SExpId, env: &'a crate::runtime::Env) -> SExpId {
+    pub fn pass(asts: &'a mut ASTS, root: SExpId, envs: &'a [crate::runtime::Env]) -> SExpId {
         let new_ast = asts.new_ast();
         let ast_id = asts.add_ast(new_ast);
-        let envs: Envs = env.into();
-        println!("Envs: {:?}", envs);
+        let envs: Envs = envs.into();
 
         let mut pass = Self {
             envs,
@@ -374,10 +373,10 @@ enum VariableKind {
     Free,
 }
 
-impl From<&crate::runtime::Env> for Envs {
-    fn from(env: &crate::runtime::Env) -> Self {
+impl From<&[crate::runtime::Env]> for Envs {
+    fn from(envs: &[crate::runtime::Env]) -> Self {
         Self {
-            envs: vec![env.into()],
+            envs: envs.iter().map(|env| env.into()).collect(),
         }
     }
 }
@@ -437,7 +436,7 @@ mod tests {
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
-            let new_root = LambdaPass::pass(&mut asts, root_id, &prelude);
+            let new_root = LambdaPass::pass(&mut asts, root_id, &[prelude]);
             let output = asts.fmt(new_root);
             output.to_string()
         })

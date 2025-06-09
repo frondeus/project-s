@@ -116,6 +116,10 @@ impl Envs {
         self.envs.last_mut().expect("No environment")
     }
 
+    pub fn slice(&self) -> &[Env] {
+        &self.envs
+    }
+
     pub fn last(&self) -> &Env {
         self.envs.last().expect("No environment")
     }

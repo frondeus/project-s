@@ -2891,6 +2891,6 @@ Example:
 (outer)
 ```
 
-```json-eager only
+```json-eager
 10.0
 ```

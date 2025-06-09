@@ -445,7 +445,9 @@ mod tests {
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
-            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
+            let envs = [prelude];
+            let root_id = crate::process_ast(&mut asts, root_id, &envs);
+            let [prelude] = envs;
 
             let mut runtime = Runtime::new(asts);
             runtime.with_env(prelude);

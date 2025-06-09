@@ -147,8 +147,8 @@ impl Runtime {
         };
 
         println!("Macro call result: {}", self.asts.fmt(result));
-        let env = self.envs.last();
-        let processed = crate::process_ast(&mut self.asts, result, env);
+        let envs = self.envs.slice();
+        let processed = crate::process_ast(&mut self.asts, result, envs);
         println!("Processed: {}", self.asts.fmt(processed));
 
         Ok(processed)
@@ -445,7 +445,9 @@ mod tests {
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
-            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
+            let envs = [prelude];
+            let root_id = crate::process_ast(&mut asts, root_id, &envs);
+            let [prelude] = envs;
 
             let mut runtime = Runtime::new(asts);
             runtime.with_env(prelude);
@@ -462,7 +464,9 @@ mod tests {
         let root_id = ast.root_id().unwrap();
         eprintln!("Before process");
         let prelude = prelude();
-        let root_id = crate::process_ast(&mut asts, root_id, &prelude);
+        let envs = [prelude];
+        let root_id = crate::process_ast(&mut asts, root_id, &envs);
+        let [prelude] = envs;
 
         let mut runtime = Runtime::new(asts);
         runtime.with_env(prelude);
@@ -491,7 +495,7 @@ mod tests {
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
-            let root_id = crate::process_ast(&mut asts, root_id, &prelude);
+            let root_id = crate::process_ast(&mut asts, root_id, &[prelude]);
 
             asts.fmt(root_id).to_string()
         })
