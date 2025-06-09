@@ -327,6 +327,68 @@ fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     }
 }
 
+fn obj_eval(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([to_eval]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    match to_eval {
+        Value::SExp(id) => {
+            let ast = rt.asts.get(id);
+            let Some(list) = ast.as_list() else {
+                return Err("Expected list".into());
+            };
+
+            let list = list.to_vec();
+            let mut iter = list.into_iter();
+            let mut last = None;
+            while let Some(key) = iter.next() {
+                let key = rt.asts.get(key);
+                let Some(key) = key.as_keyword() else {
+                    return Err("Expected keyword".into());
+                };
+
+                let Some(value) = iter.next() else {
+                    return Err("Expected value".into());
+                };
+
+                // let value = rt.eval(value);
+
+                let expr = ("obj/put", format!(":{key}"), value).build(&mut rt.asts);
+
+                let expr = expr.build(&mut rt.asts);
+                last = Some(rt.eval(expr));
+            }
+            Ok(last.unwrap_or_else(|| Value::Error("Expected at least one argument".into())))
+        }
+        rest => Ok(rest),
+    }
+}
+
+fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+    let mut args = args.into_iter();
+    let mut inner = Vec::new();
+    let mut ast = rt.asts.new_ast();
+
+    while let Some(arg_id) = args.next() {
+        let arg = rt.asts.get(arg_id);
+        if let Some(key) = arg.as_keyword() {
+            let Some(value) = args.next() else {
+                return Err("Expected value".into());
+            };
+            inner.push(("obj/put", format!(":{key}"), value).assemble(&mut ast));
+        } else {
+            inner.push(("obj/eval", arg_id).assemble(&mut ast));
+        }
+    }
+
+    inner.insert(0, "obj/condef".assemble(&mut ast));
+    let result = inner.assemble(&mut ast);
+    rt.asts.add_ast(ast);
+    println!("obj/struct: {}", rt.asts.fmt(result));
+    Ok(result)
+}
+
 impl Runtime {
     pub fn with_try_fn(
         &mut self,
@@ -367,6 +429,8 @@ impl Runtime {
         self.with_try_macro("obj/condef", condef);
         self.with_try_macro("obj/put", objput);
         self.with_try_macro("obj/+", obj_add);
+        self.with_try_macro("obj/struct", obj_struct);
+        self.with_try_fn("obj/eval", obj_eval);
 
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {

@@ -669,3 +669,24 @@ Comparing all others
   }
 }
 ```
+
+# Macro expanding to low level code
+```
+(obj/struct
+    :a 3
+    :b 2
+    (if true (obj/put :c 4))
+    (if true '(:d 4))
+    (print "hey")
+)
+```
+
+```json 
+{
+  "a": 3.0,
+  "b": 2.0,
+  "c": 4.0,
+  "d": 4.0
+}
+```
+
