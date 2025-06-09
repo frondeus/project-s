@@ -314,6 +314,19 @@ fn objput(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     Ok(("obj/insert", "self", key, value).build(&mut rt.asts))
 }
 
+fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+    match &args[..] {
+        [key, value] => Ok((
+            "if",
+            ("has?", "super", key),
+            ("obj/put", key, ("+", ("super", key), value)),
+            ("obj/put", key, value),
+        )
+            .build(&mut rt.asts)),
+        arg => Err(format!("Expected two arguments. Found: {}", arg.len())),
+    }
+}
+
 impl Runtime {
     pub fn with_try_fn(
         &mut self,
@@ -353,6 +366,7 @@ impl Runtime {
         self.with_try_fn("obj/insert", insert_to_struct);
         self.with_try_macro("obj/condef", condef);
         self.with_try_macro("obj/put", objput);
+        self.with_try_macro("obj/+", obj_add);
 
         self.with_try_macro("+obj", add_obj);
         self.with_fn("print", |_rt, args| {

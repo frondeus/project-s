@@ -643,3 +643,29 @@ Comparing all others
   "key": 42.0
 }
 ```
+
+# Using obj+
+
+```
+(+
+    (obj/condef
+        (obj/put :a (obj/condef
+            (obj/put :b 1)
+        ))
+    )
+    (obj/condef
+        (obj/+ :a (obj/condef
+            (obj/put :c 2)
+        ))
+    )
+)
+```
+
+```json
+{
+  "a": {
+    "b": 1.0,
+    "c": 2.0
+  }
+}
+```
