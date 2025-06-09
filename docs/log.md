@@ -2894,3 +2894,63 @@ Example:
 ```json
 10.0
 ```
+
+Okay. That works now. But there is another problem
+
+Let's look at following issue:
+
+
+```
+(struct 
+  :another 4
+  :key (struct 
+    :a 1
+    :b (+ 1 (root :another))
+  )
+)
+```
+
+```json only
+{
+  "another": 4.0,
+  "key": {
+    "a": 1.0,
+    "b": 5.0
+  }
+}
+```
+
+The problem is we expand top struct macro:
+
+```example
+(obj/con (cl (:self :root :origin) (obj/put) (do 
+  (obj/put :another (thunk (self root origin) 4)) 
+  (obj/put :key 
+    (thunk (self root origin) 
+      (struct 
+        :a 1 
+        :b (+ 1 (root :another))
+      )
+    )
+  ) 
+  self
+)))
+```
+
+We did not expand inner struct because its now wrapped in
+`thunk`. 
+
+And even though `thunk` captures self, root and origin
+but lets look further into expansion
+
+```example
+(obj/con (cl (:self :root :origin) (obj/put) (do 
+  (obj/put :a (thunk (self root origin) 1)) 
+  (obj/put :b (thunk (root) (+ 1 (root :another)))) 
+  self
+)))
+```
+
+cl takes self root and origin as parameters.
+But because we did not execute `obj/con` immediately, we loose
+this information!

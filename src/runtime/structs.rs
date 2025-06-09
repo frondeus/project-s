@@ -51,6 +51,7 @@ impl Runtime {
         constructor: Constructor,
         self_: Option<Value>,
     ) -> Value {
+        println!("Constructor call: {self_:?}");
         let self_ = self_.unwrap_or_else(|| self.new_ref_obj(Default::default()));
 
         let root = self
