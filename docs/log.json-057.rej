@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/log.md:1763
+/Users/frondeus/Code/project-s/docs/log.md:1422
 ```
 (let :left {
     (let :x 4)
@@ -9,18 +9,26 @@
     }
   })
 
-(let :right {
+(let :right (thunk () {
   :another 9
   
-  (+obj :key {:c 3})
-})
+  (if (has? super :key)
+    '(:key 
+      (+ (super :key) {
+        :c 3
+      })
+    )
+    '(:key {:c 3})
+  )
+
+}))
 
 (+ left right)
 ```
 
 --- /Users/frondeus/Code/project-s/docs/log.md
-+++ json-063
-@@ -1784,7 +1784,7 @@
++++ json-057
+@@ -1451,7 +1451,7 @@
    "another": 9.0,
    "key": {
      "a": 1.0,

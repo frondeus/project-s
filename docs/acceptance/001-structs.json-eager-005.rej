@@ -1,0 +1,28 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:64
+```
+(struct 
+  :another 4
+  :key (struct 
+    :a 1
+    :b (+ 1 (root :another))
+  )
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-eager-005
+@@ -72,13 +72,7 @@
+ ```
+ 
+ ```json-eager
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++<Thread panicked>
+ ```
+ 
+ # Reader sugar

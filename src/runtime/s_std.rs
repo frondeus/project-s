@@ -331,8 +331,7 @@ fn obj_eval(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                     return Err("Expected value".into());
                 };
 
-                // let value = rt.eval(value);
-
+                let value = ("thunk", ("self", "root", "origin"), value);
                 let expr = ("obj/put", format!(":{key}"), value).build(&mut rt.asts);
 
                 let expr = expr.build(&mut rt.asts);
@@ -355,7 +354,14 @@ fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             let Some(value) = args.next() else {
                 return Err("Expected value".into());
             };
-            inner.push(("obj/put", format!(":{key}"), value).assemble(&mut ast));
+            inner.push(
+                (
+                    "obj/put",
+                    format!(":{key}"),
+                    ("thunk", ("self", "root", "origin"), value),
+                )
+                    .assemble(&mut ast),
+            );
         } else {
             inner.push(("obj/eval", arg_id).assemble(&mut ast));
         }
@@ -438,7 +444,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn log() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "log", |input, _deps| {
             // eprintln!("---");
             let mut asts = ASTS::new();

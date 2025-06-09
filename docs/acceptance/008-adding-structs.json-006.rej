@@ -9,12 +9,12 @@
 ```
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
-+++ json-eager-006
++++ json-006
 @@ -141,6 +141,6 @@
  ```
  
- ```json-eager
+ ```json
 -4.0
-+<Thread panicked>
++"<Error: Undefined key: a in {\"c\": Thunk(Thunk)}>"
  ```
  

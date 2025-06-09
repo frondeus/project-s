@@ -438,7 +438,7 @@ mod tests {
     use super::{s_std::prelude, *};
 
     #[test]
-    fn integration_lazy() -> test_runner::Result {
+    fn json_lazy() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-lazy", |input, _deps| {
             // eprintln!("---");
             let mut asts = ASTS::new();
@@ -478,12 +478,12 @@ mod tests {
     }
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))
     }
 
     #[test]
-    fn integration_eager() -> test_runner::Result {
+    fn json_eager() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-eager", |input, _deps| eager_test(input))
     }
 

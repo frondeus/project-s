@@ -644,6 +644,23 @@ Comparing all others
 }
 ```
 
+# Using let
+
+```
+(obj/struct
+  (let :x 2)
+  :a x
+  :b x
+)
+```
+
+```json
+{
+  "a": 2.0,
+  "b": 2.0
+}
+```
+
 # Using obj+
 
 ```
@@ -681,7 +698,7 @@ Comparing all others
 )
 ```
 
-```json 
+```json
 {
   "a": 3.0,
   "b": 2.0,
@@ -690,3 +707,18 @@ Comparing all others
 }
 ```
 
+
+# Accessing field lazily
+```
+(obj/struct
+  :a (self :b)
+  :b 2
+)
+```
+
+```json
+{
+  "a": 2.0,
+  "b": 2.0
+}
+```

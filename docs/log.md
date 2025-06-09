@@ -44,7 +44,7 @@ I want to at least have
 
 and have it compiled to 
 
-```json-eager
+```json
 {
   "name": "Name",
   "surname": "Surname"
@@ -1114,7 +1114,7 @@ information about captured context.
 
 
 ```lift
-(do (let :c 42) (cl (:a :b) (c) (a b ($$closure :c))))
+(do (let :c 42) (cl (:a :b) (c) (a b c)))
 ```
 
 Ok, i lifted the function into "closure declaration" that takes another list outside of
@@ -1159,7 +1159,7 @@ Better. But unquote wont work...
 ```
 
 ```lift
-(do (let :d 42) (cl (:a :b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote ($$closure :d))))))
+(do (let :d 42) (cl (:a :b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote d)))))
 ```
 
 Yep, that's correct.
@@ -1183,7 +1183,7 @@ i can modify the runtime.
 ```
 
 ```lift
-(do (let :top (fn () (do (let :c 42) (cl (:a :b) (c) (+ a b ($$closure :c)))))) ((top) 1 2))
+(do (let :top (fn () (do (let :c 42) (cl (:a :b) (c) (+ a b c))))) ((top) 1 2))
 ```
 
 ```json
@@ -1203,7 +1203,7 @@ Okay, but is it fully complete?
 ```
 
 ```lift
-(do (let :c 42) (cl () (c) (let :d 10 (+ ($$closure :c) d))))
+(do (let :c 42) (cl () (c) (let :d 10 (+ c d))))
 ```
 
 Yeah it doesnt look good.
@@ -1627,7 +1627,7 @@ Now traversing the thunks will be muuch easier
 its bit too early to enable thunk pass everywhere, so lets do a hack
 
 ```json-lazy
-"<Thunk: Thunk>"
+"<Constructor: Constructor { constructor: LispFn }>"
 ```
 
 bingo?
@@ -1867,7 +1867,7 @@ I think `self` should be easier
 } :b)
 ```
 
-```json-eager
+```json
 5.0
 ```
 
@@ -1930,7 +1930,7 @@ We need a mutable reference to self.
 } :b)
 ```
 
-```json-eager
+```json
 4.0
 ```
 
@@ -1953,7 +1953,7 @@ Does it work with root?
 } :b) :c)
 ```
 
-```json-eager
+```json
 4.0
 ```
 
@@ -2891,6 +2891,6 @@ Example:
 (outer)
 ```
 
-```json-eager
+```json
 10.0
 ```

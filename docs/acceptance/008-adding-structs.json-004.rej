@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/log.md:1763
+/Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md:87
 ```
 (let :left {
     (let :x 4)
@@ -18,9 +18,9 @@
 (+ left right)
 ```
 
---- /Users/frondeus/Code/project-s/docs/log.md
-+++ json-063
-@@ -1784,7 +1784,7 @@
+--- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
++++ json-004
+@@ -108,7 +108,7 @@
    "another": 9.0,
    "key": {
      "a": 1.0,

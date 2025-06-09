@@ -13,7 +13,7 @@
 })
 ```
 
-```json-eager
+```json
 {
   "another": 9.0,
   "key": {
@@ -45,7 +45,7 @@ because left side of the `+` was already calculated.
 })
 ```
 
-```json-eager
+```json
 {
   "another": 9.0,
   "key": {
@@ -75,7 +75,7 @@ because left side of the `+` was already calculated.
 })
 ```
 
-```json-eager
+```json
 {
   "another": 9.0,
   "key": 10.0
@@ -103,7 +103,7 @@ because left side of the `+` was already calculated.
 (+ left right)
 ```
 
-```json-eager
+```json
 {
   "another": 9.0,
   "key": {
@@ -125,7 +125,7 @@ Self:
 } :b)
 ```
 
-```json-eager
+```json
 4.0
 ```
 
@@ -140,7 +140,7 @@ Root:
 } :b) :c)
 ```
 
-```json-eager
+```json
 4.0
 ```
 

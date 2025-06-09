@@ -108,7 +108,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn thunk() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "thunk", |input, _deps| {
             eprintln!("---");
             let mut asts = ASTS::new();
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn integration_runtime() -> test_runner::Result {
+    fn json_thunk() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-thunk", |input, _deps| {
             eprintln!("---");
             let mut asts = ASTS::new();

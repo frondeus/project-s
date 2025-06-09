@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/log.md:588
+```
+(+ {
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+(thunk () {
+  :another 9
+  :self (+ 1 (self :another))
+  :super (+ 1 (super :another))
+}))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-031
+@@ -607,7 +607,7 @@
+   "another": 9.0,
+   "key": {
+     "a": 1.0,
+-    "b": 5.0
++    "b": "<Error: Undefined key: another in {\"a\": Thunk(Thunk), \"b\": Thunk(Thunk)}>"
+   },
+   "self": 10.0,
+   "super": 5.0

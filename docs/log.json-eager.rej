@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/log.md:38
+```
+(struct
+    :name "Name"
+    :surname "Surname"
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-eager
+@@ -45,10 +45,7 @@
+ and have it compiled to 
+ 
+ ```json-eager
+-{
+-  "name": "Name",
+-  "surname": "Surname"
+-}
++<Thread panicked>
+ ```
+ 
+ Let's write the execution of such

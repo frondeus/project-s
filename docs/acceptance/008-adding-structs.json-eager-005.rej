@@ -13,7 +13,7 @@
  
  ```json-eager
 -4.0
-+"<Error: Undefined key: a in {}>"
++<Thread panicked>
  ```
  
  Root:

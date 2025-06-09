@@ -1,0 +1,21 @@
+/Users/frondeus/Code/project-s/docs/log.md:1238
+```
+((({
+  :a 42.0
+  :b {
+    :c (fn () (root :a))
+  }
+} :b) :c))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-052
+@@ -1249,7 +1249,7 @@
+ ```
+ 
+ ```json
+-42.0
++"<Error: Undefined key: a in {\"c\": Thunk(Thunk)}>"
+ ```
+ 
+ And now finally super

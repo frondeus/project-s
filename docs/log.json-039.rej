@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/log.md:713
+/Users/frondeus/Code/project-s/docs/log.md:754
 ```
 (+ {
   (let :x 4)
@@ -14,9 +14,9 @@
   
   (if (has? super :key)
     '(:key 
-      (+ (super :key) {
-        :c 3
-      })
+      (+ (super :key) (thunk () {
+        :c (+ (super :a) 3)
+      }))
     )
     '(:key {:c 3})
   )
@@ -25,13 +25,13 @@
 ```
 
 --- /Users/frondeus/Code/project-s/docs/log.md
-+++ json-038
-@@ -740,7 +740,7 @@
++++ json-039
+@@ -781,7 +781,7 @@
    "another": 9.0,
    "key": {
      "a": 1.0,
 -    "b": 5.0,
 +    "b": "<Error: Undefined key: another in {\"a\": Thunk(Thunk), \"b\": Thunk(Thunk), \"c\": Thunk(Thunk)}>",
-     "c": 3.0
+     "c": 4.0
    }
  }

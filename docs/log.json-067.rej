@@ -1,17 +1,27 @@
-/Users/frondeus/Code/project-s/docs/log.md:2165
+/Users/frondeus/Code/project-s/docs/log.md:1973
 ```
-(let :foo { :b 4 :a (root :b )})
-{ :b 10 :c foo }
+(+ {
+  :a (+ ((self :b) :c) 10.0)
+  :b {
+    :c 10.0
+  }
+}
+
+{
+  (+obj :b {
+    :d (root :a)
+  })
+})
 ```
 
 --- /Users/frondeus/Code/project-s/docs/log.md
 +++ json-067
-@@ -2171,7 +2171,7 @@
- {
-   "b": 10.0,
-   "c": {
--    "a": 4.0,
-+    "a": 10.0,
-     "b": 4.0
+@@ -1990,7 +1990,7 @@
+   "a": 20.0,
+   "b": {
+     "c": 10.0,
+-    "d": 20.0
++    "d": "<Error: Undefined key: a in {\"c\": Thunk(Thunk), \"d\": Thunk(Thunk)}>"
    }
  }
+ ```

@@ -449,7 +449,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn cst() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");

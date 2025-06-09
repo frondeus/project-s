@@ -1,17 +1,18 @@
-/Users/frondeus/Code/project-s/docs/log.md:473
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:86
 ```
-(struct 
-  :another 4
-  :key (struct 
+{
+  (let :x 4)
+  :another x
+  :key {
     :a 1
     :b (+ 1 (root :another))
-  )
-)
+  }
+}
 ```
 
---- /Users/frondeus/Code/project-s/docs/log.md
-+++ json-027
-@@ -485,7 +485,7 @@
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-006
+@@ -99,7 +99,7 @@
    "another": 4.0,
    "key": {
      "a": 1.0,

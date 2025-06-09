@@ -1,7 +1,6 @@
 use ast::{ASTS, SExpId};
 use lambda_lifting::LambdaPass;
 use runtime::Env;
-use thunk_inserting::ThunkPass;
 
 pub mod ast;
 pub mod builder;
@@ -18,7 +17,7 @@ pub use runtime::s_std;
 
 pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> SExpId {
     root = LambdaPass::pass(asts, root, envs);
-    root = ThunkPass::pass(asts, root);
+    // root = ThunkPass::pass(asts, root);
     root
 }
 

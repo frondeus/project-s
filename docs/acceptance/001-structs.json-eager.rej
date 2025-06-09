@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:3
+```
+(struct 
+    :name "Name"
+    :surname "Surname"
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-eager
+@@ -8,10 +8,7 @@
+ ```
+ 
+ ```json-eager
+-{
+-  "name": "Name",
+-  "surname": "Surname"
+-}
++<Thread panicked>
+ ```
+ 
+ # Accessing struct

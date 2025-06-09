@@ -1,0 +1,20 @@
+/Users/frondeus/Code/project-s/docs/log.md:2165
+```
+(let :foo { :b 4 :a (root :b )})
+{ :b 10 :c foo }
+```
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-071
+@@ -2170,10 +2170,7 @@
+ ```json
+ {
+   "b": 10.0,
+-  "c": {
+-    "a": 4.0,
+-    "b": 4.0
+-  }
++  "c": "<Error: Undefined variable: foo>"
+ }
+ ```
+ 

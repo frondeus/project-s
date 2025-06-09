@@ -6,7 +6,6 @@ use crate::{
     builder::ASTBuilder,
 };
 
-pub const CLOSURE_SYMBOL: &str = "$$closure";
 const SPECIAL_FORMS: &[&str] = &[
     "quasiquote",
     "+",
@@ -161,45 +160,81 @@ impl<'a> LambdaPass<'a> {
                 self.process_let(sexp_ids, |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "struct") {
                 self.process_struct(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
+            } else if self.is_symbol(first_id, "thunk") {
+                let free_vars = sexp_ids[1];
+                let free_vars = self.asts.get(free_vars).as_list().unwrap().to_vec();
+                let body = sexp_ids[2];
+                self.process_thunk(first_id, free_vars, body)
             } else if self.is_symbol(first_id, "fn") {
-                // println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
                 let signature_id = sexp_ids[1];
+                let body = sexp_ids[2];
                 let signature = self.asts.get(signature_id).as_list().unwrap().to_vec();
-                let signature = signature
-                    .iter()
-                    .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
-                    .collect::<Vec<String>>();
-                self.envs.push(EnvKind::Function);
-                for var in signature {
-                    self.envs.set(&var);
-                }
-
-                let mut body = sexp_ids[2];
-
-                let mut edited = false;
-                if let Some(new_body) = self.pass_inner(body) {
-                    body = new_body;
-                    edited = true;
-                }
-                let maybe_new_body = self.process_fn_decl(body);
-                self.envs.pop();
-
-                if let Some((new_body, free_vars)) = maybe_new_body {
-                    let closure =
-                        ("cl", signature_id, free_vars, new_body).assemble(self.new_ast());
-
-                    Some(closure)
-                } else if edited {
-                    Some(
-                        self.new_ast()
-                            .add_node(SExp::List(vec![first_id, signature_id, body])),
-                    )
-                } else {
-                    None
-                }
+                self.process_fn(first_id, signature, body)
             } else {
                 self.visit_mut_list(sexp_ids.clone(), |pass, id| pass.pass_inner(id))
             }
+        } else {
+            None
+        }
+    }
+
+    fn process_thunk(
+        &mut self,
+        first_id: SExpId,
+        free_vars: Vec<SExpId>,
+        mut body: SExpId,
+    ) -> Option<SExpId> {
+        self.envs.push(EnvKind::Function);
+
+        let mut edited = false;
+        if let Some(new_body) = self.pass_inner(body) {
+            body = new_body;
+            edited = true;
+        }
+        let maybe_new_body = self.process_fn_decl(body);
+        self.envs.pop();
+
+        if let Some((new_body, free_vars)) = maybe_new_body {
+            let thunk = ("thunk", free_vars, new_body).assemble(self.new_ast());
+
+            Some(thunk)
+        } else if edited {
+            Some((first_id, &free_vars[..], body).assemble(self.new_ast()))
+        } else {
+            None
+        }
+    }
+
+    fn process_fn(
+        &mut self,
+        first_id: SExpId,
+        signature_ids: Vec<SExpId>,
+        mut body: SExpId,
+    ) -> Option<SExpId> {
+        // println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
+        let signature = signature_ids
+            .iter()
+            .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
+            .collect::<Vec<String>>();
+        self.envs.push(EnvKind::Function);
+        for var in signature {
+            self.envs.set(&var);
+        }
+
+        let mut edited = false;
+        if let Some(new_body) = self.pass_inner(body) {
+            body = new_body;
+            edited = true;
+        }
+        let maybe_new_body = self.process_fn_decl(body);
+        self.envs.pop();
+
+        if let Some((new_body, free_vars)) = maybe_new_body {
+            let closure = ("cl", &signature_ids[..], free_vars, new_body).assemble(self.new_ast());
+
+            Some(closure)
+        } else if edited {
+            Some((first_id, &signature_ids[..], body).assemble(self.new_ast()))
         } else {
             None
         }
@@ -209,8 +244,13 @@ impl<'a> LambdaPass<'a> {
         // println!("processing fn decl: {}", self.asts.fmt(body));
         let mut free_vars = BTreeSet::<String>::new();
 
-        let body = self.process_fn_decl_body(body, &mut free_vars);
-        body.map(|id| (id, free_vars))
+        let new_body = self.process_fn_decl_body(body, &mut free_vars);
+
+        if free_vars.is_empty() {
+            None
+        } else {
+            Some((new_body.unwrap_or(body), free_vars))
+        }
     }
 
     fn process_quasiquote(
@@ -257,14 +297,13 @@ impl<'a> LambdaPass<'a> {
                 Some(VariableKind::Free) => {
                     println!("free var: {}", s);
                     free_vars.insert(s.clone());
-                    let s = format!(":{s}");
-                    let id = (CLOSURE_SYMBOL, s).assemble(self.new_ast());
 
-                    Some(id)
+                    None
                 }
 
                 None | Some(VariableKind::Local) => None,
             },
+            SExp::List(ids) if ids.is_empty() => None,
             SExp::List(sexp_ids) => {
                 let first = sexp_ids[0];
                 if self.is_symbol(first, "quote") {
@@ -288,6 +327,9 @@ impl<'a> LambdaPass<'a> {
                     return self.process_struct(sexp_ids.clone(), move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
+                }
+                if self.is_symbol(first, "thunk") {
+                    return None;
                 }
                 if self.is_symbol(first, "fn") {
                     return None;
@@ -429,7 +471,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn lift() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "lift", |input, _deps| {
             eprintln!("---");
             let mut asts = ASTS::new();

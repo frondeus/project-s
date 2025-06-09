@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:86
+```
+{
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-eager-006
+@@ -95,13 +95,7 @@
+ ```
+ 
+ ```json-eager
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++<Thread panicked>
+ ```
+ 
+ # has? function

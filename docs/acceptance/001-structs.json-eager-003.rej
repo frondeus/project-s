@@ -1,0 +1,17 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:32
+```
+(let :foo (struct :key 1 :another 2))
+(foo :another)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-eager-003
+@@ -35,7 +35,7 @@
+ ```
+ 
+ ```json-eager
+-2.0
++<Thread panicked>
+ ```
+ 
+ # Self

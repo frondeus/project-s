@@ -57,7 +57,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn integration() -> test_runner::Result {
+    fn type_() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "type", |input, _deps| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");

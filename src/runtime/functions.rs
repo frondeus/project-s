@@ -1,7 +1,7 @@
 // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
 #![allow(clippy::unnecessary_to_owned)]
 
-use crate::{ast::SExpId, lambda_lifting::CLOSURE_SYMBOL, try_err};
+use crate::{ast::SExpId, try_err};
 
 use super::{
     Runtime,
@@ -80,13 +80,15 @@ impl Runtime {
                 body,
                 captured,
             } => {
-                eprintln!("Envs: {:#?}", self.envs);
                 self.envs.push();
                 for (sig, arg) in signature.iter().zip(args) {
                     try_err!(arg);
                     self.envs.set(sig, arg);
                 }
-                self.envs.set(CLOSURE_SYMBOL, Value::Object(captured));
+                for (name, val) in captured {
+                    self.envs.set(&name, val);
+                }
+                // self.envs.set(CLOSURE_SYMBOL, Value::Object(captured));
 
                 let result = self.eval(body);
                 self.envs.pop();
