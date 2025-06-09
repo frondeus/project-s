@@ -1,0 +1,19 @@
+/Users/frondeus/Code/project-s/docs/log.md:951
+`````
+( let :macrodef (macro (:name :args :body) `(let ,name (macro ,args ,body))) )
+  (macrodef :var (name value) `(let ,name ,value))
+  (var :x 4.2)
+  x
+`````
+
+--- /Users/frondeus/Code/project-s/docs/log.md
++++ json-044
+@@ -956,7 +956,7 @@
+ ```
+ 
+ ```json
+-4.2
++<Thread panicked>
+ ```
+ 
+ # 26.05

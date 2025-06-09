@@ -110,7 +110,7 @@ impl Runtime {
         let signature = signature
             .to_vec()
             .into_iter()
-            .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
+            .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
             .collect();
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
@@ -144,7 +144,11 @@ impl Runtime {
             }
         };
 
-        Ok(crate::process_ast(&mut self.asts, result))
+        println!("Macro call result: {}", self.asts.fmt(result));
+        let processed = crate::process_ast(&mut self.asts, result);
+        println!("Processed: {}", self.asts.fmt(processed));
+
+        Ok(processed)
     }
 
     fn do_(&mut self, items: &[SExpId]) -> Value {

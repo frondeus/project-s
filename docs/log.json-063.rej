@@ -16,18 +16,16 @@
 
 --- /Users/frondeus/Code/project-s/docs/log.md
 +++ json-063
-@@ -1986,13 +1986,7 @@
- ```
+@@ -1987,10 +1987,10 @@
  
  ```json
--{
+ {
 -  "a": 20.0,
--  "b": {
--    "c": 10.0,
++  "a": "<Error: Undefined key: b in {}>",
+   "b": {
+     "c": 10.0,
 -    "d": 20.0
--  }
--}
-+"<Error: Undefined variable: super>"
++    "d": "<Error: Undefined key: a in {\"c\": Number(10.0)}>"
+   }
+ }
  ```
- 
- 

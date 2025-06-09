@@ -2,7 +2,7 @@ We can define macros
 
 ```
 (
-  (macro (x y) `(+ ,x ,y))
+  (macro (:x :y) `(+ ,x ,y))
   1 2
 )
 ```
@@ -13,7 +13,7 @@ We can define macros
 
 ```
 (
-  let :var (macro (name value) `(let ,name ,value))
+  let :var (macro (:name :value) `(let ,name ,value))
 )
 (var :x 4.2)
 x
@@ -27,7 +27,7 @@ We can call macros in inside of struct creation
 
 ```
 (
-  let :fif (macro (name co the els) `(if ,co '(,name ,the) '(,name ,els))))
+  let :fif (macro (:name :co :the :els) `(if ,co '(,name ,the) '(,name ,els))))
   {
     (fif :key true 42.0 10.0)
   }
