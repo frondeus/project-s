@@ -626,3 +626,20 @@ Comparing all others
 }
 ```
 
+
+# Using ifs
+
+```
+(obj/condef
+    (if true (obj/put :key 42))
+    (if false (obj/put :false 13))
+    (if false (obj/put :true 10) (obj/put :else 12))
+)
+```
+
+```json
+{
+  "else": 12.0,
+  "key": 42.0
+}
+```
