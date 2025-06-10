@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     fn type_() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "type", |input, _deps| {
+        test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
             let mut env = TypeEnv::default();

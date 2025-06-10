@@ -455,7 +455,7 @@ mod tests {
 
     #[test]
     fn log() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "log", |input, _deps| {
+        test_runner::test_snapshots("docs/", "log", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();

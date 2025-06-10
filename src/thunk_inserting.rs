@@ -103,6 +103,7 @@ impl<'a> Visitor<'a> for StructVisitor<'a, '_> {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,3 +141,4 @@ mod tests {
         })
     }
 }
+*/

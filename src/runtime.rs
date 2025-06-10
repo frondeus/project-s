@@ -435,15 +435,13 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use std::{io::Read, sync::{Arc, Mutex}};
-
-    use tracing_subscriber::layer::SubscriberExt;
+    use std::{collections::HashSet, io::Read, sync::Mutex};
 
     use super::{s_std::prelude, *};
 
     #[test]
     fn json_lazy() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json-lazy", |input, _deps| {
+        test_runner::test_snapshots("docs/", "json-lazy", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
@@ -483,23 +481,42 @@ mod tests {
 
     #[test]
     fn json() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))
+        test_runner::test_snapshots("docs/", "json", |input, _deps, _args| eager_test(input))
     }
-    
+
+    fn level_from_args(args: &HashSet<&str>) -> tracing::Level {
+        const LEVELS: &[(&str, tracing::Level)] = &[
+            ("trace", tracing::Level::TRACE),
+            ("debug", tracing::Level::DEBUG),
+            ("info", tracing::Level::INFO),
+            ("warn", tracing::Level::WARN),
+            ("error", tracing::Level::ERROR),
+        ];
+
+        for (name, level) in LEVELS {
+            if args.contains(name) {
+                return *level;
+            }
+        }
+        tracing::Level::INFO
+    }
+
     #[test]
     fn traces() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "traces", |input, _deps| {
+        test_runner::test_snapshots("docs/", "traces", |input, _deps, args| {
             let writer = tempfile::NamedTempFile::new().unwrap();
             let mut reader = writer.reopen().unwrap();
             let path = writer.path().to_owned();
-            
+
+            let level = level_from_args(args);
+
             let subscriber = tracing_subscriber::fmt()
                 .pretty()
-                .with_max_level(tracing::Level::INFO)
+                .with_max_level(level)
                 .with_writer(Mutex::new(writer))
                 .finish();
             tracing::subscriber::with_default(subscriber, move || {
-                tracing::info!("Logs stored in: {:?}", path);
+                tracing::info!("Logs ({level:?}) stored in: {path:?}");
                 eager_test(input);
             });
 
@@ -511,12 +528,14 @@ mod tests {
 
     #[test]
     fn json_eager() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json-eager", |input, _deps| eager_test(input))
+        test_runner::test_snapshots("docs/", "json-eager", |input, _deps, _args| {
+            eager_test(input)
+        })
     }
 
     #[test]
     fn processed() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "processed", |input, _deps| {
+        test_runner::test_snapshots("docs/", "processed", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
@@ -527,5 +546,4 @@ mod tests {
             asts.fmt(root_id).to_string()
         })
     }
-
 }

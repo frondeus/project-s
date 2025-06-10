@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::OpenOptions,
     io::Write,
     panic::{catch_unwind, RefUnwindSafe},
@@ -55,7 +55,7 @@ impl<'a> TestCase<'a> {
 pub fn test_snapshots<R>(root: &str, section_name: &str, test_fn: R) -> Result<()>
 where
     R: RefUnwindSafe,
-    R: Send + Fn(&str, &HashMap<CowStr, &str>) -> String,
+    R: Send + Fn(&str, &HashMap<CowStr, &str>, &HashSet<&str>) -> String,
     for<'a> &'a R: Send,
 {
     test_snapshots_custom(root, "", section_name, test_fn)
@@ -70,7 +70,7 @@ pub fn test_snapshots_custom<R>(
 ) -> Result<()>
 where
     R: RefUnwindSafe,
-    R: Send + Fn(&str, &HashMap<CowStr, &str>) -> String,
+    R: Send + Fn(&str, &HashMap<CowStr, &str>, &HashSet<&str>) -> String,
     for<'a> &'a R: Send,
 {
     let path = crate::utils::project_root()?;
@@ -153,7 +153,12 @@ where
         let test_fn = &test_fn;
         let previous = &test_case.previous;
 
-        let actual = catch_unwind(|| test_fn(code, previous));
+        let args = test_case
+            .args
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<HashSet<_>>();
+        let actual = catch_unwind(|| test_fn(code, previous, &args));
         let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
 
         match assert_section(section_name, source_name, test_case, &actual) {
@@ -262,8 +267,10 @@ mod tests {
 
     #[test]
     fn test_runner() -> Result<()> {
-        test_snapshots("crates/test-runner/v2", "assert", |src, _sections| {
-            src.to_string()
-        })
+        test_snapshots(
+            "crates/test-runner/v2",
+            "assert",
+            |src, _sections, _args| src.to_string(),
+        )
     }
 }

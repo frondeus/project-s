@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn cst() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "cst", |input, _deps| {
+        test_runner::test_snapshots("docs/", "cst", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
             let root_id = ast.root_id().unwrap();
