@@ -435,6 +435,10 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
+    use std::{io::Read, sync::{Arc, Mutex}};
+
+    use tracing_subscriber::layer::SubscriberExt;
+
     use super::{s_std::prelude, *};
 
     #[test]
@@ -481,6 +485,29 @@ mod tests {
     fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps| eager_test(input))
     }
+    
+    #[test]
+    fn traces() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "traces", |input, _deps| {
+            let writer = tempfile::NamedTempFile::new().unwrap();
+            let mut reader = writer.reopen().unwrap();
+            let path = writer.path().to_owned();
+            
+            let subscriber = tracing_subscriber::fmt()
+                .pretty()
+                .with_max_level(tracing::Level::INFO)
+                .with_writer(Mutex::new(writer))
+                .finish();
+            tracing::subscriber::with_default(subscriber, move || {
+                tracing::info!("Logs stored in: {:?}", path);
+                eager_test(input);
+            });
+
+            let mut buf = String::new();
+            reader.read_to_string(&mut buf).unwrap();
+            buf
+        })
+    }
 
     #[test]
     fn json_eager() -> test_runner::Result {
@@ -500,4 +527,5 @@ mod tests {
             asts.fmt(root_id).to_string()
         })
     }
+
 }
