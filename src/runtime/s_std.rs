@@ -34,6 +34,7 @@ fn sub(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(a)
 }
 
+#[tracing::instrument(skip_all)]
 fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     #[derive(Clone, Debug)]
     enum ObjectOrConstructor {
@@ -75,6 +76,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     fn add_obj_impl(
         rt: &mut Runtime,
         self_: Value,
@@ -90,9 +92,9 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                b({ root: undefined, super_, self, origin: root });
            });
         */
-        println!("Adding obj: {:?}, {:?}", left, right);
-        println!("Self: {:?}", self_);
-        println!("Root: {:?}", root);
+        tracing::debug!("Adding obj: {:?}, {:?}", left, right);
+        tracing::debug!("Self: {:?}", self_);
+        tracing::debug!("Root: {:?}", root);
         // let super_ = Value::ref_(Value::Object(BTreeMap::new()));
         let left = left.call(
             rt,
@@ -101,14 +103,14 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
             self_.clone(),
             Some(origin),
         )?;
-        println!("Left: {:?}", left);
+        tracing::debug!("Left: {:?}", left);
         let super_ = left.deref();
         // let super_ = Value::ref_(self_.clone());
         // let self_ = Value::ref_(self_.clone());
-        println!("Super: {:?}", super_);
-        println!("Self: {:?}", self_);
+        tracing::debug!("Super: {:?}", super_);
+        tracing::debug!("Self: {:?}", self_);
         right.call(rt, self_.clone(), Some(self_.clone()), super_, Some(root))?;
-        println!("Result: {:?}", self_);
+        tracing::debug!("Result: {:?}", self_);
 
         Ok(self_)
     }
@@ -232,6 +234,7 @@ fn new_ref(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(Value::Ref(Rc::new(RefCell::new(one))))
 }
 
+#[tracing::instrument(skip_all)]
 fn insert_to_struct(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     // println!("Inserting to struct");
     let Ok([_this, key, value]) = TryInto::<[Value; 3]>::try_into(args) else {
@@ -263,11 +266,11 @@ fn insert_to_struct(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String>
         return Err("Expected object".into());
     };
 
-    println!("Inserting to struct({:?}): {} - {:?}", this, key, value);
+    tracing::debug!("Inserting to struct({:?}): {} - {:?}", this, key, value);
 
     let old = this.insert(key, value);
 
-    println!("After insertion: {this:?}");
+    tracing::debug!("After insertion: {this:?}");
 
     Ok(old.unwrap_or_else(|| Value::Error("???".into())))
 }
@@ -368,7 +371,7 @@ fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     inner.insert(0, "obj/condef".assemble(&mut ast));
     let result = inner.assemble(&mut ast);
     rt.asts.add_ast(ast);
-    println!("obj/struct: {}", rt.asts.fmt(result));
+    // tracing::debug!("obj/struct: {}", rt.asts.fmt(result));
     Ok(result)
 }
 
@@ -400,7 +403,7 @@ pub fn prelude() -> Env {
         .with_try_macro("+obj", add_obj)
         .with_fn("print", |_rt, args| {
             for arg in args.into_iter() {
-                eprintln!("{:?}", arg);
+                tracing::info!("{:?}", arg);
             }
 
             Value::Number(1.0)
@@ -429,7 +432,7 @@ impl Runtime {
             match result {
                 Ok(id) => id,
                 Err(err) => {
-                    eprintln!("Error: {}", err);
+                    tracing::error!("Error: {}", err);
                     error().build(&mut rt.asts)
                 }
             }

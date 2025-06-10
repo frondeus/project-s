@@ -210,7 +210,7 @@ impl Value {
             Value::String(s) => target.add_node(SExp::String(s.clone())),
             Value::Bool(b) => target.add_node(SExp::Bool(*b)),
             Value::Error(err) => {
-                println!("Error: {err}");
+                tracing::error!("Error: {err}");
                 target.add_node(SExp::Error)
             }
             Value::List(list) => {

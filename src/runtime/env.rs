@@ -70,7 +70,7 @@ impl Env {
             match result {
                 Ok(id) => id,
                 Err(err) => {
-                    eprintln!("Error: {}", err);
+                    tracing::error!("Error: {}", err);
                     error().build(&mut rt.asts)
                 }
             }

@@ -309,7 +309,7 @@ impl<'a> LambdaPass<'a> {
             SExp::Symbol(s) if SPECIAL_FORMS.contains(&s.as_str()) => None,
             SExp::Symbol(s) => match self.envs.has(s) {
                 Some(VariableKind::Free) => {
-                    println!("free var: {}", s);
+                    tracing::trace!("free var: {}", s);
                     free_vars.insert(s.clone());
 
                     None
@@ -490,7 +490,6 @@ mod tests {
     #[test]
     fn lift() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "lift", |input, _deps, _args| {
-            eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();

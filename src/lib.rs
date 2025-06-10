@@ -1,3 +1,5 @@
+#![deny(clippy::print_stdout, clippy::print_stderr)]
+
 use ast::{ASTS, SExpId};
 use lambda_lifting::LambdaPass;
 use runtime::Env;

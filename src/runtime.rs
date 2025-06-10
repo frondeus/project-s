@@ -90,7 +90,7 @@ impl Runtime {
                 };
 
                 let value = self.eval(*value);
-                println!("Adding to env: {:?}", self.envs.last());
+                tracing::debug!("Adding to env: {:?}", self.envs.last());
                 self.envs.set(ident, value.clone());
                 value
             }
@@ -146,10 +146,10 @@ impl Runtime {
             }
         };
 
-        println!("Macro call result: {}", self.asts.fmt(result));
+        tracing::debug!("Macro call result: {}", self.asts.fmt(result));
         let envs = self.envs.slice();
         let processed = crate::process_ast(&mut self.asts, result, envs);
-        println!("Processed: {}", self.asts.fmt(processed));
+        tracing::debug!("Processed: {}", self.asts.fmt(processed));
 
         Ok(processed)
     }
@@ -334,7 +334,6 @@ impl Runtime {
                     }
                     SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
-                        // eprintln!("Evaling first");
                         let first = self.eval_eager_rec(first_id, true);
 
                         match first {
@@ -343,7 +342,6 @@ impl Runtime {
                                 let Some(key) = items.get(1) else {
                                     return Value::Object(map);
                                 };
-                                println!("key: {:?}", self.asts.fmt(*key));
                                 let key = self.eval(*key);
                                 try_err!(key);
                                 let Some(key) = self.as_symbol_or_keyword(&key) else {
@@ -383,7 +381,7 @@ impl Runtime {
         eager: bool,
         depth: usize,
     ) -> serde_json::Value {
-        println!("To json");
+        tracing::trace!("To json");
         if depth == 0 {
             return serde_json::Value::String("...".to_string());
         }
@@ -435,7 +433,9 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, io::Read, sync::Mutex};
+    use std::{collections::HashSet, io::Read};
+
+    use tracing_subscriber::{Layer, layer::SubscriberExt};
 
     use super::{s_std::prelude, *};
 
@@ -460,11 +460,10 @@ mod tests {
     }
 
     fn eager_test(input: &str) -> String {
-        eprintln!("---");
         let mut asts = ASTS::new();
         let ast = asts.parse(input).unwrap();
         let root_id = ast.root_id().unwrap();
-        eprintln!("Before process");
+        tracing::trace!("Before process");
         let prelude = prelude();
         let envs = [prelude];
         let root_id = crate::process_ast(&mut asts, root_id, &envs);
@@ -472,9 +471,9 @@ mod tests {
 
         let mut runtime = Runtime::new(asts);
         runtime.with_env(prelude);
-        eprintln!("Before eval");
+        tracing::trace!("Before eval");
         let value = runtime.eval(root_id);
-        eprintln!("Value: {value:?}");
+        tracing::trace!("Value: {value:?}");
         let value = runtime.to_json(value, true);
         serde_json::to_string_pretty(&value).unwrap()
     }
@@ -484,13 +483,13 @@ mod tests {
         test_runner::test_snapshots("docs/", "json", |input, _deps, _args| eager_test(input))
     }
 
-    fn level_from_args(args: &HashSet<&str>) -> tracing::Level {
-        const LEVELS: &[(&str, tracing::Level)] = &[
-            ("trace", tracing::Level::TRACE),
-            ("debug", tracing::Level::DEBUG),
-            ("info", tracing::Level::INFO),
-            ("warn", tracing::Level::WARN),
-            ("error", tracing::Level::ERROR),
+    fn level_from_args(args: &HashSet<&str>) -> tracing::level_filters::LevelFilter {
+        const LEVELS: &[(&str, tracing::level_filters::LevelFilter)] = &[
+            ("trace", tracing::level_filters::LevelFilter::TRACE),
+            ("debug", tracing::level_filters::LevelFilter::DEBUG),
+            ("info", tracing::level_filters::LevelFilter::INFO),
+            ("warn", tracing::level_filters::LevelFilter::WARN),
+            ("error", tracing::level_filters::LevelFilter::ERROR),
         ];
 
         for (name, level) in LEVELS {
@@ -498,7 +497,7 @@ mod tests {
                 return *level;
             }
         }
-        tracing::Level::INFO
+        tracing::level_filters::LevelFilter::INFO
     }
 
     #[test]
@@ -506,19 +505,33 @@ mod tests {
         test_runner::test_snapshots("docs/", "traces", |input, _deps, args| {
             let writer = tempfile::NamedTempFile::new().unwrap();
             let mut reader = writer.reopen().unwrap();
-            let path = writer.path().to_owned();
 
-            let level = level_from_args(args);
+            {
+                let level = level_from_args(args);
+                let (writer, _guard) = tracing_appender::non_blocking(writer);
 
-            let subscriber = tracing_subscriber::fmt()
-                .pretty()
-                .with_max_level(level)
-                .with_writer(Mutex::new(writer))
-                .finish();
-            tracing::subscriber::with_default(subscriber, move || {
-                tracing::info!("Logs ({level:?}) stored in: {path:?}");
-                eager_test(input);
-            });
+                let file_layer = tracing_subscriber::fmt::Layer::new()
+                    .compact()
+                    .with_file(args.contains("file"))
+                    .with_line_number(args.contains("line"))
+                    .with_writer(writer)
+                    .without_time()
+                    .with_ansi(false);
+
+                let console_layer = tracing_subscriber::fmt::Layer::new()
+                    .compact()
+                    .with_file(args.contains("file"))
+                    .with_line_number(args.contains("line"))
+                    .with_ansi(true);
+
+                let subscriber = tracing_subscriber::registry()
+                    .with(console_layer.with_filter(level))
+                    .with(file_layer.with_filter(level));
+
+                tracing::subscriber::with_default(subscriber, move || {
+                    eager_test(input);
+                });
+            }
 
             let mut buf = String::new();
             reader.read_to_string(&mut buf).unwrap();

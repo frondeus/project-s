@@ -28,9 +28,9 @@ impl Runtime {
                 let name = name.as_symbol().map(|s| s.to_string()).unwrap_or_else(|| {
                     panic!("Expected symbol, got {:?}", name);
                 });
-                println!("name: {name}");
+                tracing::trace!("name: {name}");
                 let val = self.eval(s);
-                println!("val: {val:?}");
+                tracing::trace!("val: {val:?}");
                 (name, val)
             })
             .collect();

@@ -88,7 +88,7 @@ impl<'a> Visitor<'a> for StructVisitor<'a, '_> {
 
     fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
         if self.helper.is_symbol(id, "super") {
-            println!("Found super!");
+            tracing::debug!("Found super!");
             self.using_super = true;
         }
         None
@@ -111,7 +111,6 @@ mod tests {
     #[test]
     fn thunk() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "thunk", |input, _deps| {
-            eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();
@@ -124,7 +123,6 @@ mod tests {
     #[test]
     fn json_thunk() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json-thunk", |input, _deps| {
-            eprintln!("---");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).unwrap();
             let root_id = ast.root_id().unwrap();

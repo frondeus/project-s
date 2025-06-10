@@ -51,7 +51,7 @@ impl Runtime {
         constructor: Constructor,
         self_: Option<Value>,
     ) -> Value {
-        println!("Constructor call: {self_:?}");
+        tracing::debug!("Constructor call: {self_:?}");
         let self_ = self_.unwrap_or_else(|| self.new_ref_obj(Default::default()));
 
         let root = self
@@ -68,7 +68,7 @@ impl Runtime {
 
         self.closure_call_inner(constructor.constructor, vec![self_.clone(), root, origin]);
         let ret = self_;
-        println!("Created object: {ret:?}");
+        tracing::debug!("Created object: {ret:?}");
         match ret {
             Value::Ref(ret) => match Rc::try_unwrap(ret) {
                 Ok(ret) => ret.into_inner(),
