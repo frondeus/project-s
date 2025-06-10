@@ -3030,3 +3030,47 @@ Ok, let's try it:
   }
 }
 ```
+
+Okay... Now we got suprising behaviour of root...
+
+```
+(+ {
+  :another 4
+  :key {
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+})
+```
+
+for some reason `root` is pointing into `another` from right side!
+I mean... maybe it is what we want?
+
+```json only
+{
+  "another": 9.0,
+  "key": {
+    "b": 5.0
+  }
+}
+```
+
+So... Javascript version of this returns 5.
+
+Whether i want it or not:
+I think i do want it!
+
+Imagine that the right side is a config provided by the user
+while left side is something there already.
+By overriding `another` we can automatically recalculate `key.b`.
+
+Sure, it leads to more unexpected behaviour but in the context of rpg and
+character sheets, it might be worth it.
+
+One example - changing level of the character. Very often max HP is based
+on the current level. 
+
+Okay, but now the only question is: **WHY** is it working like this?

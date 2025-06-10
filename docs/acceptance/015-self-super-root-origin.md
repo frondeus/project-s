@@ -314,6 +314,34 @@ output(
 }
 ```
 
+#### A case where root on left side references value overriden by right side
+
+```js
+const { create_obj, add, output } = require("./docs/obj");
+output(
+  add(
+    create_obj(({self, root}) => {
+      self.set("another", 4);
+      self.set("key", create_obj(({self, root}) => {
+        self.set("b", root.get("another") + 1);
+      })({root}))
+    }),
+    create_obj({
+      another: 9
+    })
+  )
+)
+```
+
+```js-eval
+{
+  "another": 9,
+  "key": {
+    "b": 5
+  }
+}
+```
+
 ### Right
 
 Okay. What about right side?
