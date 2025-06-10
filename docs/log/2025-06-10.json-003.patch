@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/log.md:3036
+/Users/frondeus/Code/project-s/docs/log/2025-06-10.md:77
 ```
 (+ {
   :another 4
@@ -12,9 +12,9 @@
 })
 ```
 
---- /Users/frondeus/Code/project-s/docs/log.md
-+++ json-079
-@@ -3053,7 +3053,7 @@
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-10.md
++++ json-003
+@@ -94,7 +94,7 @@
  {
    "another": 9.0,
    "key": {
