@@ -61,6 +61,15 @@ pub enum Function {
     },
 }
 
+impl Function {
+    pub fn body(&self) -> Option<SExpId> {
+        match self {
+            Self::Lisp { body, .. } => Some(*body),
+            Self::Rust { ..} => None,
+        }
+    }
+}
+
 impl<F> From<F> for Function
 where
     F: Fn(&mut Runtime, Vec<Value>) -> Value + 'static,

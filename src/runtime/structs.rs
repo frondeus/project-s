@@ -52,6 +52,9 @@ impl Runtime {
         self_: Option<Value>,
     ) -> Value {
         tracing::debug!("Constructor call: {self_:?}");
+        if let Some(body) = constructor.constructor.body() {
+            tracing::debug!("{}", self.asts.fmt(body));
+        }
         let self_ = self_.unwrap_or_else(|| self.new_ref_obj(Default::default()));
 
         let root = self

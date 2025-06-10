@@ -470,7 +470,7 @@ impl Envs {
             if env.kind == EnvKind::Object && OBJECT_RELATED_VARS.contains(&name) {
                 return Some(outcome);
             }
-            if env.vars.contains(name) {
+            if env.vars.contains(name) && env.kind != EnvKind::Global {
                 return Some(outcome);
             }
             if let EnvKind::Function = env.kind {

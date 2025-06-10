@@ -146,10 +146,10 @@ impl Runtime {
             }
         };
 
-        tracing::debug!("Macro call result: {}", self.asts.fmt(result));
+        // tracing::debug!("Macro call result: {}", self.asts.fmt(result));
         let envs = self.envs.slice();
         let processed = crate::process_ast(&mut self.asts, result, envs);
-        tracing::debug!("Processed: {}", self.asts.fmt(processed));
+        tracing::debug!("Expanded: {}", self.asts.fmt(processed));
 
         Ok(processed)
     }
