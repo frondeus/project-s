@@ -151,7 +151,8 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, origin]) = TryInto::<[Value; 3]>::try_into(args) else {
+                    let Ok([self_, root, _super, origin]) = TryInto::<[Value; 4]>::try_into(args)
+                    else {
                         return Value::Error("Expected two arguments".into());
                     };
 
@@ -179,7 +180,8 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, origin]) = TryInto::<[Value; 3]>::try_into(args) else {
+                    let Ok([self_, root, _super_, origin]) = TryInto::<[Value; 4]>::try_into(args)
+                    else {
                         return Value::Error("Expected two arguments".into());
                     };
 
@@ -278,12 +280,16 @@ fn insert_to_struct(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String>
 fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     Ok((
         "obj/con",
-        ("fn", (":self", ":root", ":origin"), move |ast: &mut AST| {
-            let mut items = args;
-            items.insert(0, "do".assemble(ast));
-            items.push("self".assemble(ast));
-            items.assemble(ast)
-        }),
+        (
+            "fn",
+            (":self", ":root", ":super", ":origin"),
+            move |ast: &mut AST| {
+                let mut items = args;
+                items.insert(0, "do".assemble(ast));
+                items.push("self".assemble(ast));
+                items.assemble(ast)
+            },
+        ),
     )
         .build(&mut rt.asts))
 }
@@ -311,7 +317,7 @@ fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
 
 fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
     let value = ("obj/construct-or", value);
-    let value = ("thunk", ("self", "root", "origin"), value);
+    let value = ("thunk", ("self", "root", "super", "origin"), value);
     ("obj/put", format!(":{key}"), value)
 }
 

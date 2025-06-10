@@ -6,7 +6,7 @@ and then based on it write pass rewriting struct definition.
 # Empty struct
 
 ```
-(obj/con (fn (:self :root :origin) (do
+(obj/con (fn (:self :root :super :origin) (do
 
   self
 )))
@@ -20,7 +20,7 @@ and then based on it write pass rewriting struct definition.
 # Inserting field
 
 ```
-(obj/con (fn (:self :root :origin) (do
+(obj/con (fn (:self :root :super :origin) (do
   (obj/put :key 5)
   self
 )))
@@ -36,7 +36,7 @@ and then based on it write pass rewriting struct definition.
 
 
 ```
-(obj/con (fn (:self :root :origin) (do
+(obj/con (fn (:self :root :super :origin) (do
   (obj/put :key 5)
   (obj/put :another 6)
   self

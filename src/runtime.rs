@@ -467,7 +467,9 @@ mod tests {
     fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "json", |input, _deps, args| {
             let lazy = args.contains("lazy");
-            eval_to_json(input, !lazy)
+            tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
+                eval_to_json(input, !lazy)
+            })
         })
     }
 

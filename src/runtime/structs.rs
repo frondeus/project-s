@@ -69,7 +69,16 @@ impl Runtime {
             .cloned()
             .unwrap_or_else(|| self_.clone());
 
-        self.closure_call_inner(constructor.constructor, vec![self_.clone(), root, origin]);
+        let super_ = self
+            .envs
+            .get("super")
+            .cloned()
+            .unwrap_or_else(|| self_.clone());
+
+        self.closure_call_inner(
+            constructor.constructor,
+            vec![self_.clone(), root, super_, origin],
+        );
         let ret = self_;
         tracing::debug!("Created object: {ret:?}");
         match ret {
