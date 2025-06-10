@@ -4,7 +4,7 @@
 (thunk () 123)
 ```
 
-```json-lazy
+```json lazy
 "<Thunk: Thunk>"
 ```
 
@@ -13,7 +13,7 @@
   (thunk (x) (+ 123 x))
 ```
 
-```json-lazy
+```json lazy
 "<Thunk: Thunk>"
 ```
 

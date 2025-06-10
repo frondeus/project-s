@@ -439,27 +439,7 @@ mod tests {
 
     use super::{s_std::prelude, *};
 
-    #[test]
-    fn json_lazy() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json-lazy", |input, _deps, _args| {
-            // eprintln!("---");
-            let mut asts = ASTS::new();
-            let ast = asts.parse(input).unwrap();
-            let root_id = ast.root_id().unwrap();
-            let prelude = prelude();
-            let envs = [prelude];
-            let root_id = crate::process_ast(&mut asts, root_id, &envs);
-            let [prelude] = envs;
-
-            let mut runtime = Runtime::new(asts);
-            runtime.with_env(prelude);
-            let value = runtime.eval(root_id);
-            let value = runtime.to_json(value, false);
-            serde_json::to_string_pretty(&value).unwrap()
-        })
-    }
-
-    fn eager_test(input: &str) -> String {
+    fn eval_to_value(input: &str) -> (Runtime, Value) {
         let mut asts = ASTS::new();
         let ast = asts.parse(input).unwrap();
         let root_id = ast.root_id().unwrap();
@@ -473,14 +453,22 @@ mod tests {
         runtime.with_env(prelude);
         tracing::trace!("Before eval");
         let value = runtime.eval(root_id);
+        (runtime, value)
+    }
+
+    fn eval_to_json(input: &str, eager: bool) -> String {
+        let (mut runtime, value) = eval_to_value(input);
         tracing::trace!("Value: {value:?}");
-        let value = runtime.to_json(value, true);
+        let value = runtime.to_json(value, eager);
         serde_json::to_string_pretty(&value).unwrap()
     }
 
     #[test]
     fn json() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, _deps, _args| eager_test(input))
+        test_runner::test_snapshots("docs/", "json", |input, _deps, args| {
+            let lazy = args.contains("lazy");
+            eval_to_json(input, !lazy)
+        })
     }
 
     fn level_from_args(args: &HashSet<&str>) -> tracing::level_filters::LevelFilter {
@@ -529,20 +517,13 @@ mod tests {
                     .with(file_layer.with_filter(level));
 
                 tracing::subscriber::with_default(subscriber, move || {
-                    eager_test(input);
+                    eval_to_value(input);
                 });
             }
 
             let mut buf = String::new();
             reader.read_to_string(&mut buf).unwrap();
             buf
-        })
-    }
-
-    #[test]
-    fn json_eager() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json-eager", |input, _deps, _args| {
-            eager_test(input)
         })
     }
 
