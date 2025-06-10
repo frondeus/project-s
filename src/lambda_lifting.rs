@@ -387,6 +387,28 @@ impl From<&crate::runtime::Env> for Env {
         }
     }
 }
+impl From<&[crate::runtime::Env]> for Envs {
+    fn from(envs: &[crate::runtime::Env]) -> Self {
+        let mut envs_iter = envs.iter();
+        let mut envs = Vec::new();
+
+        if let Some(global) = envs_iter.next() {
+            envs.push(Env {
+                vars: global.keys().map(|k| k.to_string()).collect(),
+                kind: EnvKind::Global,
+            });
+        };
+
+        for env in envs_iter {
+            envs.push(Env {
+                vars: env.keys().map(|k| k.to_string()).collect(),
+                kind: EnvKind::Local,
+            });
+        }
+
+        Self { envs }
+    }
+}
 
 #[derive(Debug)]
 struct Env {
@@ -430,14 +452,6 @@ impl Env {
 enum VariableKind {
     Local,
     Free,
-}
-
-impl From<&[crate::runtime::Env]> for Envs {
-    fn from(envs: &[crate::runtime::Env]) -> Self {
-        Self {
-            envs: envs.iter().map(|env| env.into()).collect(),
-        }
-    }
 }
 
 impl Envs {

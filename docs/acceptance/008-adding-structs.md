@@ -18,7 +18,7 @@
   "another": 9.0,
   "key": {
     "a": 1.0,
-    "b": 5.0
+    "b": 10.0
   }
 }
 ```
@@ -50,7 +50,7 @@ because left side of the `+` was already calculated.
   "another": 9.0,
   "key": {
     "a": 1.0,
-    "b": 5.0
+    "b": 10.0
   },
   "self": 10.0,
   "super": 5.0
@@ -108,7 +108,7 @@ because left side of the `+` was already calculated.
   "another": 9.0,
   "key": {
     "a": 1.0,
-    "b": 5.0,
+    "b": 10.0,
     "c": 3.0
   }
 }

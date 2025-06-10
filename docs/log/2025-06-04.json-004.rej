@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-04.md:115
+```
+(let :base {
+  :a 5.0
+})
+
+(let :x {
+  :key 42.0
+  :value (+ base {
+    :a (+ (super :a) 10.0)
+  })
+})
+
+(((+ {:d 1 } x) :value) :a)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-04.md
++++ json-004
+@@ -134,7 +134,7 @@
+ And technically, :x doesnt need to be a thunk.
+ 
+ ```json
+-15.0
++"<Error: Undefined key: a in {\"d\": Thunk(Thunk)}>"
+ ```
+ 
+ TODO: `cl` and `fn` should also take keywords as definitions.
