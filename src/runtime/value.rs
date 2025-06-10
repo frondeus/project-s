@@ -65,7 +65,7 @@ impl Function {
     pub fn body(&self) -> Option<SExpId> {
         match self {
             Self::Lisp { body, .. } => Some(*body),
-            Self::Rust { ..} => None,
+            Self::Rust { .. } => None,
         }
     }
 }
