@@ -25,7 +25,7 @@
    "key": {
      "a": 1.0,
 -    "b": 5.0,
-+    "b": "<Error: Undefined key: another in {\"a\": Thunk(Thunk), \"b\": Thunk(Thunk), \"c\": Thunk(Thunk)}>",
++    "b": 10.0,
      "c": 3.0
    }
  }

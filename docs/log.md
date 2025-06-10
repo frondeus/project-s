@@ -2910,7 +2910,7 @@ Let's look at following issue:
 )
 ```
 
-```json only
+```json
 {
   "another": 4.0,
   "key": {
@@ -2954,3 +2954,79 @@ but lets look further into expansion
 cl takes self root and origin as parameters.
 But because we did not execute `obj/con` immediately, we loose
 this information!
+
+# 10.06
+
+So we want to have a thunk but only if a value is not a constructor?
+
+So the root cause is:
+```example
+(obj/put :a (thunk (self root origin) (obj/con (...)) ))
+```
+
+{ a: thunk }
+now we call obj.a
+
+thunk is evaluated - we create a constructor
+But we do not immediately create constructed object!
+
+What if i had
+
+```
+(let :x {:e 1 :f (root :d)})
+
+{
+  :a (obj/construct-or {
+    :b 1
+    :c (root :d)
+  })
+  :d (obj/construct-or 2)
+  :g (obj/construct-or x)
+}
+
+```
+
+```json 
+{
+  "a": {
+    "b": 1.0,
+    "c": 2.0
+  },
+  "d": 2.0,
+  "g": {
+    "e": 1.0,
+    "f": 2.0
+  }
+}
+```
+
+Okay, this works, so we could use (obj/construct-or) here, right?
+
+Ok, let's try it:
+
+```
+(let :x {:e 1 :f (root :d)})
+
+{
+  :a {
+    :b 1
+    :c (root :d)
+  }
+  :d 2
+  :g x
+}
+```
+
+```json
+{
+  "a": {
+    "b": 1.0,
+    "c": 2.0
+  },
+  "d": 2.0,
+  "g": {
+    "e": 1.0,
+    "f": 2.0
+  }
+}
+```

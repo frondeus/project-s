@@ -194,7 +194,14 @@ impl<'a> LambdaPass<'a> {
         let maybe_new_body = self.process_fn_decl(body);
         self.envs.pop();
 
-        if let Some((new_body, free_vars)) = maybe_new_body {
+        if let Some((new_body, new_free_vars)) = maybe_new_body {
+            let mut free_vars = free_vars
+                .into_iter()
+                .map(|id| self.asts.get(id).as_symbol().unwrap().to_string())
+                .collect::<BTreeSet<String>>();
+
+            free_vars.extend(new_free_vars);
+
             let thunk = ("thunk", free_vars, new_body).assemble(self.new_ast());
 
             Some(thunk)
@@ -286,6 +293,13 @@ impl<'a> LambdaPass<'a> {
         })
     }
 
+    fn process_captured(&mut self, id: SExpId, free_vars: &mut BTreeSet<String>) -> Option<SExpId> {
+        let list = self.asts.get(id).as_list()?;
+        self.visit_mut_list(list.to_vec(), |pass, id| {
+            pass.process_fn_decl_body(id, free_vars)
+        })
+    }
+
     fn process_fn_decl_body(
         &mut self,
         body: SExpId,
@@ -329,13 +343,16 @@ impl<'a> LambdaPass<'a> {
                     });
                 }
                 if self.is_symbol(first, "thunk") {
-                    return None;
+                    let captured = sexp_ids[1];
+                    return self.process_captured(captured, free_vars);
                 }
                 if self.is_symbol(first, "fn") {
                     return None;
                 }
                 if self.is_symbol(first, "cl") {
-                    return None;
+                    let _signature = sexp_ids[1];
+                    let captured = sexp_ids[2];
+                    return self.process_captured(captured, free_vars);
                 }
 
                 self.visit_mut_list(sexp_ids.clone(), |pass, id| {

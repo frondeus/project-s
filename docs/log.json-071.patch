@@ -6,15 +6,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/log.md
 +++ json-071
-@@ -2170,10 +2170,7 @@
- ```json
+@@ -2171,7 +2171,7 @@
  {
    "b": 10.0,
--  "c": {
+   "c": {
 -    "a": 4.0,
--    "b": 4.0
--  }
-+  "c": "<Error: Undefined variable: foo>"
++    "a": 10.0,
+     "b": 4.0
+   }
  }
- ```
- 

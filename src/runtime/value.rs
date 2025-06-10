@@ -132,6 +132,10 @@ impl Value {
         }
     }
 
+    pub fn is_constructor(&self) -> bool {
+        matches!(self, Value::Constructor(_))
+    }
+
     pub fn is_lazy(&self, include_constructor: bool) -> bool {
         if include_constructor && matches!(self, Value::Constructor(_)) {
             return true;

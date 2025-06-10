@@ -306,6 +306,12 @@ fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     }
 }
 
+fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
+    let value = ("obj/construct-or", value);
+    let value = ("thunk", ("self", "root", "origin"), value);
+    ("obj/put", format!(":{key}"), value)
+}
+
 fn obj_eval(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     let Ok([to_eval]) = TryInto::<[Value; 1]>::try_into(args) else {
         return Err("Expected one argument".into());
@@ -331,8 +337,7 @@ fn obj_eval(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
                     return Err("Expected value".into());
                 };
 
-                let value = ("thunk", ("self", "root", "origin"), value);
-                let expr = ("obj/put", format!(":{key}"), value).build(&mut rt.asts);
+                let expr = obj_put_thunk(key.to_string(), value).build(&mut rt.asts);
 
                 let expr = expr.build(&mut rt.asts);
                 last = Some(rt.eval(expr));
@@ -354,14 +359,7 @@ fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             let Some(value) = args.next() else {
                 return Err("Expected value".into());
             };
-            inner.push(
-                (
-                    "obj/put",
-                    format!(":{key}"),
-                    ("thunk", ("self", "root", "origin"), value),
-                )
-                    .assemble(&mut ast),
-            );
+            inner.push(obj_put_thunk(key.to_string(), value).assemble(&mut ast));
         } else {
             inner.push(("obj/eval", arg_id).assemble(&mut ast));
         }
@@ -372,6 +370,17 @@ fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
     rt.asts.add_ast(ast);
     println!("obj/struct: {}", rt.asts.fmt(result));
     Ok(result)
+}
+
+fn obj_construct_or(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([value]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    match value {
+        Value::Constructor(constructor) => Ok(rt.constructor_call(constructor, None)),
+        val => Ok(val),
+    }
 }
 
 pub fn prelude() -> Env {
@@ -386,6 +395,7 @@ pub fn prelude() -> Env {
         .with_try_macro("obj/+", obj_add)
         .with_try_macro("obj/struct", obj_struct)
         .with_try_fn("obj/eval", obj_eval)
+        .with_try_fn("obj/construct-or", obj_construct_or)
         .with_try_macro("struct", obj_struct)
         .with_try_macro("+obj", add_obj)
         .with_fn("print", |_rt, args| {
