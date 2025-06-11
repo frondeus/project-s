@@ -97,7 +97,7 @@ because left side of the `+` was already calculated.
 (let :right {
   :another 9
   
-  (+obj :key {:c 3})
+  (obj/+ :key {:c 3})
 })
 
 (+ left right)

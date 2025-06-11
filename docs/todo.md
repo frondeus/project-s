@@ -12,6 +12,7 @@ Nice to have
 * [ ] Destructuring
 * [x] Arrays
 * [ ] Better strings
+* [ ] Splice (from janet)?
 
 Probably a lot of more lol.
 Like vertical stack
@@ -19,3 +20,4 @@ Like vertical stack
 * [ ] Type checker!
 * [ ] JIT
 * [ ] REPL
+* [ ] Macro expansion in a pass.

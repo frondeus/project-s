@@ -1,50 +1,13 @@
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
-use crate::{ast::SExpId, runtime::value::Value};
+use crate::runtime::value::Value;
 
 use super::{
     Runtime, // value::{Closure, Constructor},
     value::Constructor,
 };
 
-// #[derive(Default)]
-// pub(crate) struct Structs {
-//     stack: Vec<BTreeMap<String, Value>>,
-// }
-
-// impl Structs {
-//     pub(crate) fn push(&mut self, strukt: BTreeMap<String, Value>) {
-//         self.stack.push(strukt);
-//     }
-
-//     pub(crate) fn pop(&mut self) -> BTreeMap<String, Value> {
-//         self.stack.pop().unwrap()
-//     }
-
-//     pub(crate) fn last(&self) -> Option<&BTreeMap<String, Value>> {
-//         self.stack.last()
-//     }
-
-//     pub(crate) fn super_(&self) -> Option<&BTreeMap<String, Value>> {
-//         self.last()
-//     }
-// }
-
 impl Runtime {
-    pub(crate) fn condef(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        match items {
-            [f] => {
-                let f = self.eval_eager_rec(*f, false);
-                let Value::Function(f) = f else {
-                    return Err(format!("Expected function found {f:?}"));
-                };
-
-                Ok(Value::Constructor(Constructor { constructor: f }))
-            }
-            _ => Err(format!("Expected 1 argument found {}", items.len())),
-        }
-    }
-
     // Constructor (self)
     pub(crate) fn constructor_call(
         &mut self,

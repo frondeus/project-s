@@ -12,7 +12,8 @@ use crate::{
 
 mod env;
 mod functions;
-mod lists;
+mod json;
+mod macros;
 mod quotes;
 pub mod s_std;
 mod structs;
@@ -58,29 +59,6 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    fn has_obj(&mut self, items: &[SExpId]) -> Value {
-        match items {
-            [obj, key] => {
-                let obj = self.eval_eager_rec(*obj, true);
-                try_err!(obj);
-                let Some(obj) = obj.as_object() else {
-                    return Value::Error(format!("has_obj: Expected object, found {:?}", obj));
-                };
-                let key = self.eval(*key);
-                try_err!(key);
-                let Some(key) = self.as_symbol_or_keyword(&key) else {
-                    return Value::Error(format!("Expected symbol or keyword. Found: {:?}", key));
-                };
-
-                Value::Bool(obj.contains_key(key))
-            }
-            _ => Value::Error(format!(
-                "has_obj: Expected 2 arguments, found: {}",
-                items.len()
-            )),
-        }
-    }
-
     fn _let(&mut self, items: &[SExpId]) -> Value {
         match items {
             [ident, value] => {
@@ -96,62 +74,6 @@ impl Runtime {
             }
             _ => Value::Error(format!("Expected 2 arguments, found: {}", items.len())),
         }
-    }
-
-    // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
-    #[allow(clippy::unnecessary_to_owned)]
-    fn macro_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        let signature = items
-            .first()
-            .ok_or_else(|| "Expected signature".to_string())?;
-
-        let signature = self.asts.get(*signature);
-        let Some(signature) = signature.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let signature = signature
-            .to_vec()
-            .into_iter()
-            .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
-            .collect();
-        let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
-
-        Ok(Value::Macro(Macro::Lisp {
-            signature,
-            body: *body,
-        }))
-    }
-
-    fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<SExpId, String> {
-        let result = match macro_ {
-            Macro::Lisp { signature, body } => {
-                self.envs.push();
-
-                for (sig, arg) in signature.iter().zip(args) {
-                    self.envs.set(sig, Value::SExp(*arg));
-                }
-
-                let result = self.eval(body);
-
-                self.envs.pop();
-
-                let result = result
-                    .as_sexp()
-                    .ok_or_else(|| "Expected SExpression".to_string())?;
-                *result
-            }
-            Macro::Rust { body } => {
-                let args = args.to_vec();
-                body(self, args)
-            }
-        };
-
-        // tracing::debug!("Macro call result: {}", self.asts.fmt(result));
-        let envs = self.envs.slice();
-        let processed = crate::process_ast(&mut self.asts, result, envs);
-        tracing::debug!("Expanded: {}", self.asts.fmt(processed));
-
-        Ok(processed)
     }
 
     fn do_(&mut self, items: &[SExpId]) -> Value {
@@ -274,12 +196,6 @@ impl Runtime {
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Bool(b) => Value::Bool(b),
-            // SExp::Symbol(s) if s == "super" => {
-            //     let Some(map) = self.supers.super_() else {
-            //         return Value::Error("super used outside of object".to_string());
-            //     };
-            //     Value::Object(map.clone())
-            // }
             SExp::Keyword(_s) => Value::SExp(id),
             SExp::Symbol(s) if s.starts_with(":") => {
                 panic!("This should be a keyword: {}", s);
@@ -310,10 +226,6 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "cl" => {
                         self.closure_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "obj/con" => {
-                        self.condef(&items[1..]).unwrap_or_else(Value::Error)
-                    }
-                    SExp::Symbol(tag) if tag == "list" => self.make_list(&items[1..]),
                     SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
                         let Some(item) = items.get(1) else {
@@ -332,7 +244,6 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "if" => {
                         self.if_(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "has?" => self.has_obj(&items[1..]),
                     _first => {
                         let first = self.eval_eager_rec(first_id, true);
 
@@ -368,58 +279,6 @@ impl Runtime {
                     }
                 }
                 // Otherwise, just return error for now
-            }
-        }
-    }
-
-    pub fn to_json(&mut self, value: Value, eager: bool) -> serde_json::Value {
-        self.to_json_inner(value, eager, 5)
-    }
-    pub fn to_json_inner(
-        &mut self,
-        mut value: Value,
-        eager: bool,
-        depth: usize,
-    ) -> serde_json::Value {
-        tracing::trace!("To json");
-        if depth == 0 {
-            return serde_json::Value::String("...".to_string());
-        }
-        if eager {
-            value = value.eager_rec(self, true);
-        }
-        match value {
-            Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),
-            Value::String(s) => serde_json::Value::String(s),
-            Value::Bool(b) => serde_json::Value::Bool(b),
-            Value::Object(map) => {
-                let mut obj = serde_json::Map::new();
-                for (k, v) in map {
-                    obj.insert(k, self.to_json_inner(v, eager, depth - 1));
-                }
-                serde_json::Value::Object(obj)
-            }
-            Value::List(list) => {
-                let mut arr = vec![];
-                for value in list {
-                    arr.push(self.to_json_inner(value, eager, depth - 1));
-                }
-                serde_json::Value::Array(arr)
-            }
-            Value::Function(function) => {
-                serde_json::Value::String(format!("<Function: {:?}>", function))
-            }
-            Value::Constructor(constructor) => {
-                serde_json::Value::String(format!("<Constructor: {:?}>", constructor))
-            }
-            Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
-            Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
-            Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
-            Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
-            Value::SExp(id) => {
-                let ast = self.asts.get_ast(id);
-                let sexp = ast.get(id).fmt(&self.asts).to_string();
-                serde_json::Value::String(sexp)
             }
         }
     }

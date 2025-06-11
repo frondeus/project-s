@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use crate::{
     ast::{AST, SExp, SExpId},
-    builder::{ASTBuilder, error, quote},
+    builder::{ASTBuilder, error},
 };
 
 use super::{
@@ -201,26 +201,6 @@ fn set(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(value)
 }
 
-fn add_obj(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
-    match &args[..] {
-        [key, value] => {
-            let result = (
-                "if",
-                ("has?", "super", key),
-                // quote((key, ("thunk", (), ("+", ("super", key), value)))),
-                quote((key, ("+", ("super", key), value))),
-                quote((key, value)),
-            );
-            Ok(result.build(&mut rt.asts))
-            // let result = ("thunk", (), result);
-
-            // let result = result.build(&mut rt.asts);
-            // Ok(result)
-        }
-        _ => Err("Expected two arguments".into()),
-    }
-}
-
 fn new_ref(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     let Ok([one]) = TryInto::<[Value; 1]>::try_into(args) else {
         return Err("Expected one argument".into());
@@ -409,13 +389,51 @@ fn deep_eager(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(value)
 }
 
+fn obj_has(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([obj, key]) = TryInto::<[Value; 2]>::try_into(args) else {
+        return Err("Expected two arguments".into());
+    };
+
+    let obj = obj.eager_rec(rt, true);
+    let key = key.eager_rec(rt, true);
+
+    let Some(obj) = obj.as_object() else {
+        return Err("has?: Expected object".into());
+    };
+
+    let Some(key) = rt.as_symbol_or_keyword(&key) else {
+        return Err("has?: Expected symbol or keyword".into());
+    };
+
+    Ok(Value::Bool(obj.contains_key(key)))
+}
+
+fn obj_con(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([value]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    let value = value.eager_rec(rt, false);
+    let Value::Function(constructor) = value else {
+        return Err("obj/con: Expected function".into());
+    };
+
+    Ok(Value::Constructor(Constructor { constructor }))
+}
+
+fn make_list(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    Ok(Value::List(args))
+}
+
 pub fn prelude() -> Env {
     Env::default()
         .with_try_fn("-", sub)
         .with_try_fn("+", add)
         .with_try_fn("ref", new_ref)
         .with_try_fn("set", set)
+        .with_try_fn("list", make_list)
         .with_try_fn("obj/insert", insert_to_struct)
+        .with_try_fn("obj/con", obj_con)
         .with_try_macro("obj/condef", condef)
         .with_try_macro("obj/put", objput)
         .with_try_macro("obj/+", obj_add)
@@ -424,9 +442,9 @@ pub fn prelude() -> Env {
         .with_try_fn("obj/construct-or", obj_construct_or)
         .with_try_fn("obj/new", obj_construct_or)
         .with_try_macro("struct", obj_struct)
-        .with_try_macro("+obj", add_obj)
         .with_try_fn("eager", eager)
         .with_try_fn("deep-eager", deep_eager)
+        .with_try_fn("has?", obj_has)
         .with_try_fn("debug", |_rt, args| {
             tracing::info!("Debug: {:#?}", &args);
 
