@@ -80,7 +80,18 @@ impl Runtime {
         let mut result = None;
         self.envs.push();
         for item in items {
-            result = Some(self.eval(*item));
+            let mut value = self.eval(*item);
+
+            if self.eager_do_error {
+                value = match value.ok() {
+                    Err(e) => {
+                        self.envs.pop();
+                        return Value::Error(e);
+                    }
+                    Ok(value) => value,
+                }
+            }
+            result = Some(value);
         }
         self.envs.pop();
         result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
@@ -101,7 +112,7 @@ impl Runtime {
                 if condition.as_boolean().ok_or("Expected boolean")? {
                     Ok(self.eval(*then))
                 } else {
-                    Err("No else branch".to_string())
+                    Ok(Value::List(vec![]))
                 }
             }
             _ => Err(format!("Expected 2 or 3 arguments, found: {}", items.len())),
@@ -284,10 +295,20 @@ impl Runtime {
     }
 }
 
-#[derive(Default)]
 pub struct Runtime {
     envs: Envs,
     asts: ASTS,
+    eager_do_error: bool,
+}
+
+impl Default for Runtime {
+    fn default() -> Self {
+        Self {
+            envs: Default::default(),
+            asts: Default::default(),
+            eager_do_error: true,
+        }
+    }
 }
 
 #[cfg(test)]

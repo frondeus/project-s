@@ -247,7 +247,7 @@ fn insert_to_struct(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String>
 
     tracing::debug!("After insertion: {this:?}");
 
-    Ok(old.unwrap_or_else(|| Value::Error("???".into())))
+    Ok(old.unwrap_or_else(|| Value::List(vec![])))
 }
 
 fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {

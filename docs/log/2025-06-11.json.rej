@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-11.md:267
+```
+(let (:a :b :c) (1 2 3))
+
+a
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-11.md
++++ json
+@@ -271,5 +271,6 @@
+ ```
+ 
+ ```json
++"<Error: Let: Expected keyword>"
+ ```
+ 
