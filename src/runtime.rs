@@ -28,6 +28,8 @@ macro_rules! try_err {
         };
     };
 }
+
+#[derive(Debug)]
 enum Pattern {
     Single(String),
     List(Vec<Pattern>),
@@ -86,7 +88,7 @@ impl Runtime {
                 self.envs.set(&key, value.clone());
                 Ok(value)
             }
-            Pattern::List(patterns) => match value {
+            Pattern::List(patterns) => match value.eager_rec(self, true) {
                 Value::List(items) => {
                     let mut result = vec![];
                     for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
@@ -95,7 +97,29 @@ impl Runtime {
                     }
                     Ok(Value::List(result))
                 }
-                _ => Err(format!("Destructing. Expected list, found: {:?}", value)),
+                Value::Object(mut map) => {
+                    let mut result = vec![];
+                    for pattern in patterns {
+                        let key = match pattern {
+                            Pattern::Single(key) => key,
+                            list => {
+                                return Err(format!(
+                                    "Destructing object. Expected key, found {list:?}"
+                                ));
+                            }
+                        };
+
+                        let value = map.remove(&key).unwrap_or_else(|| {
+                            Value::Error(format!("Field :{key} not found in {map:?} "))
+                        });
+
+                        let pattern = Pattern::Single(key);
+                        let value = self.destruct_(pattern, value)?;
+                        result.push(value);
+                    }
+                    Ok(Value::List(result))
+                }
+                value => Err(format!("Destructing. Expected list, found: {:?}", value)),
             },
         }
     }
