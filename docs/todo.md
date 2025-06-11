@@ -17,4 +17,5 @@ Probably a lot of more lol.
 Like vertical stack
 * [ ] LSP
 * [ ] Type checker!
-
+* [ ] JIT
+* [ ] REPL
