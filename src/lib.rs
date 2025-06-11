@@ -11,6 +11,7 @@ pub mod visitor;
 
 pub mod lambda_lifting;
 
+pub mod patterns;
 pub mod types;
 
 pub mod runtime;

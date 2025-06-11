@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    rc::Rc,
-};
+use std::{collections::BTreeMap, rc::Rc};
 
 pub use env::Env;
 use env::Envs;
@@ -10,6 +7,7 @@ use value::{Function, Macro, Value};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
+    patterns::Pattern,
     types::{Type, TypeEnv},
 };
 
@@ -30,13 +28,6 @@ macro_rules! try_err {
             return $crate::runtime::value::Value::Error(e);
         };
     };
-}
-
-#[derive(Debug)]
-enum Pattern {
-    Single(String),
-    List(Vec<Pattern>),
-    Object(HashMap<String, Pattern>),
 }
 
 impl Runtime {
@@ -69,68 +60,7 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    fn is_special_case(&self, ident: SExpId, name: &str) -> bool {
-        let ident = self.asts.get(ident);
-        let Some(ident) = ident.as_symbol() else {
-            return false;
-        };
-        ident == name
-    }
-    fn parse_pattern(&self, ident: SExpId) -> Result<Pattern, String> {
-        let ident = self.asts.get(ident).clone();
-        match ident {
-            SExp::Keyword(k) => Ok(Pattern::Single(k)),
-            SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![])),
-            SExp::List(items) => {
-                let first = items[0];
-                if self.is_special_case(first, "obj/struct") {
-                    let mut patterns = HashMap::new();
-                    let mut items = items.into_iter().skip(1).peekable();
-                    while let Some(item) = items.next() {
-                        let Some(key) = self.asts.get(item).as_keyword() else {
-                            return Err(format!(
-                                "Expected keyword, found: {:?}",
-                                self.asts.fmt(item)
-                            ));
-                        };
-
-                        if let Some(next) = items.peek() {
-                            let next = self.asts.get(*next);
-                            match next {
-                                SExp::Symbol(renamed) => {
-                                    patterns.insert(
-                                        key.to_owned(),
-                                        Pattern::Single(renamed.to_owned()),
-                                    );
-                                    items.next();
-                                    continue;
-                                }
-                                SExp::Keyword(_) => (),
-                                _ => {
-                                    let next = items.next().unwrap();
-                                    patterns.insert(key.to_owned(), self.parse_pattern(next)?);
-                                    continue;
-                                }
-                            }
-                        }
-                        patterns.insert(key.to_owned(), Pattern::Single(key.to_owned()));
-                    }
-
-                    return Ok(Pattern::Object(patterns));
-                }
-
-                let mut patterns = vec![];
-                for item in items {
-                    let pattern = self.parse_pattern(item)?;
-                    patterns.push(pattern);
-                }
-                Ok(Pattern::List(patterns))
-            }
-            _ => Err(format!("Expected keyword or list, found: {:?}", ident)),
-        }
-    }
-
-    fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
+    pub(crate) fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
         match pattern {
             Pattern::Single(key) => {
                 tracing::debug!("Adding to env: {:?}", self.envs.last());
@@ -170,7 +100,7 @@ impl Runtime {
     fn _let(&mut self, items: &[SExpId]) -> Result<Value, String> {
         match items {
             [ident, value] => {
-                let pattern = self.parse_pattern(*ident)?;
+                let pattern = Pattern::parse(*ident, &self.asts)?;
                 let value = self.eval(*value);
 
                 self.destruct_(pattern, value)

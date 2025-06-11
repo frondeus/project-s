@@ -1,7 +1,7 @@
 // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
 #![allow(clippy::unnecessary_to_owned)]
 
-use crate::{ast::SExpId, try_err};
+use crate::{ast::SExpId, patterns::Pattern};
 
 use super::{
     Runtime,
@@ -10,42 +10,26 @@ use super::{
 
 impl Runtime {
     pub(crate) fn function_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        let signature = items
+        let pattern = items
             .first()
-            .ok_or_else(|| "Expected signature".to_string())?;
+            .ok_or_else(|| "Expected pattern".to_string())?;
 
-        let signature = self.asts.get(*signature);
-        let Some(signature) = signature.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let signature = signature
-            .to_vec()
-            .into_iter()
-            .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
-            .collect();
-
+        let pattern = Pattern::parse(*pattern, &self.asts)?;
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
         Ok(Value::Function(Function::Lisp {
-            signature,
+            pattern,
             captured: Default::default(),
             body: *body,
         }))
     }
 
     pub(crate) fn closure_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        let signature = items
+        let pattern = items
             .first()
-            .ok_or_else(|| "Expected signature".to_string())?;
-        let signature = self.asts.get(*signature);
-        let Some(signature) = signature.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let signature = signature
-            .to_vec()
-            .into_iter()
-            .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
-            .collect();
+            .ok_or_else(|| "Expected pattern".to_string())?;
+
+        let pattern = Pattern::parse(*pattern, &self.asts)?;
 
         let captured = items
             .get(1)
@@ -67,7 +51,7 @@ impl Runtime {
         let body = items.get(2).ok_or_else(|| "Expected body".to_string())?;
 
         Ok(Value::Function(Function::Lisp {
-            signature,
+            pattern,
             captured,
             body: *body,
         }))
@@ -76,14 +60,13 @@ impl Runtime {
     pub(crate) fn closure_call_inner(&mut self, function: Function, args: Vec<Value>) -> Value {
         match function {
             Function::Lisp {
-                signature,
+                pattern,
                 body,
                 captured,
             } => {
                 self.envs.push();
-                for (sig, arg) in signature.iter().zip(args) {
-                    try_err!(arg);
-                    self.envs.set(sig, arg);
+                if let Err(e) = self.destruct_(pattern, Value::List(args)) {
+                    return Value::Error(e);
                 }
                 for (name, val) in captured {
                     self.envs.set(&name, val);

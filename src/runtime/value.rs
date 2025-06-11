@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
-use crate::ast::{AST, SExp, SExpId};
+use crate::{
+    ast::{AST, SExp, SExpId},
+    patterns::Pattern,
+};
 
 use super::Runtime;
 
@@ -52,7 +55,8 @@ pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
 #[derive(Clone)]
 pub enum Function {
     Lisp {
-        signature: Vec<String>,
+        // signature: Vec<String>,
+        pattern: Pattern,
         captured: BTreeMap<String, Value>,
         body: SExpId,
     },

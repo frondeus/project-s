@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     builder::ASTBuilder,
+    patterns::Pattern,
 };
 
 const SPECIAL_FORMS: &[&str] = &[
@@ -166,10 +167,10 @@ impl<'a> LambdaPass<'a> {
                 let body = sexp_ids[2];
                 self.process_thunk(first_id, free_vars, body)
             } else if self.is_symbol(first_id, "fn") {
-                let signature_id = sexp_ids[1];
+                let pattern_id = sexp_ids[1];
                 let body = sexp_ids[2];
-                let signature = self.asts.get(signature_id).as_list().unwrap().to_vec();
-                self.process_fn(first_id, signature, body)
+                let pattern = Pattern::parse(pattern_id, self.asts).ok()?;
+                self.process_fn(first_id, pattern_id, pattern, body)
             } else {
                 self.visit_mut_list(sexp_ids.clone(), |pass, id| pass.pass_inner(id))
             }
@@ -212,21 +213,39 @@ impl<'a> LambdaPass<'a> {
         }
     }
 
+    fn process_pattern(&mut self, pattern: Pattern) {
+        match pattern {
+            Pattern::Single(key) => {
+                self.envs.set(&key);
+            }
+            Pattern::List(patterns) => {
+                for pattern in patterns {
+                    self.process_pattern(pattern);
+                }
+            }
+            Pattern::Object(patterns) => {
+                for (_key, pattern) in patterns {
+                    self.process_pattern(pattern);
+                }
+            }
+        }
+    }
+
     fn process_fn(
         &mut self,
         first_id: SExpId,
-        signature_ids: Vec<SExpId>,
+        pattern_id: SExpId,
+        pattern: Pattern,
         mut body: SExpId,
     ) -> Option<SExpId> {
         // println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
-        let signature = signature_ids
-            .iter()
-            .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
-            .collect::<Vec<String>>();
+        // let signature = signature_ids
+        //     .iter()
+        //     .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
+        //     .collect::<Vec<String>>();
         self.envs.push(EnvKind::Function);
-        for var in signature {
-            self.envs.set(&var);
-        }
+
+        self.process_pattern(pattern);
 
         let mut edited = false;
         if let Some(new_body) = self.pass_inner(body) {
@@ -237,11 +256,11 @@ impl<'a> LambdaPass<'a> {
         self.envs.pop();
 
         if let Some((new_body, free_vars)) = maybe_new_body {
-            let closure = ("cl", &signature_ids[..], free_vars, new_body).assemble(self.new_ast());
+            let closure = ("cl", pattern_id, free_vars, new_body).assemble(self.new_ast());
 
             Some(closure)
         } else if edited {
-            Some((first_id, &signature_ids[..], body).assemble(self.new_ast()))
+            Some((first_id, pattern_id, body).assemble(self.new_ast()))
         } else {
             None
         }
