@@ -399,7 +399,7 @@ fn deep_eager(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     };
 
     let eager_value = value.clone().eager_rec(rt, true);
-    tracing::warn!("Deep eager: {:?}", eager_value);
+    tracing::debug!("Deep eager: {:?}", eager_value);
 
     if let Value::Object(map) = &eager_value {
         for value in map.values() {
