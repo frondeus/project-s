@@ -9,7 +9,7 @@
 * [x] If else in normal places
 
 Nice to have
-* [ ] Destructuring
+* [x] Destructuring
 * [x] Arrays
 * [ ] Better strings
 * [ ] Splice (from janet)?
