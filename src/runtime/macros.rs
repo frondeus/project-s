@@ -1,4 +1,4 @@
-use crate::ast::SExpId;
+use crate::{ast::SExpId, patterns::Pattern};
 
 use super::{
     Runtime,
@@ -9,43 +9,34 @@ impl Runtime {
     // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
     #[allow(clippy::unnecessary_to_owned)]
     pub(crate) fn macro_def(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        let signature = items
+        let pattern = items
             .first()
-            .ok_or_else(|| "Expected signature".to_string())?;
+            .ok_or_else(|| "Expected pattern".to_string())?;
 
-        let signature = self.asts.get(*signature);
-        let Some(signature) = signature.as_list() else {
-            return Err("Expected list".to_string());
-        };
-        let signature = signature
-            .to_vec()
-            .into_iter()
-            .map(|s| self.asts.get(s).as_keyword().unwrap().to_string())
-            .collect();
+        let pattern = Pattern::parse(*pattern, &self.asts)?;
         let body = items.get(1).ok_or_else(|| "Expected body".to_string())?;
 
         Ok(Value::Macro(Macro::Lisp {
-            signature,
+            pattern,
             body: *body,
         }))
     }
 
     pub(crate) fn macro_call(&mut self, macro_: Macro, args: &[SExpId]) -> Result<SExpId, String> {
         let result = match macro_ {
-            Macro::Lisp { signature, body } => {
+            Macro::Lisp { pattern, body } => {
                 self.envs.push();
 
-                for (sig, arg) in signature.iter().zip(args) {
-                    self.envs.set(sig, Value::SExp(*arg));
-                }
+                let args = args.iter().copied().map(Value::SExp).collect();
+                self.destruct_(pattern, Value::List(args))?;
 
                 let result = self.eval(body);
 
                 self.envs.pop();
 
-                let result = result
-                    .as_sexp()
-                    .ok_or_else(|| "Expected SExpression".to_string())?;
+                let result = result.as_sexp().ok_or_else(|| {
+                    format!("Macro call: Expected SExpression. Found {:?}", result)
+                })?;
                 *result
             }
             Macro::Rust { body } => {

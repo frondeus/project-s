@@ -238,11 +238,6 @@ impl<'a> LambdaPass<'a> {
         pattern: Pattern,
         mut body: SExpId,
     ) -> Option<SExpId> {
-        // println!("processing fn: {}", self.asts.fmt_list(sexp_ids));
-        // let signature = signature_ids
-        //     .iter()
-        //     .map(|id| self.asts.get(*id).as_keyword().unwrap().to_string())
-        //     .collect::<Vec<String>>();
         self.envs.push(EnvKind::Function);
 
         self.process_pattern(pattern);

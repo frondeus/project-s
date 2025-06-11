@@ -27,21 +27,16 @@ pub enum Value {
 
 #[derive(Clone)]
 pub enum Macro {
-    Lisp {
-        signature: Vec<String>,
-        body: SExpId,
-    },
-    Rust {
-        body: NativeMacro,
-    },
+    Lisp { pattern: Pattern, body: SExpId },
+    Rust { body: NativeMacro },
 }
 
 impl std::fmt::Debug for Macro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Lisp { signature, body } => f
+            Self::Lisp { pattern, body } => f
                 .debug_struct("LispMacro")
-                .field("signature", signature)
+                .field("pattern", pattern)
                 .field("body", body)
                 .finish(),
             Self::Rust { .. } => f.debug_struct("RustMacro").finish(),
@@ -231,7 +226,12 @@ impl Value {
                 target.add_node(SExp::Error)
             }
             Value::List(list) => {
-                todo!("Could not convert List to SExp: {:?}", list)
+                if list.iter().all(|v| matches!(v, Value::SExp(_))) {
+                    let list = list.iter().filter_map(|v| v.as_sexp()).copied().collect();
+                    target.add_node(SExp::List(list))
+                } else {
+                    todo!("Could not convert List to SExp: {:?}", list)
+                }
             }
             Value::Ref(rc) => {
                 todo!("Could not convert Ref to SExp: {:?}", rc)
