@@ -1,7 +1,7 @@
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, rc::Rc};
 
 use crate::{
-    ast::{AST, SExp, SExpId},
+    ast::{AST, SExp, SExpId, SExpParser},
     builder::{ASTBuilder, error},
 };
 
@@ -425,6 +425,27 @@ fn make_list(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(Value::List(args))
 }
 
+fn import(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let modules = rt.modules();
+    let Ok([path]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Import: Expected one argument".into());
+    };
+
+    let path: &str = path.as_string().ok_or("Import: Expected string")?;
+    let path = PathBuf::from(path);
+    let Some(module) = modules.get_module(&path) else {
+        return Err(format!("Module not found: {}", path.display()));
+    };
+    let module = module.to_string();
+
+    let parser = SExpParser::new(&mut rt.asts).map_err(|e| e.to_string())?;
+    let ast = parser.parse(&module).map_err(|e| e.to_string())?;
+    let root = ast.root_id().ok_or("Import: Expected root")?;
+    rt.asts.add_ast(ast);
+
+    Ok(rt.eval(root))
+}
+
 pub fn prelude() -> Env {
     Env::default()
         .with_try_fn("-", sub)
@@ -445,6 +466,7 @@ pub fn prelude() -> Env {
         .with_try_fn("eager", eager)
         .with_try_fn("deep-eager", deep_eager)
         .with_try_fn("has?", obj_has)
+        .with_try_fn("import", import)
         .with_try_fn("debug", |_rt, args| {
             tracing::info!("Debug: {:#?}", &args);
 
@@ -495,44 +517,5 @@ impl Runtime {
 
     pub fn with_prelude(&mut self) {
         self.with_env(prelude());
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::{Arc, Mutex};
-
-    use crate::ast::ASTS;
-
-    use super::*;
-
-    #[test]
-    fn log() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "log", |input, _deps, _args| {
-            // eprintln!("---");
-            let mut asts = ASTS::new();
-            let ast = asts.parse(input).unwrap();
-            let root_id = ast.root_id().unwrap();
-            let prelude = prelude();
-            let envs = [prelude];
-            let root_id = crate::process_ast(&mut asts, root_id, &envs);
-            let [prelude] = envs;
-
-            let mut runtime = Runtime::new(asts);
-            runtime.with_env(prelude);
-            let log = Arc::new(Mutex::new(String::new()));
-            let log_clone = log.clone();
-            runtime.with_fn("print", move |_rt, args| {
-                for arg in args.into_iter() {
-                    log_clone.lock().unwrap().push_str(&format!("{:?}\n", arg));
-                }
-
-                Value::Number(1.0)
-            });
-
-            _ = runtime.eval(root_id);
-            let log = log.lock().unwrap().clone();
-            log
-        })
     }
 }

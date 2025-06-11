@@ -5,7 +5,7 @@
   * [x] Closures!
   * [x] Rust functions
   * [x] Rust macros?
-* [ ] Imports
+* [x] Imports
 * [x] If else in normal places
 
 Nice to have

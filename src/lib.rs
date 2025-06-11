@@ -14,6 +14,8 @@ pub mod lambda_lifting;
 pub mod patterns;
 pub mod types;
 
+pub mod modules;
+
 pub mod runtime;
 pub use runtime::s_std;
 

@@ -270,7 +270,7 @@ mod tests {
         test_snapshots(
             "crates/test-runner/v2",
             "assert",
-            |src, _sections, _args| src.to_string(),
+            |src: &str, _sections, _args| src.to_string(),
         )
     }
 }

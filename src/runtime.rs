@@ -7,6 +7,7 @@ use value::{Function, Macro, Value};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
+    modules::ModuleProvider,
     patterns::Pattern,
     types::{Type, TypeEnv},
 };
@@ -152,10 +153,12 @@ impl Runtime {
         }
     }
 
-    pub fn new(asts: ASTS) -> Self {
+    pub fn new(asts: ASTS, modules: Box<dyn ModuleProvider>) -> Self {
         Self {
             asts,
-            ..Default::default()
+            modules,
+            eager_do_error: true,
+            envs: Default::default(),
         }
     }
 
@@ -328,33 +331,35 @@ impl Runtime {
             }
         }
     }
+
+    pub fn modules(&self) -> &dyn ModuleProvider {
+        &*self.modules
+    }
 }
 
 pub struct Runtime {
     envs: Envs,
     asts: ASTS,
     eager_do_error: bool,
-}
-
-impl Default for Runtime {
-    fn default() -> Self {
-        Self {
-            envs: Default::default(),
-            asts: Default::default(),
-            eager_do_error: true,
-        }
-    }
+    modules: Box<dyn ModuleProvider>,
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, io::Read};
+    use std::{
+        collections::{HashMap, HashSet},
+        io::Read,
+        path::PathBuf,
+    };
 
+    use test_runner::CowStr;
     use tracing_subscriber::{Layer, layer::SubscriberExt};
+
+    use crate::modules::MemoryModules;
 
     use super::{s_std::prelude, *};
 
-    fn eval_to_value(input: &str) -> (Runtime, Value) {
+    fn eval_to_value(input: &str, modules: MemoryModules) -> (Runtime, Value) {
         let mut asts = ASTS::new();
         let ast = asts.parse(input).unwrap();
         let root_id = ast.root_id().unwrap();
@@ -364,26 +369,38 @@ mod tests {
         let root_id = crate::process_ast(&mut asts, root_id, &envs);
         let [prelude] = envs;
 
-        let mut runtime = Runtime::new(asts);
+        let modules = Box::new(modules);
+        let mut runtime = Runtime::new(asts, modules);
         runtime.with_env(prelude);
         tracing::trace!("Before eval");
         let value = runtime.eval(root_id);
         (runtime, value)
     }
 
-    fn eval_to_json(input: &str, eager: bool) -> String {
-        let (mut runtime, value) = eval_to_value(input);
+    fn eval_to_json(input: &str, modules: MemoryModules, eager: bool) -> String {
+        let (mut runtime, value) = eval_to_value(input, modules);
         tracing::trace!("Value: {value:?}");
         let value = runtime.to_json(value, eager);
         serde_json::to_string_pretty(&value).unwrap()
     }
 
+    fn deps_to_modules(deps: &HashMap<CowStr<'_>, &str>) -> MemoryModules {
+        let modules = deps
+            .iter()
+            .filter(|(name, _value)| name.ends_with(".s"))
+            .map(|(name, value)| (PathBuf::from(name.to_string()), value.to_string()))
+            .collect::<HashMap<_, _>>();
+        // tracing::info!("Modules: {:#?}", modules);
+        MemoryModules { modules }
+    }
+
     #[test]
     fn json() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, _deps, args| {
+        test_runner::test_snapshots("docs/", "json", |input, deps, args| {
             let lazy = args.contains("lazy");
             tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
-                eval_to_json(input, !lazy)
+                let deps = deps_to_modules(deps);
+                eval_to_json(input, deps, !lazy)
             })
         })
     }
@@ -435,7 +452,8 @@ mod tests {
                     .with(file_layer.with_filter(level));
 
                 tracing::subscriber::with_default(subscriber, move || {
-                    let (mut runtime, value) = eval_to_value(input);
+                    let modules = MemoryModules::default();
+                    let (mut runtime, value) = eval_to_value(input, modules);
                     runtime.to_json(value, true);
                 });
             }
