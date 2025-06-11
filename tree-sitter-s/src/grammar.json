@@ -1,6 +1,7 @@
 {
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
   "name": "s",
+  "word": "symbol",
   "rules": {
     "source_file": {
       "type": "REPEAT",
@@ -34,6 +35,14 @@
         },
         {
           "type": "SYMBOL",
+          "name": "splice"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "list"
+        },
+        {
+          "type": "SYMBOL",
           "name": "float"
         },
         {
@@ -55,10 +64,6 @@
         {
           "type": "SYMBOL",
           "name": "symbol"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "list"
         }
       ]
     },
@@ -169,6 +174,23 @@
         }
       ]
     },
+    "splice": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ".."
+        },
+        {
+          "type": "FIELD",
+          "name": "inner",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sexp"
+          }
+        }
+      ]
+    },
     "quote": {
       "type": "SEQ",
       "members": [
@@ -231,47 +253,35 @@
       "type": "PATTERN",
       "value": "[^\"]*"
     },
+    "float": {
+      "type": "PATTERN",
+      "value": "[+-]?(?:[0-9]+\\.[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
+    },
+    "integer": {
+      "type": "PATTERN",
+      "value": "[+-]?[0-9]+"
+    },
     "keyword": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
           "type": "PATTERN",
-          "value": ":[^\\s()'\"`,{}\\[\\]#]+"
+          "value": "[^\\s)}\\]]+"
         }
-      }
+      ]
     },
     "symbol": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
-        "value": 1,
+        "value": -10,
         "content": {
           "type": "PATTERN",
-          "value": "[^\\s()'\"`,{}:\\[\\]#]+"
-        }
-      }
-    },
-    "float": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "[+-]?(?:[0-9]+\\.[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
-        }
-      }
-    },
-    "integer": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "[+-]?[0-9]+"
+          "value": "[^\\s)}\\]]+"
         }
       }
     }

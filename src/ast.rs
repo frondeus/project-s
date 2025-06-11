@@ -385,6 +385,7 @@ impl SExpParser {
             "quote" => self.shortcut(node, source, "quote"),
             "quasiquote" => self.shortcut(node, source, "quasiquote"),
             "unquote" => self.shortcut(node, source, "unquote"),
+            "splice" => self.shortcut(node, source, "splice"),
 
             kind => Err(ParseError::UnexpectedNode(format!(
                 "Unexpected node kind: {}",
@@ -459,12 +460,55 @@ mod tests {
     #[test]
     fn cst() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "cst", |input, _deps, _args| {
+            let mut parser = TSParser::new();
+            parser
+                .set_language(&tree_sitter_s::LANGUAGE.into())
+                .unwrap();
+
+            let tree = parser.parse(input, None).unwrap();
+
+            let mut output = String::new();
+            let mut cursor = tree.root_node().walk();
+            let mut indent = 0;
+            // let mut cost = 100;
+            loop {
+                // cost -= 1;
+                let node = cursor.node();
+                output.push_str(&" ".repeat(indent));
+                output.push_str(&format!(
+                    "{} - {:?}\n",
+                    node.kind(),
+                    node.utf8_text(input.as_bytes()).unwrap()
+                ));
+
+                if !cursor.goto_first_child() {
+                    if !cursor.goto_next_sibling() {
+                        if !cursor.goto_parent() {
+                            break;
+                        } else {
+                            indent -= 1;
+                            if !cursor.goto_next_sibling() {
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    indent += 1;
+                }
+            }
+            output
+        })
+    }
+
+    #[test]
+    fn ast() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "ast", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
             let root_id = ast.root_id().unwrap();
             let result = asts.get(root_id);
             let result = result.fmt(&asts);
-            format!("{:?}", result)
+            format!("{}", result)
         })
     }
 }

@@ -1,7 +1,10 @@
 // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
 #![allow(clippy::unnecessary_to_owned)]
 
-use crate::{ast::SExpId, patterns::Pattern};
+use crate::{
+    ast::{SExp, SExpId},
+    patterns::Pattern,
+};
 
 use super::{
     Runtime,
@@ -81,8 +84,37 @@ impl Runtime {
         }
     }
 
+    pub(crate) fn handle_splice(&self, args: &[SExpId]) -> impl Iterator<Item = SExpId> {
+        args.iter().flat_map(|arg| {
+            if let Some(list) = self.as_special_form(*arg, "splice") {
+                if let Some(first) = list.get(1) {
+                    let first = self.asts.get(*first);
+                    if let SExp::List(l) = first {
+                        return l.clone();
+                    }
+                }
+            }
+            vec![*arg]
+        })
+    }
+
     pub(crate) fn closure_call(&mut self, function: Function, args: &[SExpId]) -> Value {
-        let args = args.iter().map(|arg| self.eval(*arg)).collect::<Vec<_>>();
+        let args = self
+            .handle_splice(args)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|arg| self.eval(arg))
+            .collect::<Vec<_>>();
+
         self.closure_call_inner(function, args)
+    }
+
+    fn as_special_form(&self, list_id: SExpId, name: &str) -> Option<&[SExpId]> {
+        let list = self.asts.get(list_id);
+        let list = list.as_list()?;
+        let first = list.first()?;
+        let first = self.asts.get(*first);
+        let first = first.as_symbol()?;
+        if first == name { Some(list) } else { None }
     }
 }

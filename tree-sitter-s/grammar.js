@@ -21,6 +21,7 @@ extras: $ => [
   $.comment,
 ],
   
+  word: $ => $.symbol,
   rules: {
     source_file: $ => repeat($._sexp),
 
@@ -30,14 +31,15 @@ extras: $ => [
       $.unquote,
       $.struct,
       $.array,
+      $.splice,
 
+      $.list,
       $.float,
       $.integer,
       $.string,
       $.boolean,
       $.keyword,
       $.symbol,
-      $.list
     ),
 
     comment: $ => seq(
@@ -72,6 +74,11 @@ extras: $ => [
       field("inner", $._sexp)
     ),
 
+    splice: $ => seq(
+      "..",
+      field("inner", $._sexp)
+    ),
+
     quote: $ => seq(
       "'",
       field("inner", $._sexp)
@@ -87,9 +94,9 @@ extras: $ => [
       "false"
     ))),
     string_inner: $ => /[^"]*/,
-    keyword: $ => token(prec(2, /:[^\s()'"`,{}\[\]#]+/)),
-    symbol: $ =>  token(prec(1, /[^\s()'"`,{}:\[\]#]+/)),
-    float: $ =>   token(prec(2, /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/)),
-    integer: $ => token(prec(2, /[+-]?[0-9]+/)),
+    float: $ =>   /[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/,
+    integer: $ => /[+-]?[0-9]+/,
+    keyword: $ => seq(":", /[^\s)}\]]+/),
+    symbol: $ =>  token(prec(-10, /[^\s)}\]]+/)),
   }
 });

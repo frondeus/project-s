@@ -12,7 +12,7 @@ Nice to have
 * [x] Destructuring
 * [x] Arrays
 * [ ] Better strings
-* [ ] Splice (from janet)?
+* [x] Splice (from janet)?
 
 Probably a lot of more lol.
 Like vertical stack

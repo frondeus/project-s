@@ -3,7 +3,9 @@ symbol
 ```
 
 ```cst
-List([Symbol("do"), Symbol("symbol")])
+source_file - "symbol"
+ symbol - "symbol"
+
 ```
 
 this evaluates immediately to its variable
@@ -17,7 +19,11 @@ this evaluates immediately to its variable
 ```
 
 ```cst
-List([Symbol("do"), List([Symbol("quote"), Symbol("symbol")])])
+source_file - "'symbol"
+ quote - "'symbol"
+  ' - "'"
+  symbol - "symbol"
+
 ```
 
 This is quoted
@@ -31,7 +37,10 @@ This is quoted
 ```
 
 ```cst
-List([Symbol("do"), Keyword("symbol")])
+source_file - ":symbol"
+ keyword - ":symbol"
+  : - ":"
+
 ```
 
 This as well
