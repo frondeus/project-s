@@ -28,6 +28,10 @@ macro_rules! try_err {
         };
     };
 }
+enum Pattern {
+    Single(String),
+    List(Vec<Pattern>),
+}
 
 impl Runtime {
     fn is_type(&self, items: &[SExpId]) -> Value {
@@ -59,20 +63,52 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    fn _let(&mut self, items: &[SExpId]) -> Value {
+    fn parse_pattern(&self, ident: SExpId) -> Result<Pattern, String> {
+        let ident = self.asts.get(ident).clone();
+        match ident {
+            SExp::Keyword(k) => Ok(Pattern::Single(k)),
+            SExp::List(items) => {
+                let mut patterns = vec![];
+                for item in items {
+                    let pattern = self.parse_pattern(item)?;
+                    patterns.push(pattern);
+                }
+                Ok(Pattern::List(patterns))
+            }
+            _ => Err(format!("Expected keyword or list, found: {:?}", ident)),
+        }
+    }
+
+    fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
+        match pattern {
+            Pattern::Single(key) => {
+                tracing::debug!("Adding to env: {:?}", self.envs.last());
+                self.envs.set(&key, value.clone());
+                Ok(value)
+            }
+            Pattern::List(patterns) => match value {
+                Value::List(items) => {
+                    let mut result = vec![];
+                    for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
+                        let value = self.destruct_(pattern, item)?;
+                        result.push(value);
+                    }
+                    Ok(Value::List(result))
+                }
+                _ => Err(format!("Destructing. Expected list, found: {:?}", value)),
+            },
+        }
+    }
+
+    fn _let(&mut self, items: &[SExpId]) -> Result<Value, String> {
         match items {
             [ident, value] => {
-                let ident = self.asts.get(*ident).clone();
-                let Some(ident) = ident.as_keyword() else {
-                    return Value::Error("Let: Expected keyword".to_string());
-                };
-
+                let pattern = self.parse_pattern(*ident)?;
                 let value = self.eval(*value);
-                tracing::debug!("Adding to env: {:?}", self.envs.last());
-                self.envs.set(ident, value.clone());
-                value
+
+                self.destruct_(pattern, value)
             }
-            _ => Value::Error(format!("Expected 2 arguments, found: {}", items.len())),
+            _ => Err(format!("Expected 2 arguments, found: {}", items.len())),
         }
     }
 
@@ -251,7 +287,9 @@ impl Runtime {
                         };
                         self.quasiquote(item)
                     }
-                    SExp::Symbol(tag) if tag == "let" => self._let(&items[1..]),
+                    SExp::Symbol(tag) if tag == "let" => {
+                        self._let(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     SExp::Symbol(tag) if tag == "if" => {
                         self.if_(&items[1..]).unwrap_or_else(Value::Error)
                     }
