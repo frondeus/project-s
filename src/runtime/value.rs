@@ -101,7 +101,11 @@ pub struct Thunk {
 
 impl std::fmt::Debug for Thunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Thunk").finish()
+        match &*self.inner.borrow() {
+            InnerThunk::Evaluated(value) => f.debug_tuple("Thunk/Evaluated").field(value).finish(),
+            InnerThunk::Evaluating => f.debug_struct("Thunk/Evaluating").finish(),
+            InnerThunk::ToEvaluate { .. } => f.debug_struct("Thunk/ToEvaluate").finish(),
+        }
     }
 }
 

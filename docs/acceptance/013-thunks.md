@@ -5,7 +5,7 @@
 ```
 
 ```json lazy
-"<Thunk: Thunk>"
+"<Thunk: Thunk/ToEvaluate>"
 ```
 
 ```
@@ -14,7 +14,7 @@
 ```
 
 ```json lazy
-"<Thunk: Thunk>"
+"<Thunk: Thunk/ToEvaluate>"
 ```
 
 

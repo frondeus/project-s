@@ -78,16 +78,18 @@ impl Runtime {
         self.closure_call_inner(
             constructor.constructor,
             vec![self_.clone(), root, super_, origin],
-        );
-        let ret = self_;
-        tracing::debug!("Created object: {ret:?}");
-        match ret {
-            Value::Ref(ret) => match Rc::try_unwrap(ret) {
-                Ok(ret) => ret.into_inner(),
-                Err(ret) => Value::Ref(ret),
-            },
-            v => v,
-        }
+        )
+        // let ret = self_;
+        // tracing::info!("Created object: {ret:?}");
+        // let ret = match ret {
+        //     Value::Ref(ret) => match Rc::try_unwrap(ret) {
+        //         Ok(ret) => ret.into_inner(),
+        //         Err(ret) => Value::Ref(ret),
+        //     },
+        //     v => v,
+        // };
+        // tracing::info!("unwrapping object: {ret:?}");
+        // ret
     }
 
     pub fn new_ref_obj(&self, obj: BTreeMap<String, Value>) -> Value {

@@ -493,15 +493,16 @@ mod tests {
     #[test]
     fn traces() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "traces", |input, _deps, args| {
-            let writer = tempfile::NamedTempFile::new().unwrap();
-            let mut reader = writer.reopen().unwrap();
+            let mut reader = tempfile::NamedTempFile::new().unwrap();
+
+            let writer = reader.reopen().unwrap();
 
             {
                 let level = level_from_args(args);
                 let (writer, _guard) = tracing_appender::non_blocking(writer);
 
                 let file_layer = tracing_subscriber::fmt::Layer::new()
-                    .compact()
+                    // .compact()
                     .with_file(args.contains("file"))
                     .with_line_number(args.contains("line"))
                     .with_writer(writer)
@@ -509,7 +510,7 @@ mod tests {
                     .with_ansi(false);
 
                 let console_layer = tracing_subscriber::fmt::Layer::new()
-                    .compact()
+                    // .compact()
                     .with_file(args.contains("file"))
                     .with_line_number(args.contains("line"))
                     .with_ansi(true);
@@ -519,7 +520,8 @@ mod tests {
                     .with(file_layer.with_filter(level));
 
                 tracing::subscriber::with_default(subscriber, move || {
-                    eval_to_value(input);
+                    let (mut runtime, value) = eval_to_value(input);
+                    runtime.to_json(value, true);
                 });
             }
 

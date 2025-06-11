@@ -346,7 +346,9 @@ impl SExpParser {
                 let mut items = Vec::new();
                 let mut child = node.named_child(0);
                 while let Some(n) = child {
-                    items.push(self.node_to_sexp(n, source)?);
+                    if !n.is_extra() {
+                        items.push(self.node_to_sexp(n, source)?);
+                    }
                     child = n.next_named_sibling();
                 }
                 self.ast.set(parent, SExp::List(items));
@@ -358,7 +360,9 @@ impl SExpParser {
                 let mut children = Vec::new();
                 children.push(self.ast.add_node(SExp::Symbol("obj/struct".to_string())));
                 while let Some(n) = child {
-                    children.push(self.node_to_sexp(n, source)?);
+                    if !n.is_extra() {
+                        children.push(self.node_to_sexp(n, source)?);
+                    }
                     child = n.next_named_sibling();
                 }
                 self.ast.set(strukt, SExp::List(children));
@@ -370,7 +374,9 @@ impl SExpParser {
                 let mut child = node.named_child(0);
                 items.push(self.ast.add_node(SExp::Symbol("list".to_string())));
                 while let Some(n) = child {
-                    items.push(self.node_to_sexp(n, source)?);
+                    if !n.is_extra() {
+                        items.push(self.node_to_sexp(n, source)?);
+                    }
                     child = n.next_named_sibling();
                 }
                 self.ast.set(array, SExp::List(items));
@@ -431,8 +437,10 @@ impl SExpParser {
         let mut ids = Vec::new();
         loop {
             let node = cursor.node();
-            let id = self.node_to_sexp(node, input)?;
-            ids.push(id);
+            if !node.is_extra() {
+                let id = self.node_to_sexp(node, input)?;
+                ids.push(id);
+            }
             if !cursor.goto_next_sibling() {
                 break;
             }

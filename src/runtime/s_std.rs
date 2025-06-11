@@ -85,17 +85,9 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         left: ObjectOrConstructor,
         right: ObjectOrConstructor,
     ) -> Result<Value, String> {
-        /*
-           let add = (a, b) => create_obj(({self, root}) => {
-               let left = a({ root, super_: self, self });
-               let super_ = new Map(Object.entries(left));
-               b({ root: undefined, super_, self, origin: root });
-           });
-        */
         tracing::debug!("Adding obj: {:?}, {:?}", left, right);
         tracing::debug!("Self: {:?}", self_);
         tracing::debug!("Root: {:?}", root);
-        // let super_ = Value::ref_(Value::Object(BTreeMap::new()));
         let left = left.call(
             rt,
             self_.clone(),
@@ -105,8 +97,6 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         )?;
         tracing::debug!("Left: {:?}", left);
         let super_ = left.deref();
-        // let super_ = Value::ref_(self_.clone());
-        // let self_ = Value::ref_(self_.clone());
         tracing::debug!("Super: {:?}", super_);
         tracing::debug!("Self: {:?}", self_);
         right.call(rt, self_.clone(), Some(self_.clone()), super_, Some(root))?;
@@ -195,6 +185,7 @@ fn add(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
 }
 
 fn set(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    tracing::info!("Setting");
     let Ok([key, value]) = TryInto::<[Value; 2]>::try_into(args) else {
         return Err("Expected two arguments".into());
     };
@@ -202,6 +193,8 @@ fn set(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     let Some(key) = key.as_ref() else {
         return Err("Expected symbol".into());
     };
+
+    tracing::info!("Setting {key:?} to {value:?}");
 
     *key.borrow_mut() = value.clone();
 
@@ -392,6 +385,30 @@ fn obj_construct_or(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String>
     }
 }
 
+fn eager(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([value]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    Ok(value.eager_rec(rt, true))
+}
+
+fn deep_eager(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([value]) = TryInto::<[Value; 1]>::try_into(args) else {
+        return Err("Expected one argument".into());
+    };
+
+    let value = value.eager_rec(rt, true);
+    tracing::warn!("Deep eager: {:?}", value);
+
+    if let Value::Object(map) = &value {
+        for value in map.values() {
+            deep_eager(rt, vec![value.clone()])?;
+        }
+    }
+    Ok(value)
+}
+
 pub fn prelude() -> Env {
     Env::default()
         .with_try_fn("-", sub)
@@ -405,10 +422,19 @@ pub fn prelude() -> Env {
         .with_try_macro("obj/struct", obj_struct)
         .with_try_fn("obj/eval", obj_eval)
         .with_try_fn("obj/construct-or", obj_construct_or)
+        .with_try_fn("obj/new", obj_construct_or)
         .with_try_macro("struct", obj_struct)
         .with_try_macro("+obj", add_obj)
-        .with_fn("print", |_rt, args| {
+        .with_try_fn("eager", eager)
+        .with_try_fn("deep-eager", deep_eager)
+        .with_try_fn("debug", |_rt, args| {
+            tracing::info!("Debug: {:#?}", &args);
+
+            Ok(Value::List(args))
+        })
+        .with_fn("print", |rt, args| {
             for arg in args.into_iter() {
+                let arg = arg.eager_rec(rt, true);
                 tracing::info!("{:?}", arg);
             }
 
