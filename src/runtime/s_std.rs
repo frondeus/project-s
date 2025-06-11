@@ -398,10 +398,10 @@ fn deep_eager(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
         return Err("Expected one argument".into());
     };
 
-    let value = value.eager_rec(rt, true);
-    tracing::warn!("Deep eager: {:?}", value);
+    let eager_value = value.clone().eager_rec(rt, true);
+    tracing::warn!("Deep eager: {:?}", eager_value);
 
-    if let Value::Object(map) = &value {
+    if let Value::Object(map) = &eager_value {
         for value in map.values() {
             deep_eager(rt, vec![value.clone()])?;
         }

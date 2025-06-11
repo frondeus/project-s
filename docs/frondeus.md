@@ -23,7 +23,9 @@
     }
 } dwarf)))
 
-(deep-eager result)
+(debug "Before eager" result)
+(debug "Eager result" (deep-eager result))
+(debug "After eager" result)
  result
 ```
 
@@ -52,6 +54,31 @@
 ```
 
 ```traces
+ INFO project_s::runtime::s_std: Debug: [
+    String(
+        "Before eager",
+    ),
+    Ref(
+        RefCell {
+            value: Object(
+                {
+                    "ancestry": Thunk(
+                        Thunk/ToEvaluate,
+                    ),
+                    "features": Thunk(
+                        Thunk/ToEvaluate,
+                    ),
+                    "languages": Thunk(
+                        Thunk/ToEvaluate,
+                    ),
+                    "stats": Thunk(
+                        Thunk/ToEvaluate,
+                    ),
+                },
+            ),
+        },
+    ),
+]
  WARN project_s::runtime::s_std: Deep eager: Object({"ancestry": Thunk(Thunk/ToEvaluate), "features": Thunk(Thunk/ToEvaluate), "languages": Thunk(Thunk/ToEvaluate), "stats": Thunk(Thunk/ToEvaluate)})
  WARN project_s::runtime::s_std: Deep eager: String("Dwarf")
  WARN project_s::runtime::s_std: Deep eager: Object({"stout": Thunk(Thunk/ToEvaluate)})
@@ -66,5 +93,233 @@
  WARN project_s::runtime::s_std: Deep eager: Number(11.0)
  WARN project_s::runtime::s_std: Deep eager: Number(6.0)
  WARN project_s::runtime::s_std: Deep eager: Number(17.0)
+ INFO project_s::runtime::s_std: Debug: [
+    String(
+        "Eager result",
+    ),
+    Ref(
+        RefCell {
+            value: Ref(
+                RefCell {
+                    value: Object(
+                        {
+                            "ancestry": Thunk(
+                                Thunk/Evaluated(
+                                    String(
+                                        "Dwarf",
+                                    ),
+                                ),
+                            ),
+                            "features": Thunk(
+                                Thunk/Evaluated(
+                                    Ref(
+                                        RefCell {
+                                            value: Object(
+                                                {
+                                                    "stout": Thunk(
+                                                        Thunk/Evaluated(
+                                                            String(
+                                                                "Stout",
+                                                            ),
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                            "is_stout": Thunk(
+                                Thunk/ToEvaluate,
+                            ),
+                            "languages": Thunk(
+                                Thunk/Evaluated(
+                                    List(
+                                        [
+                                            String(
+                                                "Common",
+                                            ),
+                                            String(
+                                                "Dwarvish",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
+                            "stats": Thunk(
+                                Thunk/Evaluated(
+                                    Ref(
+                                        RefCell {
+                                            value: Object(
+                                                {
+                                                    "cha": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                13.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "con": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                13.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "dex": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                11.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "int": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                11.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "str": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                6.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "wis": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                17.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        },
+    ),
+]
+ INFO project_s::runtime::s_std: Debug: [
+    String(
+        "After eager",
+    ),
+    Ref(
+        RefCell {
+            value: Ref(
+                RefCell {
+                    value: Object(
+                        {
+                            "ancestry": Thunk(
+                                Thunk/Evaluated(
+                                    String(
+                                        "Dwarf",
+                                    ),
+                                ),
+                            ),
+                            "features": Thunk(
+                                Thunk/Evaluated(
+                                    Ref(
+                                        RefCell {
+                                            value: Object(
+                                                {
+                                                    "stout": Thunk(
+                                                        Thunk/Evaluated(
+                                                            String(
+                                                                "Stout",
+                                                            ),
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                            "is_stout": Thunk(
+                                Thunk/ToEvaluate,
+                            ),
+                            "languages": Thunk(
+                                Thunk/Evaluated(
+                                    List(
+                                        [
+                                            String(
+                                                "Common",
+                                            ),
+                                            String(
+                                                "Dwarvish",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
+                            "stats": Thunk(
+                                Thunk/Evaluated(
+                                    Ref(
+                                        RefCell {
+                                            value: Object(
+                                                {
+                                                    "cha": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                13.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "con": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                13.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "dex": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                11.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "int": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                11.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "str": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                6.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "wis": Thunk(
+                                                        Thunk/Evaluated(
+                                                            Number(
+                                                                17.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        },
+    ),
+]
 
 ```
