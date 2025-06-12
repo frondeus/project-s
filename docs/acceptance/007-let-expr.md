@@ -25,3 +25,41 @@ You can also use let in structs
   "key": 6.0
 }
 ```
+
+
+# Recursive let
+
+Let's imitate overlays from Nix, without using `+` operator:
+
+```nix
+nix-repl> fix = f: let result = f result; in result
+nix-repl> pkgs = self: { a = 3; b = 4; c = self.a+self.b; }
+nix-repl> fix pkgs
+{ a = 3; b = 4; c = 7; }
+```
+
+
+Introducing `let*` which is a recursive `let`.
+
+```
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
+    :a 3
+    :b 4
+    :c (+ (this :a) (this :b))
+}))
+
+(fix pkgs)
+```
+
+```json
+{
+  "a": 3.0,
+  "b": 4.0,
+  "c": 7.0
+}
+```

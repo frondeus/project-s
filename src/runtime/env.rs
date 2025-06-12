@@ -120,6 +120,7 @@ impl Envs {
         &self.envs
     }
 
+    #[allow(dead_code)]
     pub fn last(&self) -> &Env {
         self.envs.last().expect("No environment")
     }
@@ -132,12 +133,13 @@ impl Envs {
         self.envs.iter().rev().find_map(|env| env.vars.get(name))
     }
 
-    // pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
-    //     self.envs
-    //         .iter_mut()
-    //         .rev()
-    //         .find_map(|env| env.vars.get_mut(name))
-    // }
+    #[allow(dead_code)]
+    pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
+        self.envs
+            .iter_mut()
+            .rev()
+            .find_map(|env| env.vars.get_mut(name))
+    }
 
     pub fn push(&mut self) {
         self.envs.push(Env::default());

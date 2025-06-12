@@ -4,6 +4,8 @@
     :languages [ "Common" "Dwarvish" ]
     :features {
         :stout (do 
+            # "Cursed" operation - when its evaluated (and it is lazy)
+            # It will mutate the `origin` reference.
             (set origin (obj/new (+ origin {
                 :is_stout true
             })))
@@ -28,10 +30,9 @@
     }
 } dwarf)))
 
+# In order to evaluate all fields before priting the JSON we use `deep-eager` here.
 (deep-eager result)
 ```
-
-
 
 ```json
 {

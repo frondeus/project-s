@@ -98,6 +98,23 @@ pub struct Thunk {
     pub(crate) inner: Rc<RefCell<InnerThunk>>,
 }
 
+impl Thunk {
+    pub fn new(body: SExpId) -> Self {
+        Self {
+            inner: Rc::new(RefCell::new(InnerThunk::ToEvaluate {
+                captured: BTreeMap::new(),
+                body,
+            })),
+        }
+    }
+
+    pub fn new_for_let() -> Self {
+        Self {
+            inner: Rc::new(RefCell::new(InnerThunk::Evaluating)),
+        }
+    }
+}
+
 impl std::fmt::Debug for Thunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self.inner.borrow() {
@@ -158,6 +175,13 @@ impl Value {
     pub fn as_sexp(&self) -> Option<&SExpId> {
         match self {
             Value::SExp(id) => Some(id),
+            _ => None,
+        }
+    }
+
+    pub fn as_thunk(&self) -> Option<&Thunk> {
+        match self {
+            Value::Thunk(thunk) => Some(thunk),
             _ => None,
         }
     }

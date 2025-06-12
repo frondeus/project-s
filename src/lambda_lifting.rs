@@ -156,7 +156,7 @@ impl<'a> LambdaPass<'a> {
                 None
             } else if self.is_symbol(first_id, "do") {
                 self.process_do(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
-            } else if self.is_symbol(first_id, "let") {
+            } else if self.is_one_of(first_id, &["let", "let-rec", "let*"]) {
                 let sexp_ids = sexp_ids.to_vec();
                 self.process_let(sexp_ids, |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "struct") {
@@ -345,7 +345,7 @@ impl<'a> LambdaPass<'a> {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
-                if self.is_symbol(first, "let") {
+                if self.is_one_of(first, &["let", "let-rec", "let*"]) {
                     let sexp_ids = sexp_ids.to_vec();
                     return self.process_let(sexp_ids, move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)

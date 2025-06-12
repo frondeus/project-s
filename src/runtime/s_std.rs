@@ -446,10 +446,29 @@ fn import(rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
     Ok(rt.eval(root))
 }
 
+fn lg(_rt: &mut Runtime, args: Vec<Value>) -> Result<Value, String> {
+    let Ok([a, b]) = TryInto::<[Value; 2]>::try_into(args) else {
+        return Err("Expected two arguments".into());
+    };
+
+    let a = a.as_number().ok_or("Expected number")?;
+    let b = b.as_number().ok_or("Expected number")?;
+
+    Ok(Value::Bool(a > b))
+}
+
+fn let_star(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+    match &args[..] {
+        [pattern, value] => Ok(("let-rec", pattern, ("thunk", (), value)).build(&mut rt.asts)),
+        _ => Err("Expected two arguments".into()),
+    }
+}
+
 pub fn prelude() -> Env {
     Env::default()
         .with_try_fn("-", sub)
         .with_try_fn("+", add)
+        .with_try_fn(">", lg)
         .with_try_fn("ref", new_ref)
         .with_try_fn("set", set)
         .with_try_fn("list", make_list)
@@ -467,6 +486,7 @@ pub fn prelude() -> Env {
         .with_try_fn("deep-eager", deep_eager)
         .with_try_fn("has?", obj_has)
         .with_try_fn("import", import)
+        .with_try_macro("let*", let_star)
         .with_try_fn("debug", |_rt, args| {
             tracing::info!("Debug: {:#?}", &args);
 

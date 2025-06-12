@@ -127,3 +127,140 @@ true
 ```json
 false
 ```
+
+
+# Differences between `self` `super` `root` and `origin`
+
+## Root
+
+```
+{
+  :a "the most top a"
+  :b (+ {
+    :d "left side d"
+    :a "left side a"
+  }
+  {
+    :a "the most top a from right side"
+    :b {
+      :a "the most inner a from right side"
+      :c (root :a)
+    }
+  )
+}
+```
+
+```json
+{
+  "a": "the most top a",
+  "b": {
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "the most top a from right side"
+    },
+    "d": "left side d"
+  }
+}
+```
+
+## Super
+
+```
+{
+  :a "the most top a"
+  :b (+ {
+    :d "left side d"
+    :a "left side a"
+  }
+  {
+    :a "the most top a from right side"
+    :b {
+      :a "the most inner a from right side"
+      :c (super :a)
+    }
+  )
+}
+```
+
+```json
+{
+  "a": "the most top a",
+  "b": {
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "left side a"
+    },
+    "d": "left side d"
+  }
+}
+```
+
+## Self 
+
+```
+{
+  :a "the most top a"
+  :b (+ {
+    :d "left side d"
+    :a "left side a"
+  }
+  {
+    :a "the most top a from right side"
+    :b {
+      :a "the most inner a from right side"
+      :c (self :a)
+    }
+  )
+}
+```
+
+```json
+{
+  "a": "the most top a",
+  "b": {
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "the most inner a from right side"
+    },
+    "d": "left side d"
+  }
+}
+```
+
+## Origin
+
+
+```
+{
+  :a "the most top a"
+  :b (+ {
+    :d "left side d"
+    :a "left side a"
+  }
+  {
+    :a "the most top a from right side"
+    :b {
+      :a "the most inner a from right side"
+      :c (origin :a)
+    }
+  )
+}
+```
+
+```json
+{
+  "a": "the most top a",
+  "b": {
+    "a": "the most top a from right side",
+    "b": {
+      "a": "the most inner a from right side",
+      "c": "the most top a"
+    },
+    "d": "left side d"
+  }
+}
+```
+

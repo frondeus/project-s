@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, rc::Rc};
 pub use env::Env;
 use env::Envs;
 // use structs::Structs;
-use value::{Function, Macro, Value};
+use value::{Function, InnerThunk, Macro, Thunk, Value};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -61,18 +61,22 @@ impl Runtime {
         Value::Bool(*result == ty)
     }
 
-    pub(crate) fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
+    pub(crate) fn destruct_with(
+        &mut self,
+        pattern: Pattern,
+        value: Value,
+        with: &impl Fn(&mut Self, &str, Value),
+    ) -> Result<Value, String> {
         match pattern {
             Pattern::Single(key) => {
-                tracing::debug!("Adding to env: {:?}", self.envs.last());
-                self.envs.set(&key, value.clone());
+                with(self, &key, value.clone());
                 Ok(value)
             }
             Pattern::List(patterns) => match value.eager_rec(self, true) {
                 Value::List(items) => {
                     let mut result = vec![];
                     for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
-                        let value = self.destruct_(pattern, item)?;
+                        let value = self.destruct_with(pattern, item, with)?;
                         result.push(value);
                     }
                     Ok(Value::List(result))
@@ -87,7 +91,7 @@ impl Runtime {
                             Value::Error(format!("Field :{key} not found in {map:?} "))
                         });
 
-                        let value = self.destruct_(pattern, value)?;
+                        let value = self.destruct_with(pattern, value, with)?;
                         result.insert(key, value);
                     }
 
@@ -98,6 +102,13 @@ impl Runtime {
         }
     }
 
+    pub(crate) fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
+        self.destruct_with(pattern, value, &|this, key, value| {
+            tracing::debug!("Adding to env: {:?}", this.envs.last());
+            this.envs.set(key, value);
+        })
+    }
+
     fn _let(&mut self, items: &[SExpId]) -> Result<Value, String> {
         match items {
             [ident, value] => {
@@ -105,6 +116,46 @@ impl Runtime {
                 let value = self.eval(*value);
 
                 self.destruct_(pattern, value)
+            }
+            _ => Err(format!("Expected 2 arguments, found: {}", items.len())),
+        }
+    }
+
+    fn _let_rec_pre_destruct(&mut self, pattern: Pattern) {
+        match pattern {
+            Pattern::Single(key) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
+            Pattern::List(patterns) => {
+                for pattern in patterns {
+                    self._let_rec_pre_destruct(pattern);
+                }
+            }
+            Pattern::Object(hash_map) => {
+                for (_key, pattern) in hash_map {
+                    self._let_rec_pre_destruct(pattern);
+                }
+            }
+        }
+    }
+
+    pub(crate) fn _let_rec_destruct(
+        &mut self,
+        pattern: Pattern,
+        value: Value,
+    ) -> Result<Value, String> {
+        self.destruct_with(pattern, value, &|this, key, value| {
+            let thunk = this.envs.get(key).unwrap().as_thunk().unwrap();
+
+            *thunk.inner.borrow_mut() = InnerThunk::Evaluated(value);
+        })
+    }
+
+    fn _let_rec(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        match items {
+            [ident, value] => {
+                let pattern = Pattern::parse(*ident, &self.asts)?;
+                self._let_rec_pre_destruct(pattern.clone());
+                let thunk = self.eval(*value);
+                self._let_rec_destruct(pattern, thunk)
             }
             _ => Err(format!("Expected 2 arguments, found: {}", items.len())),
         }
@@ -289,6 +340,9 @@ impl Runtime {
                     }
                     SExp::Symbol(tag) if tag == "let" => {
                         self._let(&items[1..]).unwrap_or_else(Value::Error)
+                    }
+                    SExp::Symbol(tag) if tag == "let-rec" => {
+                        self._let_rec(&items[1..]).unwrap_or_else(Value::Error)
                     }
                     SExp::Symbol(tag) if tag == "if" => {
                         self.if_(&items[1..]).unwrap_or_else(Value::Error)
