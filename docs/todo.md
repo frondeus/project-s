@@ -13,6 +13,16 @@ Nice to have
 * [x] Arrays
 * [ ] Better strings
 * [x] Splice (from janet)?
+* [ ] Default parameters
+* [ ] Error invocation
+* [ ] Asserts
+* [ ] Field visibility
+* [ ] Unscope from janet
+
+# After adding types
+* [ ] Enums
+* [ ] Named types
+* [ ] Match expression
 
 Probably a lot of more lol.
 Like vertical stack
