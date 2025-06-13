@@ -1,7 +1,20 @@
-use tower_lsp::{jsonrpc::Result, lsp_types::{DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams, MessageType, OneOf, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities}, Client, LanguageServer};
+use tower_lsp_server::{
+    Client, LanguageServer, UriExt,
+    jsonrpc::Result,
+    lsp_types::{
+        DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+        DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+        DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams,
+        MessageType, OneOf, SemanticToken, SemanticTokenType, SemanticTokens,
+        SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+        SemanticTokensParams, SemanticTokensResult, SemanticTokensServerCapabilities,
+        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    },
+};
 
 pub struct Backend {
-    client: Client
+    client: Client,
 }
 
 impl Backend {
@@ -10,10 +23,11 @@ impl Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _params: InitializeParams) -> Result<InitializeResult> {
-        self.client.log_message(MessageType::INFO, "Initializing language server").await;
+        self.client
+            .log_message(MessageType::INFO, "Initializing language server")
+            .await;
 
         Ok(InitializeResult {
             server_info: None,
@@ -21,7 +35,7 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
-                
+
                 // completion_provider: Some(CompletionOptions {
                 //     resolve_provider: Some(false),
                 //     trigger_characters: Some(vec![".".to_string()]),
@@ -33,6 +47,19 @@ impl LanguageServer for Backend {
                 //     commands: vec!["dummy.do_something".to_string()],
                 //     work_done_progress_options: Default::default(),
                 // }),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            work_done_progress_options: Default::default(),
+                            legend: SemanticTokensLegend {
+                                token_types: vec![SemanticTokenType::KEYWORD],
+                                token_modifiers: vec![],
+                            },
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            ..Default::default()
+                        },
+                    ),
+                ),
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
@@ -42,7 +69,6 @@ impl LanguageServer for Backend {
                 }),
                 ..ServerCapabilities::default()
             },
-            ..Default::default()
         })
     }
 
@@ -110,6 +136,33 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "file closed!")
             .await;
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let Some(document) = params.text_document.uri.to_file_path() else {
+            return Ok(None);
+        };
+
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("semantic tokens full: {:?}", document),
+            )
+            .await;
+
+        Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+            data: vec![SemanticToken {
+                delta_line: 0,
+                delta_start: 0,
+                length: 3,
+                token_type: 0,
+                token_modifiers_bitset: 0,
+            }],
+            ..Default::default()
+        })))
     }
 
     // async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
