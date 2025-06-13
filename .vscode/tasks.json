@@ -12,6 +12,46 @@
 				"isDefault": true
 			},
 			"label": "rust: cargo xtask test"
+		},
+		{
+			"type": "shell",
+			"label": "rust: cargo build",
+			"command": "cargo build",
+			"problemMatcher": "$rustc",
+			"presentation": {
+				"reveal": "never"
+			},
+			"group": {
+				"kind": "build",
+			}
+		},
+		{
+			"type": "npm",
+			"script": "compile",
+			"path": "vscode",
+			"problemMatcher": "$tsc",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "never"
+			},
+			"dependsOn": [ "rust: cargo build" ]
+		},
+		{
+			"type": "npm",
+			"script": "watch",
+			"path": "vscode",
+			"problemMatcher": "$tsc-watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never"
+			},
+			"dependsOn": [ "rust: cargo build" ],
+			"group": {
+				"kind": "build",
+			}
 		}
 	]
 }

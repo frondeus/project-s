@@ -15,7 +15,7 @@ classifiers = [
 ]
 authors = [{ name = "Wojciech Polak", email = "project-s@frondeus.pl" }]
 requires-python = ">=3.10"
-license.text = "MIT"
+license = { text = "MIT" }
 readme = "README.md"
 
 [project.urls]

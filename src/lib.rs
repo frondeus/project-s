@@ -19,6 +19,8 @@ pub mod modules;
 pub mod runtime;
 pub use runtime::s_std;
 
+pub mod lsp;
+
 pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> SExpId {
     root = LambdaPass::pass(asts, root, envs);
     // root = ThunkPass::pass(asts, root);
