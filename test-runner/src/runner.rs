@@ -122,11 +122,14 @@ where
                     ));
                 }
                 name if name == section_name => {
-                    count += 1;
-                    let args = name_iter.map(|s| s.to_string()).collect::<Vec<_>>();
-                    test_cases.last_mut().expect("test case").section = Some(section);
-                    test_cases.last_mut().expect("test case").args = args;
-                    test_cases.last_mut().expect("test case").count = count;
+                    let last = test_cases.last_mut().expect("test case");
+                    if last.section.is_none() {
+                        count += 1;
+                        let args = name_iter.map(|s| s.to_string()).collect::<Vec<_>>();
+                        last.section = Some(section);
+                        last.args = args;
+                        last.count = count;
+                    }
                 }
                 _ => {
                     let Some(test_case) = test_cases.last_mut() else {

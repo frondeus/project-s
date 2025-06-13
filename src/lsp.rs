@@ -1,3 +1,4 @@
+use highlights::lsp_legend;
 use tower_lsp_server::{
     Client, LanguageServer, UriExt,
     jsonrpc::Result,
@@ -5,13 +6,14 @@ use tower_lsp_server::{
         DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
         DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams,
-        MessageType, OneOf, SemanticToken, SemanticTokenType, SemanticTokens,
-        SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+        MessageType, OneOf, SemanticTokens, SemanticTokensFullOptions, SemanticTokensOptions,
         SemanticTokensParams, SemanticTokensResult, SemanticTokensServerCapabilities,
         ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
         WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     },
 };
+
+mod highlights;
 
 pub struct Backend {
     client: Client,
@@ -51,12 +53,9 @@ impl LanguageServer for Backend {
                     SemanticTokensServerCapabilities::SemanticTokensOptions(
                         SemanticTokensOptions {
                             work_done_progress_options: Default::default(),
-                            legend: SemanticTokensLegend {
-                                token_types: vec![SemanticTokenType::KEYWORD],
-                                token_modifiers: vec![],
-                            },
+                            legend: lsp_legend(),
+                            range: Some(false),
                             full: Some(SemanticTokensFullOptions::Bool(true)),
-                            ..Default::default()
                         },
                     ),
                 ),
@@ -153,14 +152,17 @@ impl LanguageServer for Backend {
             )
             .await;
 
+        let Ok(document) = std::fs::read_to_string(document) else {
+            return Ok(None);
+        };
+
+        let highlights = highlights::highlights(&document);
+        self.client
+            .log_message(MessageType::INFO, format!("highlights: {:#?}", highlights))
+            .await;
+
         Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
-            data: vec![SemanticToken {
-                delta_line: 0,
-                delta_start: 0,
-                length: 3,
-                token_type: 0,
-                token_modifiers_bitset: 0,
-            }],
+            data: highlights,
             ..Default::default()
         })))
     }

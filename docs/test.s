@@ -10,15 +10,9 @@
             })))
             "Stout"
         )
+        :tout '(:a 2 3)
     }
-    
 })
-
-
-# Usually creating a new object or adding two objects is extra lazy -
-# It creates a object **constructor** that is called only on the first access.
-# Also its not cached, so if you call `result` twice, it creates two instances of the object.
-# But here, we want to have an object reference so we call `obj/new` explicitly.
 
 (let :result (obj/new (+ {
     :stats {
@@ -33,3 +27,7 @@
 
 # In order to evaluate all fields before priting the JSON we use `deep-eager` here.
 (deep-eager result)
+(doo)
+
+
+

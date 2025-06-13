@@ -26,7 +26,8 @@ Nice to have
 
 Probably a lot of more lol.
 Like vertical stack
-* [ ] LSP
+* [x] LSP
+  * [x] LSP highlights
 * [ ] Type checker!
 * [ ] JIT
 * [ ] REPL
