@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::{
-    api::{FromValue, Rest},
+    api::{CalledConstructor, EagerRec, FromValue, Rest, WithConstructor, WithoutConstructor},
     ast::{SExp, SExpParser},
     builder::ASTBuilder,
     runtime::{
@@ -49,10 +49,12 @@ pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
                     res
                 }
                 ObjectOrConstructor::Object(left) => {
+                    let ref_self = self_.as_ref().cloned().unwrap();
                     for (key, value) in left {
                         insert_to_struct(
-                            rt,
-                            Rest::new(vec![self_.clone(), Value::String(key), value]),
+                            ref_self.clone(),
+                            StructKey(key),
+                            CalledConstructor(value),
                         )?;
                     }
                     self_
@@ -170,8 +172,6 @@ pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
 }
 
 pub fn set(key: Ref, value: Value) -> Value {
-    tracing::info!("Setting");
-
     tracing::info!("Setting {key:?} to {value:?}");
 
     *key.borrow_mut() = value.clone();
@@ -183,7 +183,7 @@ pub fn new_ref(one: Value) -> Value {
     Value::ref_(one)
 }
 
-struct StructKey(String);
+pub struct StructKey(String);
 impl FromValue for StructKey {
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         let key = match value {
@@ -201,20 +201,12 @@ impl FromValue for StructKey {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn insert_to_struct(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
-    // println!("Inserting to struct");
-    let [_this, key, value] = args.with_arity::<3>()?;
-
-    let key = StructKey::try_from_value(rt, key)?;
-
-    let value = match value {
-        Value::Constructor(v) => rt.constructor_call(v, None),
-        _ => value,
-    };
-
-    let Some(this) = _this.as_ref() else {
-        return Err("Expected self".into());
-    };
+pub fn insert_to_struct(
+    this: Ref,
+    key: StructKey,
+    value: CalledConstructor<Value>,
+) -> Result<Value, String> {
+    let value = value.0;
     let mut this = this.borrow_mut();
 
     let Some(this) = this.as_object_mut() else {
@@ -262,15 +254,12 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
     }
 }
 
-pub fn obj_construct_or(rt: &mut Runtime, value: Value) -> Value {
-    match value {
-        Value::Constructor(constructor) => rt.constructor_call(constructor, None),
-        val => val,
-    }
+pub fn obj_construct_or(value: CalledConstructor<Value>) -> Value {
+    value.0
 }
 
-pub fn eager(rt: &mut Runtime, value: Value) -> Value {
-    value.eager_rec(rt, true)
+pub fn eager(value: EagerRec<Value, WithConstructor>) -> Value {
+    value.value
 }
 
 pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
@@ -285,24 +274,30 @@ pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
     value
 }
 
-pub fn obj_has(rt: &mut Runtime, obj: Value, key: Value) -> Result<Value, String> {
-    let obj = obj.eager_rec(rt, true);
-    let key = key.eager_rec(rt, true);
-
-    let Some(obj) = obj.as_object() else {
-        return Err("has?: Expected object".into());
-    };
-
-    let Some(key) = rt.as_symbol_or_keyword(&key) else {
-        return Err("has?: Expected symbol or keyword".into());
-    };
-
-    Ok(Value::Bool(obj.contains_key(key)))
+pub struct SymbolOrKeyword(String);
+impl FromValue for SymbolOrKeyword {
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let sexp = value.as_sexp().ok_or("Expected symbol or keyword")?;
+        let sexp = rt.asts.get(*sexp);
+        match sexp {
+            SExp::Symbol(s) | SExp::Keyword(s) => Ok(Self(s.to_string())),
+            _ => Err("Expected symbol or keyword".into()),
+        }
+    }
 }
 
-pub fn obj_con(rt: &mut Runtime, value: Value) -> Result<Value, String> {
-    let value = value.eager_rec(rt, false);
-    let Value::Function(constructor) = value else {
+pub fn obj_has(
+    obj: EagerRec<BTreeMap<String, Value>, WithConstructor>,
+    key: EagerRec<SymbolOrKeyword, WithConstructor>,
+) -> Result<Value, String> {
+    let obj = obj.value;
+    let key = key.value;
+
+    Ok(Value::Bool(obj.contains_key(&key.0)))
+}
+
+pub fn obj_con(value: EagerRec<Value, WithoutConstructor>) -> Result<Value, String> {
+    let Value::Function(constructor) = value.value else {
         return Err("obj/con: Expected function".into());
     };
 

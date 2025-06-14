@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -99,6 +100,74 @@ impl FromValue for Ref {
 impl IntoValue for Ref {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Ref(self))
+    }
+}
+
+impl FromValue for BTreeMap<String, Value> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Object(map) => Ok(map),
+            value => Err(format!("Expected object, got {:?}", value)),
+        }
+    }
+}
+
+impl IntoValue for BTreeMap<String, Value> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
+        Ok(Value::Object(self))
+    }
+}
+
+pub struct CalledConstructor<T>(pub T);
+
+impl<T> FromValue for CalledConstructor<T>
+where
+    T: FromValue,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let value = match value.ok()? {
+            Value::Constructor(c) => rt.constructor_call(c, None),
+            value => value,
+        };
+        let value = T::try_from_value(rt, value)?;
+
+        Ok(Self(value))
+    }
+}
+
+pub struct EagerRec<T, Marker> {
+    pub value: T,
+    marker: PhantomData<Marker>,
+}
+
+pub struct WithConstructor;
+pub struct WithoutConstructor;
+
+impl<T> FromValue for EagerRec<T, WithoutConstructor>
+where
+    T: FromValue,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let value = value.eager_rec(rt, false);
+        let value = T::try_from_value(rt, value)?;
+        Ok(Self {
+            value,
+            marker: PhantomData,
+        })
+    }
+}
+
+impl<T> FromValue for EagerRec<T, WithConstructor>
+where
+    T: FromValue,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let value = value.eager_rec(rt, true);
+        let value = T::try_from_value(rt, value)?;
+        Ok(Self {
+            value,
+            marker: PhantomData,
+        })
     }
 }
 
