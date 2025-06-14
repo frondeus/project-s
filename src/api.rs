@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::runtime::value::Ref;
+use crate::runtime::{Function, value::Ref};
 use crate::runtime::{Runtime, Value};
 
 //------------- IntoValue and FromValue ------------
@@ -115,6 +115,15 @@ impl FromValue for BTreeMap<String, Value> {
 impl IntoValue for BTreeMap<String, Value> {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Object(self))
+    }
+}
+
+impl FromValue for Function {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Function(f) => Ok(f),
+            value => Err(format!("Expected function, got {:?}", value)),
+        }
     }
 }
 

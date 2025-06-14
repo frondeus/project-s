@@ -296,12 +296,10 @@ pub fn obj_has(
     Ok(Value::Bool(obj.contains_key(&key.0)))
 }
 
-pub fn obj_con(value: EagerRec<Value, WithoutConstructor>) -> Result<Value, String> {
-    let Value::Function(constructor) = value.value else {
-        return Err("obj/con: Expected function".into());
-    };
-
-    Ok(Value::Constructor(Constructor { constructor }))
+pub fn obj_con(constructor: EagerRec<Function, WithoutConstructor>) -> Value {
+    Value::Constructor(Constructor {
+        constructor: constructor.value,
+    })
 }
 
 pub fn make_list(args: Rest<Value>) -> Value {
