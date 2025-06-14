@@ -1,7 +1,10 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::{
-    api::{CalledConstructor, EagerRec, FromValue, Rest, WithConstructor, WithoutConstructor},
+    api::{
+        CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Rest, WithConstructor,
+        WithoutConstructor,
+    },
     ast::{SExp, SExpParser},
     builder::ASTBuilder,
     runtime::{
@@ -17,61 +20,76 @@ pub fn sub(args: Rest<f64>) -> f64 {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
-    #[derive(Clone, Debug)]
-    enum ObjectOrConstructor {
-        Object(BTreeMap<String, Value>),
-        Constructor(Constructor),
-    }
+fn add_numbers(first: f64, args: Rest<EagerRec<f64, WithoutConstructor>>) -> f64 {
+    first
+        + args
+            .into_iter()
+            .map(|a| a.value)
+            .reduce(|a, b| a + b)
+            .unwrap_or(0.0)
+}
 
-    impl ObjectOrConstructor {
-        fn call(
-            self,
-            rt: &mut Runtime,
-            self_: Value,
-            root: Option<Value>,
-            super_: Value,
-            origin: Option<Value>,
-        ) -> Result<Value, String> {
-            Ok(match self {
-                ObjectOrConstructor::Constructor(left) => {
-                    rt.envs.push();
-                    // rt.envs.set("self", self_.clone());
-                    if let Some(root) = root {
-                        rt.envs.set("root", root.clone());
-                    }
-                    rt.envs.set("super", super_.clone());
-                    if let Some(origin) = origin {
-                        rt.envs.set("origin", origin.clone());
-                    }
-                    let res = rt.constructor_call(left, Some(self_.clone()));
-                    rt.envs.pop();
-                    res
-                }
-                ObjectOrConstructor::Object(left) => {
-                    let ref_self = self_.as_ref().cloned().unwrap();
-                    for (key, value) in left {
-                        insert_to_struct(
-                            ref_self.clone(),
-                            StructKey(key),
-                            CalledConstructor(value),
-                        )?;
-                    }
-                    self_
-                }
-            })
+#[derive(Clone, Debug)]
+enum ObjectOrConstructor {
+    Object(BTreeMap<String, Value>),
+    Constructor(Constructor),
+}
+
+impl FromValue for ObjectOrConstructor {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value {
+            Value::Object(left) => Ok(ObjectOrConstructor::Object(left)),
+            Value::Constructor(left) => Ok(ObjectOrConstructor::Constructor(left)),
+            _ => Err(format!("Expected object or constructor, got {:?}", value)),
         }
     }
+}
 
-    #[tracing::instrument(skip_all)]
-    fn add_obj_impl(
+impl ObjectOrConstructor {
+    fn call(
+        self,
         rt: &mut Runtime,
         self_: Value,
-        root: Value,
-        origin: Value,
-        left: ObjectOrConstructor,
-        right: ObjectOrConstructor,
+        root: Option<Value>,
+        super_: Value,
+        origin: Option<Value>,
     ) -> Result<Value, String> {
+        Ok(match self {
+            ObjectOrConstructor::Constructor(left) => {
+                rt.envs.push();
+                // rt.envs.set("self", self_.clone());
+                if let Some(root) = root {
+                    rt.envs.set("root", root.clone());
+                }
+                rt.envs.set("super", super_.clone());
+                if let Some(origin) = origin {
+                    rt.envs.set("origin", origin.clone());
+                }
+                let res = rt.constructor_call(left, Some(self_.clone()));
+                rt.envs.pop();
+                res
+            }
+            ObjectOrConstructor::Object(left) => {
+                let ref_self = self_.as_ref().cloned().unwrap();
+                for (key, value) in left {
+                    insert_to_struct(ref_self.clone(), StructKey(key), CalledConstructor(value))?;
+                }
+                self_
+            }
+        })
+    }
+}
+
+#[tracing::instrument(skip_all)]
+fn add_two_objects(left: ObjectOrConstructor, right: ObjectOrConstructor) -> Constructor {
+    let constructor = move |rt: &mut Runtime,
+                            self_: Value,
+                            root: Value,
+                            _super: Value,
+                            origin: Value|
+          -> Result<Value, String> {
+        let left = left.clone();
+        let right = right.clone();
         tracing::debug!("Adding obj: {:?}, {:?}", left, right);
         tracing::debug!("Self: {:?}", self_);
         tracing::debug!("Root: {:?}", root);
@@ -90,84 +108,52 @@ pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
         tracing::debug!("Result: {:?}", self_);
 
         Ok(self_)
-    }
-
-    let mut args = args.into_iter();
-    let Some(first) = args.next() else {
-        return Err("Expected at least one argument".into());
     };
+    let constructor = constructor.into_native_function();
 
-    let first = first.eager_rec(rt, false).ok()?;
+    Constructor {
+        constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
+            constructor.call(rt, args)
+        }),
+    }
+}
 
-    match first {
-        Value::Number(mut first) => {
-            for arg in args {
-                let Some(b) = arg.eager(rt, false).ok()?.as_number() else {
-                    return Err("Expected number".into());
-                };
-                first += b;
-            }
-            Ok(Value::Number(first))
-        }
-        Value::Constructor(left) => {
-            let left = ObjectOrConstructor::Constructor(left);
-            let Some(right) = args.next() else {
-                return Err("Expected at least two arguments".into());
-            };
+fn add_objects(
+    left: ObjectOrConstructor,
+    rights: Rest<EagerRec<ObjectOrConstructor, WithoutConstructor>>,
+) -> Value {
+    let mut left = left;
+    for right in rights {
+        left = ObjectOrConstructor::Constructor(add_two_objects(left.clone(), right.value));
+    }
+    match left {
+        ObjectOrConstructor::Object(left) => Value::Object(left),
+        ObjectOrConstructor::Constructor(left) => Value::Constructor(left),
+    }
+}
 
-            let right = match right.eager_rec(rt, false).ok()? {
-                Value::Object(right) => ObjectOrConstructor::Object(right),
-                Value::Constructor(right) => ObjectOrConstructor::Constructor(right),
-                right => {
-                    return Err(format!(
-                        "+: Expected object or object constructor. Found: {:?}",
-                        right
-                    ));
-                }
-            };
-
-            Ok(Value::Constructor(Constructor {
-                constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, _super, origin]) = TryInto::<[Value; 4]>::try_into(args)
-                    else {
-                        return Value::Error("Expected two arguments".into());
-                    };
-
-                    add_obj_impl(rt, self_, root, origin, left.clone(), right.clone())
-                        .unwrap_or_else(Value::Error)
-                }),
-            }))
+#[tracing::instrument(skip_all)]
+pub fn add(
+    rt: &mut Runtime,
+    first: EagerRec<Value, WithoutConstructor>,
+    args: Rest<Value>,
+) -> Result<Value, String> {
+    match first.value {
+        Value::Number(first) => {
+            let args = Rest::<_>::try_from_values(rt, args)?;
+            Ok(Value::Number(add_numbers(first, args)))
         }
         Value::Object(left) => {
             let left = ObjectOrConstructor::Object(left);
-            let Some(right) = args.next() else {
-                return Err("Expected at least two arguments".into());
-            };
-
-            let right = match right.eager_rec(rt, false).ok()? {
-                Value::Object(right) => ObjectOrConstructor::Object(right),
-                Value::Constructor(right) => ObjectOrConstructor::Constructor(right),
-                right => {
-                    return Err(format!(
-                        "+: Expected object or object constructor. Found: {:?}",
-                        right
-                    ));
-                }
-            };
-
-            Ok(Value::Constructor(Constructor {
-                constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, _super_, origin]) = TryInto::<[Value; 4]>::try_into(args)
-                    else {
-                        return Value::Error("Expected two arguments".into());
-                    };
-
-                    add_obj_impl(rt, self_, root, origin, left.clone(), right.clone())
-                        .unwrap_or_else(Value::Error)
-                }),
-            }))
+            let args = Rest::<_>::try_from_values(rt, args)?;
+            Ok(add_objects(left, args))
         }
-        _ => Err(format!("+: Expected number or object. Found: {:?}", first)),
+        Value::Constructor(left) => {
+            let left = ObjectOrConstructor::Constructor(left);
+            let args = Rest::<_>::try_from_values(rt, args)?;
+            Ok(add_objects(left, args))
+        }
+        first => Err(format!("+: Expected number or object. Found: {:?}", first)),
     }
 }
 

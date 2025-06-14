@@ -227,13 +227,23 @@ where
         Self { values }
     }
 
-    fn try_from_values(rt: &mut Runtime, values: Rest<Value>) -> Result<Self, String> {
+    pub fn try_from_values(rt: &mut Runtime, values: Rest<Value>) -> Result<Self, String> {
         let values = values
             .values
             .into_iter()
             .map(|v| T::try_from_value(rt, v))
             .collect::<Result<Vec<T>, String>>()?;
         Ok(Self { values })
+    }
+
+    pub fn with_arity_and_rest<const N: usize>(mut self) -> Result<([T; N], Rest<T>), String>
+    where
+        T: std::fmt::Debug,
+    {
+        assert_at_least_arity(N, &self.values)?;
+        let rest = self.values.split_off(N);
+        let args = self.values.try_into().unwrap();
+        Ok((args, Rest { values: rest }))
     }
 
     pub fn with_arity<const N: usize>(self) -> Result<[T; N], String>
@@ -270,6 +280,7 @@ impl<T> IntoIterator for Rest<T> {
     }
 }
 
+//------------- Utils ------------
 fn assert_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
     if values.len() != len {
         return Err(format!("Expected {len} arguments, got {}", values.len()));
@@ -277,7 +288,15 @@ fn assert_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
     Ok(())
 }
 
-//------------- Utils ------------
+fn assert_at_least_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
+    if values.len() < len {
+        return Err(format!(
+            "Expected at least {len} arguments, got {}",
+            values.len()
+        ));
+    }
+    Ok(())
+}
 
 trait TupleLen {
     const LEN: usize;
@@ -493,7 +512,7 @@ macro_rules! fnlike {
             $($arg: FromValue),*
         {
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
-                assert_arity(<($first, $($arg),*) as TupleLen>::LEN + 1, &values)?;
+                assert_at_least_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
 
                 let mut values = values.into_iter();
 
@@ -568,7 +587,7 @@ macro_rules! fnlike {
             $($arg: FromValue),*
         {
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
-                assert_arity(<($first, $($arg),*) as TupleLen>::LEN + 1, &values)?;
+                assert_at_least_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
 
                 let mut values = values.into_iter();
 
