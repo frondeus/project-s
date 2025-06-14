@@ -9,27 +9,27 @@ use crate::runtime::{Runtime, Value};
 //------------- IntoValue and FromValue ------------
 
 impl<T: IntoValue> IntoValue for Result<T, String> {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
         match self {
-            Ok(v) => v.try_into_value(),
+            Ok(v) => v.try_into_value(rt),
             Err(e) => Ok(Value::Error(e)),
         }
     }
 }
 
 impl FromValue for Value {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         Ok(value)
     }
 }
 impl IntoValue for Value {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(self)
     }
 }
 
 impl FromValue for f64 {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Number(n) => Ok(n),
             value => Err(format!("Expected number, got {:?}", value)),
@@ -38,13 +38,13 @@ impl FromValue for f64 {
 }
 
 impl IntoValue for f64 {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Number(self))
     }
 }
 
 impl FromValue for i32 {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Number(n) => Ok(n as i32),
             value => Err(format!("Expected number, got {:?}", value)),
@@ -53,13 +53,13 @@ impl FromValue for i32 {
 }
 
 impl IntoValue for i32 {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Number(self as f64))
     }
 }
 
 impl FromValue for bool {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Bool(b) => Ok(b),
             value => Err(format!("Expected bool, got {:?}", value)),
@@ -68,13 +68,13 @@ impl FromValue for bool {
 }
 
 impl IntoValue for bool {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Bool(self))
     }
 }
 
 impl FromValue for String {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::String(s) => Ok(s),
             value => Err(format!("Expected string, got {:?}", value)),
@@ -83,13 +83,13 @@ impl FromValue for String {
 }
 
 impl IntoValue for String {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::String(self))
     }
 }
 
 impl FromValue for Ref {
-    fn try_from_value(value: Value) -> Result<Self, String> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Ref(r) => Ok(r),
             value => Err(format!("Expected ref, got {:?}", value)),
@@ -97,7 +97,7 @@ impl FromValue for Ref {
     }
 }
 impl IntoValue for Ref {
-    fn try_into_value(self) -> Result<Value, String> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Ref(self))
     }
 }
@@ -105,11 +105,11 @@ impl IntoValue for Ref {
 // ------------- Definitions ------------
 
 pub trait IntoValue {
-    fn try_into_value(self) -> Result<Value, String>;
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String>;
 }
 
 pub trait FromValue: Sized {
-    fn try_from_value(value: Value) -> Result<Self, String>;
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String>;
 }
 
 pub trait NativeFunction {
@@ -149,11 +149,11 @@ where
         Self { values }
     }
 
-    fn try_from_values(values: Rest<Value>) -> Result<Self, String> {
+    fn try_from_values(rt: &mut Runtime, values: Rest<Value>) -> Result<Self, String> {
         let values = values
             .values
             .into_iter()
-            .map(T::try_from_value)
+            .map(|v| T::try_from_value(rt, v))
             .collect::<Result<Vec<T>, String>>()?;
         Ok(Self { values })
     }
@@ -248,9 +248,9 @@ macro_rules! fnlike {
         where F: 'static + Fn() -> O,
             O: IntoValue,
         {
-            fn try_call(&self, _rt: &mut Runtime, _values: Vec<Value>) -> Result<Value, String> {
+            fn try_call(&self, rt: &mut Runtime, _values: Vec<Value>) -> Result<Value, String> {
                 let o = (self.f)();
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
     };
@@ -278,18 +278,18 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
-            fn try_call(&self, _rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+            fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
                 let mut values = values.into_iter();
 
-                let $first = $first::try_from_value(values.next().unwrap())?;
+                let $first = $first::try_from_value(rt, values.next().unwrap())?;
                 $(
-                    let $arg = $arg::try_from_value(values.next().unwrap())?;
+                    let $arg = $arg::try_from_value(rt, values.next().unwrap())?;
                 )*
 
                 let o = (self.f)($first, $($arg,)*);
 
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
 
@@ -314,7 +314,7 @@ macro_rules! fnlike {
         {
             fn try_call(&self, rt: &mut Runtime, _values: Vec<Value>) -> Result<Value, String> {
                 let o = (self.f)(rt);
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
 
@@ -347,14 +347,14 @@ macro_rules! fnlike {
                 assert_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
                 let mut values = values.into_iter();
 
-                let $first = $first::try_from_value(values.next().unwrap())?;
+                let $first = $first::try_from_value(rt, values.next().unwrap())?;
                 $(
-                    let $arg = $arg::try_from_value(values.next().unwrap())?;
+                    let $arg = $arg::try_from_value(rt, values.next().unwrap())?;
                 )*
 
                 let o = (self.f)(rt, $first, $($arg,)*);
 
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
 
@@ -380,11 +380,11 @@ macro_rules! fnlike {
             O: IntoValue,
             R: FromValue,
         {
-            fn try_call(&self, _rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+            fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 let rest = Rest { values };
-                let rest = Rest::<R>::try_from_values(rest)?;
+                let rest = Rest::<R>::try_from_values(rt, rest)?;
                 let o = (self.f)(rest);
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
     };
@@ -414,22 +414,22 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
-            fn try_call(&self, _rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+            fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_arity(<($first, $($arg),*) as TupleLen>::LEN + 1, &values)?;
 
                 let mut values = values.into_iter();
 
-                let $first = $first::try_from_value(values.next().unwrap())?;
+                let $first = $first::try_from_value(rt, values.next().unwrap())?;
                 $(
-                    let $arg = $arg::try_from_value(values.next().unwrap())?;
+                    let $arg = $arg::try_from_value(rt, values.next().unwrap())?;
                 )*
 
                 let rest = Rest { values: values.collect() };
 
-                let rest = Rest::<R>::try_from_values(rest)?;
+                let rest = Rest::<R>::try_from_values(rt, rest)?;
                 let o = (self.f)($first, $($arg,)* rest);
 
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
 
@@ -457,9 +457,9 @@ macro_rules! fnlike {
         {
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 let rest = Rest { values };
-                let rest = Rest::<R>::try_from_values(rest)?;
+                let rest = Rest::<R>::try_from_values(rt, rest)?;
                 let o = (self.f)(rt, rest);
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
     };
@@ -494,16 +494,16 @@ macro_rules! fnlike {
 
                 let mut values = values.into_iter();
 
-                let $first = $first::try_from_value(values.next().unwrap())?;
+                let $first = $first::try_from_value(rt, values.next().unwrap())?;
                 $(
-                    let $arg = $arg::try_from_value(values.next().unwrap())?;
+                    let $arg = $arg::try_from_value(rt, values.next().unwrap())?;
                 )*
 
                 let rest = Rest { values: values.collect() };
-                let rest = Rest::<R>::try_from_values(rest)?;
+                let rest = Rest::<R>::try_from_values(rt, rest)?;
                 let o = (self.f)(rt, $first, $($arg,)* rest);
 
-                O::try_into_value(o)
+                O::try_into_value(o, rt)
             }
         }
 

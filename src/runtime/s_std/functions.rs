@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::{
-    api::Rest,
+    api::{FromValue, Rest},
     ast::{SExp, SExpParser},
     builder::ASTBuilder,
     runtime::{
@@ -126,8 +126,7 @@ pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, _super, origin]) =
-                        TryInto::<[Value; 4]>::try_into(args)
+                    let Ok([self_, root, _super, origin]) = TryInto::<[Value; 4]>::try_into(args)
                     else {
                         return Value::Error("Expected two arguments".into());
                     };
@@ -156,8 +155,7 @@ pub fn add(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
 
             Ok(Value::Constructor(Constructor {
                 constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-                    let Ok([self_, root, _super_, origin]) =
-                        TryInto::<[Value; 4]>::try_into(args)
+                    let Ok([self_, root, _super_, origin]) = TryInto::<[Value; 4]>::try_into(args)
                     else {
                         return Value::Error("Expected two arguments".into());
                     };
@@ -185,21 +183,29 @@ pub fn new_ref(one: Value) -> Value {
     Value::ref_(one)
 }
 
+struct StructKey(String);
+impl FromValue for StructKey {
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let key = match value {
+            Value::String(s) => s,
+            Value::SExp(id) => match rt.asts.get(id) {
+                SExp::Symbol(s) => s.to_string(),
+                SExp::Keyword(s) => s.to_string(),
+                SExp::String(s) => s.to_string(),
+                _ => return Err("Expected keyword, symbol or string".into()),
+            },
+            _ => return Err("Expected keyword, symbol or string".into()),
+        };
+        Ok(Self(key))
+    }
+}
+
 #[tracing::instrument(skip_all)]
 pub fn insert_to_struct(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
     // println!("Inserting to struct");
     let [_this, key, value] = args.with_arity::<3>()?;
 
-    let key = match key {
-        Value::String(s) => s,
-        Value::SExp(id) => match rt.asts.get(id) {
-            SExp::Symbol(s) => s.to_string(),
-            SExp::Keyword(s) => s.to_string(),
-            SExp::String(s) => s.to_string(),
-            _ => return Err("Expected keyword, symbol or string".into()),
-        },
-        _ => return Err("Expected keyword, symbol or string".into()),
-    };
+    let key = StructKey::try_from_value(rt, key)?;
 
     let value = match value {
         Value::Constructor(v) => rt.constructor_call(v, None),
@@ -215,9 +221,9 @@ pub fn insert_to_struct(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, St
         return Err("Expected object".into());
     };
 
-    tracing::debug!("Inserting to struct({:?}): {} - {:?}", this, key, value);
+    tracing::debug!("Inserting to struct({:?}): {} - {:?}", this, key.0, value);
 
-    let old = this.insert(key, value);
+    let old = this.insert(key.0, value);
 
     tracing::debug!("After insertion: {this:?}");
 
