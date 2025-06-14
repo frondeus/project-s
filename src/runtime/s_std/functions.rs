@@ -36,6 +36,10 @@ enum ObjectOrConstructor {
 }
 
 impl FromValue for ObjectOrConstructor {
+    fn is_matching(value: &Value) -> bool {
+        matches!(value, Value::Object(_) | Value::Constructor(_))
+    }
+
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value {
             Value::Object(left) => Ok(ObjectOrConstructor::Object(left)),
@@ -171,6 +175,11 @@ pub fn new_ref(one: Value) -> Value {
 
 pub struct StructKey(String);
 impl FromValue for StructKey {
+    fn is_matching(value: &Value) -> bool {
+        // Not ideal
+        matches!(value, Value::String(_) | Value::SExp(_))
+    }
+
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         let key = match value {
             Value::String(s) => s,
@@ -262,6 +271,11 @@ pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
 
 pub struct SymbolOrKeyword(String);
 impl FromValue for SymbolOrKeyword {
+    fn is_matching(value: &Value) -> bool {
+        // Not ideal
+        matches!(value, Value::SExp(_))
+    }
+
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         let sexp = value.as_sexp().ok_or("Expected symbol or keyword")?;
         let sexp = rt.asts.get(*sexp);

@@ -239,6 +239,13 @@ impl Value {
         }
     }
 
+    pub fn as_function(&self) -> Option<&Function> {
+        match self {
+            Value::Function(function) => Some(function),
+            _ => None,
+        }
+    }
+
     pub fn into_object(self) -> Option<BTreeMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),

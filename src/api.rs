@@ -22,6 +22,9 @@ impl FromValue for Value {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         Ok(value)
     }
+    fn is_matching(_value: &Value) -> bool {
+        true
+    }
 }
 impl IntoValue for Value {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
@@ -35,6 +38,9 @@ impl FromValue for f64 {
             Value::Number(n) => Ok(n),
             value => Err(format!("Expected number, got {:?}", value)),
         }
+    }
+    fn is_matching(value: &Value) -> bool {
+        value.as_number().is_some()
     }
 }
 
@@ -51,6 +57,10 @@ impl FromValue for i32 {
             value => Err(format!("Expected number, got {:?}", value)),
         }
     }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_number().is_some()
+    }
 }
 
 impl IntoValue for i32 {
@@ -65,6 +75,10 @@ impl FromValue for bool {
             Value::Bool(b) => Ok(b),
             value => Err(format!("Expected bool, got {:?}", value)),
         }
+    }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_boolean().is_some()
     }
 }
 
@@ -81,6 +95,10 @@ impl FromValue for String {
             value => Err(format!("Expected string, got {:?}", value)),
         }
     }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_string().is_some()
+    }
 }
 
 impl IntoValue for String {
@@ -96,6 +114,10 @@ impl FromValue for Ref {
             value => Err(format!("Expected ref, got {:?}", value)),
         }
     }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_ref().is_some()
+    }
 }
 impl IntoValue for Ref {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
@@ -109,6 +131,10 @@ impl FromValue for BTreeMap<String, Value> {
             Value::Object(map) => Ok(map),
             value => Err(format!("Expected object, got {:?}", value)),
         }
+    }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_object().is_some()
     }
 }
 
@@ -124,6 +150,10 @@ impl FromValue for Function {
             Value::Function(f) => Ok(f),
             value => Err(format!("Expected function, got {:?}", value)),
         }
+    }
+
+    fn is_matching(value: &Value) -> bool {
+        value.as_function().is_some()
     }
 }
 
@@ -141,6 +171,10 @@ where
         let value = T::try_from_value(rt, value)?;
 
         Ok(Self(value))
+    }
+
+    fn is_matching(value: &Value) -> bool {
+        T::is_matching(value)
     }
 }
 
@@ -164,6 +198,10 @@ where
             marker: PhantomData,
         })
     }
+
+    fn is_matching(value: &Value) -> bool {
+        T::is_matching(value)
+    }
 }
 
 impl<T> FromValue for EagerRec<T, WithConstructor>
@@ -178,6 +216,10 @@ where
             marker: PhantomData,
         })
     }
+
+    fn is_matching(value: &Value) -> bool {
+        T::is_matching(value)
+    }
 }
 
 // ------------- Definitions ------------
@@ -188,9 +230,12 @@ pub trait IntoValue {
 
 pub trait FromValue: Sized {
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String>;
+    fn is_matching(value: &Value) -> bool;
 }
 
 pub trait NativeFunction {
+    fn signature_matches(&self, values: &[Value]) -> bool;
+
     fn call(&self, rt: &mut Runtime, values: Vec<Value>) -> Value {
         self.try_call(rt, values).unwrap_or_else(Value::Error)
     }
@@ -253,6 +298,15 @@ where
         assert_arity(N, &self.values)?;
         Ok(self.values.try_into().unwrap())
     }
+
+    pub fn signature_matches(values: &[Value]) -> bool {
+        for value in values {
+            if !T::is_matching(value) {
+                return false;
+            }
+        }
+        true
+    }
 }
 impl<T> From<Rest<T>> for Vec<T> {
     fn from(rest: Rest<T>) -> Self {
@@ -282,14 +336,22 @@ impl<T> IntoIterator for Rest<T> {
 
 //------------- Utils ------------
 fn assert_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
-    if values.len() != len {
+    if !has_arity(len, values) {
         return Err(format!("Expected {len} arguments, got {}", values.len()));
     }
     Ok(())
 }
 
+fn has_arity<T>(len: usize, values: &[T]) -> bool {
+    values.len() == len
+}
+
+fn has_at_least_arity<T>(len: usize, values: &[T]) -> bool {
+    values.len() >= len
+}
+
 fn assert_at_least_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
-    if values.len() < len {
+    if !has_at_least_arity(len, values) {
         return Err(format!(
             "Expected at least {len} arguments, got {}",
             values.len()
@@ -345,6 +407,10 @@ macro_rules! fnlike {
         where F: 'static + Fn() -> O,
             O: IntoValue,
         {
+            fn signature_matches(&self, _values: &[Value]) -> bool {
+                true
+            }
+
             fn try_call(&self, rt: &mut Runtime, _values: Vec<Value>) -> Result<Value, String> {
                 let o = (self.f)();
                 O::try_into_value(o, rt)
@@ -375,6 +441,25 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                if !has_arity(<($first, $($arg),*) as TupleLen>::LEN, values) {
+                    return false;
+                }
+
+                let mut values = values.into_iter();
+
+                if !$first::is_matching(values.next().unwrap()) {
+                    return false;
+                }
+                $(
+                    if !$arg::is_matching(values.next().unwrap()) {
+                        return false;
+                    }
+                )*
+
+                true
+            }
+
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
                 let mut values = values.into_iter();
@@ -409,6 +494,9 @@ macro_rules! fnlike {
         where F: 'static + Fn(&mut Runtime) -> O,
             O: IntoValue,
         {
+            fn signature_matches(&self, _values: &[Value]) -> bool {
+                true
+            }
             fn try_call(&self, rt: &mut Runtime, _values: Vec<Value>) -> Result<Value, String> {
                 let o = (self.f)(rt);
                 O::try_into_value(o, rt)
@@ -440,6 +528,27 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
+
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                if !has_arity(<($first, $($arg),*) as TupleLen>::LEN, values) {
+                    return false;
+                }
+
+                let mut values = values.into_iter();
+
+                if !$first::is_matching(values.next().unwrap()) {
+                    return false;
+                }
+
+                $(
+                    if !$arg::is_matching(values.next().unwrap()) {
+                        return false;
+                    }
+                )*
+
+                true
+            }
+
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
                 let mut values = values.into_iter();
@@ -477,6 +586,10 @@ macro_rules! fnlike {
             O: IntoValue,
             R: FromValue,
         {
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                Rest::<R>::signature_matches(values)
+            }
+
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 let rest = Rest { values };
                 let rest = Rest::<R>::try_from_values(rt, rest)?;
@@ -511,6 +624,18 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
+
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                let len = <($first, $($arg),*) as TupleLen>::LEN;
+                if !has_at_least_arity(len, values) {
+                    return false;
+                }
+
+                let rest = &values[len..];
+
+                Rest::<R>::signature_matches(rest)
+            }
+
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_at_least_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
 
@@ -552,6 +677,9 @@ macro_rules! fnlike {
             O: IntoValue,
             R: FromValue,
         {
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                Rest::<R>::signature_matches(values)
+            }
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 let rest = Rest { values };
                 let rest = Rest::<R>::try_from_values(rt, rest)?;
@@ -586,6 +714,16 @@ macro_rules! fnlike {
             $first: FromValue,
             $($arg: FromValue),*
         {
+            fn signature_matches(&self, values: &[Value]) -> bool {
+                let len = <($first, $($arg),*) as TupleLen>::LEN;
+                if !has_at_least_arity(len, values) {
+                    return false;
+                }
+
+                let rest = &values[len..];
+                Rest::<R>::signature_matches(rest)
+            }
+
             fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
                 assert_at_least_arity(<($first, $($arg),*) as TupleLen>::LEN, &values)?;
 
