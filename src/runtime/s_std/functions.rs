@@ -20,8 +20,11 @@ pub fn sub(args: Rest<f64>) -> f64 {
 }
 
 #[tracing::instrument(skip_all)]
-fn add_numbers(first: f64, args: Rest<EagerRec<f64, WithoutConstructor>>) -> f64 {
-    first
+fn add_numbers(
+    first: EagerRec<f64, WithoutConstructor>,
+    args: Rest<EagerRec<f64, WithoutConstructor>>,
+) -> f64 {
+    first.value
         + args
             .into_iter()
             .map(|a| a.value)
@@ -30,13 +33,13 @@ fn add_numbers(first: f64, args: Rest<EagerRec<f64, WithoutConstructor>>) -> f64
 }
 
 #[derive(Clone, Debug)]
-enum ObjectOrConstructor {
+pub enum ObjectOrConstructor {
     Object(BTreeMap<String, Value>),
     Constructor(Constructor),
 }
 
 impl FromValue for ObjectOrConstructor {
-    fn is_matching(value: &Value) -> bool {
+    fn is_matching(_rt: &mut Runtime, value: &Value) -> bool {
         matches!(value, Value::Object(_) | Value::Constructor(_))
     }
 
@@ -123,10 +126,10 @@ fn add_two_objects(left: ObjectOrConstructor, right: ObjectOrConstructor) -> Con
 }
 
 fn add_objects(
-    left: ObjectOrConstructor,
+    left: EagerRec<ObjectOrConstructor, WithoutConstructor>,
     rights: Rest<EagerRec<ObjectOrConstructor, WithoutConstructor>>,
 ) -> Value {
-    let mut left = left;
+    let mut left = left.value;
     for right in rights {
         left = ObjectOrConstructor::Constructor(add_two_objects(left.clone(), right.value));
     }
@@ -136,30 +139,14 @@ fn add_objects(
     }
 }
 
-#[tracing::instrument(skip_all)]
-pub fn add(
-    rt: &mut Runtime,
-    first: EagerRec<Value, WithoutConstructor>,
-    args: Rest<Value>,
-) -> Result<Value, String> {
-    match first.value {
-        Value::Number(first) => {
-            let args = Rest::<_>::try_from_values(rt, args)?;
-            Ok(Value::Number(add_numbers(first, args)))
-        }
-        Value::Object(left) => {
-            let left = ObjectOrConstructor::Object(left);
-            let args = Rest::<_>::try_from_values(rt, args)?;
-            Ok(add_objects(left, args))
-        }
-        Value::Constructor(left) => {
-            let left = ObjectOrConstructor::Constructor(left);
-            let args = Rest::<_>::try_from_values(rt, args)?;
-            Ok(add_objects(left, args))
-        }
-        first => Err(format!("+: Expected number or object. Found: {:?}", first)),
-    }
-}
+#[allow(non_upper_case_globals, clippy::type_complexity)]
+pub const add: (
+    fn(EagerRec<f64, WithoutConstructor>, Rest<EagerRec<f64, WithoutConstructor>>) -> f64,
+    fn(
+        EagerRec<ObjectOrConstructor, WithoutConstructor>,
+        Rest<EagerRec<ObjectOrConstructor, WithoutConstructor>>,
+    ) -> Value,
+) = (add_numbers, add_objects);
 
 pub fn set(key: Ref, value: Value) -> Value {
     tracing::info!("Setting {key:?} to {value:?}");
@@ -175,9 +162,15 @@ pub fn new_ref(one: Value) -> Value {
 
 pub struct StructKey(String);
 impl FromValue for StructKey {
-    fn is_matching(value: &Value) -> bool {
-        // Not ideal
-        matches!(value, Value::String(_) | Value::SExp(_))
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        match value {
+            Value::String(_) => true,
+            Value::SExp(id) => matches!(
+                rt.asts.get(*id),
+                SExp::Symbol(_) | SExp::Keyword(_) | SExp::String(_)
+            ),
+            _ => false,
+        }
     }
 
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
@@ -271,9 +264,11 @@ pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
 
 pub struct SymbolOrKeyword(String);
 impl FromValue for SymbolOrKeyword {
-    fn is_matching(value: &Value) -> bool {
-        // Not ideal
-        matches!(value, Value::SExp(_))
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        match value {
+            Value::SExp(id) => matches!(rt.asts.get(*id), SExp::Symbol(_) | SExp::Keyword(_)),
+            _ => false,
+        }
     }
 
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
