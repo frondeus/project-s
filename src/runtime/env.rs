@@ -38,10 +38,11 @@ impl Env {
 
     pub fn with_fn<CTX>(
         mut self,
-        name: impl ToString,
+        name: &'static str,
         body: impl IntoOverloadedFunction<CTX>,
     ) -> Self {
-        let body = body.into_overloaded_function();
+        let mut body = body.into_overloaded_function();
+        body.with_name(name);
 
         self.vars.insert(
             name.to_string(),
