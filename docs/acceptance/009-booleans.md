@@ -7,6 +7,10 @@ true
 true
 ```
 
+```type
+Bool
+```
+
 ```
 false
 ```
@@ -14,3 +18,8 @@ false
 ```json
 false
 ```
+
+```type
+Bool
+```
+

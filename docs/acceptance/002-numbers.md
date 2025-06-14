@@ -6,3 +6,7 @@
 ```json
 5.0
 ```
+
+```type
+Number
+```

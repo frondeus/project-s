@@ -63,3 +63,14 @@ Introducing `let*` which is a recursive `let`.
   "c": 7.0
 }
 ```
+
+# Typechecking
+
+```
+(let :x 5)
+x
+```
+
+```type
+Number
+```

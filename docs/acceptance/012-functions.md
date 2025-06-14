@@ -7,6 +7,14 @@
 "<Function: LispFn>"
 ```
 
+```
+(fn (:x) x)
+```
+
+```type
+(Any) -> Any
+```
+
 # Calling a function
 
 ```
@@ -15,6 +23,27 @@
 
 ```json
 3.0
+```
+
+```
+(let :f (fn (:x) x))
+
+(f 4)
+```
+
+```type
+Number
+```
+
+```
+(let :f (fn (:x) x))
+
+(f 5)
+f
+```
+
+```type
+(Number) -> Number
 ```
 
 # Closures

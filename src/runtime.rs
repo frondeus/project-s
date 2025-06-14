@@ -9,7 +9,7 @@ use crate::{
     ast::{ASTS, SExp, SExpId},
     modules::ModuleProvider,
     patterns::Pattern,
-    types::{Type, TypeEnv},
+    // types::{Type, TypeEnv},
 };
 
 mod env;
@@ -32,34 +32,34 @@ macro_rules! try_err {
 }
 
 impl Runtime {
-    fn is_type(&self, items: &[SExpId]) -> Value {
-        let Some(sexp) = items.first() else {
-            return Value::Error("Expected SExpression".to_string());
-        };
-        let mut env = TypeEnv::default();
-        let infered = env.infer(self.asts.get_ast(*sexp), *sexp);
-        let result = env.get(infered);
+    // fn is_type(&self, items: &[SExpId]) -> Value {
+    //     let Some(sexp) = items.first() else {
+    //         return Value::Error("Expected SExpression".to_string());
+    //     };
+    //     // let mut env = TypeEnv::default();
+    //     // let infered = env.infer(self.asts.get_ast(*sexp), *sexp);
+    //     // let result = env.get(infered);
 
-        let Some(ty_id) = items.get(1) else {
-            return Value::Error("Expected type".to_string());
-        };
-        let ty = self.asts.get_ast(*sexp).get(*ty_id);
-        let Some(ty) = ty.as_symbol() else {
-            return Value::Error(format!(
-                "Expected symbol. Found: {:?}",
-                self.asts.fmt(*ty_id)
-            ));
-        };
-        let ty = match ty {
-            "Number" => Type::Number,
-            "String" => Type::String,
-            "Bool" => Type::Bool,
-            "Symbol" => Type::Symbol,
-            "Error" => Type::Error,
-            ty => return Value::Error(format!("Unknown type: {}", ty)),
-        };
-        Value::Bool(*result == ty)
-    }
+    //     let Some(ty_id) = items.get(1) else {
+    //         return Value::Error("Expected type".to_string());
+    //     };
+    //     let ty = self.asts.get_ast(*sexp).get(*ty_id);
+    //     let Some(ty) = ty.as_symbol() else {
+    //         return Value::Error(format!(
+    //             "Expected symbol. Found: {:?}",
+    //             self.asts.fmt(*ty_id)
+    //         ));
+    //     };
+    //     let ty = match ty {
+    //         "Number" => Type::Number,
+    //         "String" => Type::String,
+    //         "Bool" => Type::Bool,
+    //         "Symbol" => Type::Symbol,
+    //         "Error" => Type::Error,
+    //         ty => return Value::Error(format!("Unknown type: {}", ty)),
+    //     };
+    //     Value::Bool(*result == ty)
+    // }
 
     pub(crate) fn destruct_with(
         &mut self,
@@ -324,7 +324,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "cl" => {
                         self.closure_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
+                    // SExp::Symbol(tag) if tag == "is-type" => self.is_type(&items[1..]),
                     SExp::Symbol(tag) if tag == "quote" => {
                         let Some(item) = items.get(1) else {
                             return Value::Error("Expected item after quote".to_string());

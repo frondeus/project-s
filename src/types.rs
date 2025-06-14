@@ -1,52 +1,382 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use core::ID;
+use std::collections::BTreeMap;
 
-use crate::ast::{AST, SExp, SExpId};
+use crate::{
+    ast::{ASTS, SExp, SExpId},
+    patterns::Pattern,
+};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Type {
-    Number,
-    String,
-    Bool,
-    Symbol,
-    Error,
-}
+mod core;
+mod reachability;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TypeId(usize);
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TypeEnv {
-    types: Vec<Type>,
-    exprs: HashMap<SExpId, TypeId>,
+    engine: core::TypeCheckerCore,
+    envs: Envs,
 }
 
 impl TypeEnv {
-    pub fn add(&mut self, ty: Type) -> TypeId {
-        let id = self.types.len();
-        self.types.push(ty);
-        TypeId(id)
-    }
-
-    pub fn get(&self, id: TypeId) -> &Type {
-        &self.types[id.0]
-    }
-
-    pub fn infer(&mut self, ast: &AST, id: SExpId) -> TypeId {
-        let sexp = ast.get(id);
+    fn check(&mut self, asts: &ASTS, id: SExpId) -> core::Result<core::Value> {
+        let sexp = asts.get(id);
         match sexp {
-            SExp::Number(_) => self.add(Type::Number),
-            SExp::String(_) => self.add(Type::String),
-            SExp::Symbol(_) => self.add(Type::Symbol),
-            SExp::Keyword(_) => self.add(Type::Symbol),
-            SExp::Bool(_) => self.add(Type::Bool),
-            SExp::List(list) => {
-                let last = list.last().unwrap();
-                self.infer(ast, *last)
-            }
-            SExp::Error => self.add(Type::Error),
+            SExp::Number(_) => Ok(self.engine.number()),
+            SExp::String(_) => Ok(self.engine.string()),
+            SExp::Bool(_) => Ok(self.engine.bool()),
+            SExp::Keyword(_) => Ok(self.engine.keyword()),
+            SExp::Symbol(symbol) => self
+                .envs
+                .get(symbol)
+                .copied()
+                .ok_or_else(|| core::TypeError::UndefinedVariable(symbol.to_owned())),
+            SExp::List(sexp_ids) => match sexp_ids.as_slice() {
+                [] => Ok(self.engine.list(vec![])),
+                [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
+                    let cond_type = self.check(asts, *condition)?;
+                    let bound = self.engine.bool_use();
+                    self.engine.flow(cond_type, bound)?;
+
+                    let then_type = self.check(asts, *then_branch)?;
+                    // TODO: Force that then_type is a `()` type
+                    Ok(then_type)
+                }
+                [first, condition, then_branch, else_branch]
+                    if Self::is_symbol(asts, *first, "if") =>
+                {
+                    let cond_type = self.check(asts, *condition)?;
+                    let bound = self.engine.bool_use();
+                    self.engine.flow(cond_type, bound)?;
+
+                    let then_type = self.check(asts, *then_branch)?;
+                    let else_type = self.check(asts, *else_branch)?;
+
+                    let (merged, merged_bound) = self.engine.var();
+                    self.engine.flow(then_type, merged_bound)?;
+                    self.engine.flow(else_type, merged_bound)?;
+
+                    Ok(merged)
+                }
+                [first, pattern, body] if Self::is_symbol(asts, *first, "fn") => {
+                    let pattern = Pattern::parse(*pattern, asts)
+                        .map_err(core::TypeError::UnreadablePattern)?;
+
+                    self.envs.push();
+                    let pattern_bound = self.check_pattern(pattern);
+                    // let pattern_must_be_list = self.engine.list_use
+
+                    let body_type = self.check(asts, *body);
+                    self.envs.pop();
+                    let body_type = body_type?;
+
+                    Ok(self.engine.func(pattern_bound, body_type))
+                }
+                [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
+                    self.envs.push();
+                    for arg in args {
+                        if let Err(e) = self.check(asts, *arg) {
+                            self.envs.pop();
+                            return Err(e);
+                        }
+                    }
+                    let last_type = self.check(asts, *last);
+                    self.envs.pop();
+                    last_type
+                }
+                [first, pattern, value] if Self::is_symbol(asts, *first, "let") => {
+                    let pattern = Pattern::parse(*pattern, asts)
+                        .map_err(core::TypeError::UnreadablePattern)?;
+
+                    let value_type = self.check(asts, *value)?;
+                    let pattern_bound = self.check_pattern(pattern);
+
+                    self.engine.flow(value_type, pattern_bound)?;
+
+                    Ok(value_type)
+                }
+                [callee, args @ ..] => {
+                    let callee_type = self.check(asts, *callee)?;
+                    let args_types = args
+                        .iter()
+                        .map(|arg| self.check(asts, *arg))
+                        .collect::<core::Result<Vec<_>>>()?;
+
+                    let (ret_type, ret_bound) = self.engine.var();
+                    // This will only work if the callee is a function
+                    // We need to also be able to handle:
+                    // * objects
+                    // * constructors
+                    // * macros
+                    // * (in future) arrays
+                    let bound = self.engine.func_use(args_types, ret_bound);
+                    self.engine.flow(callee_type, bound)?;
+                    Ok(ret_type)
+                }
+            },
+            SExp::Error => Ok(self.engine.error()),
         }
+    }
+
+    fn check_pattern(&mut self, pattern: Pattern) -> core::Use {
+        match pattern {
+            Pattern::Single(key) => {
+                let (value, bound) = self.engine.var();
+                self.envs.set(&key, value);
+                bound
+            }
+            Pattern::List(patterns) => {
+                let mut bounds = Vec::new();
+                for pattern in patterns {
+                    let bound = self.check_pattern(pattern);
+                    bounds.push(bound);
+                }
+
+                self.engine.list_use(bounds)
+            }
+            Pattern::Object(patterns) => {
+                let mut bounds = Vec::new();
+                for (key, pattern) in patterns {
+                    let bound = self.check_pattern(pattern);
+                    bounds.push((key, bound));
+                }
+
+                self.engine.obj_use(bounds)
+            }
+        }
+    }
+
+    fn is_symbol(asts: &ASTS, sexp: SExpId, name: &str) -> bool {
+        let sexp = asts.get(sexp);
+        match sexp {
+            SExp::Symbol(symbol) => symbol == name,
+            _ => false,
+        }
+    }
+
+    // ------------ DEBUG ---------------
+    pub fn dot(&self) -> String {
+        use std::fmt::Write;
+        let mut buffer = String::new();
+        writeln!(buffer, "digraph G {{").unwrap();
+        for (id, node) in self.engine.iter() {
+            writeln!(buffer, "N{id} [label=\"{id}: {node:?}\"];").unwrap();
+        }
+
+        for (id, node) in self.engine.iter() {
+            match node {
+                core::TypeNode::Var => (),
+                core::TypeNode::Value(vtype_head) => {
+                    for to in vtype_head.ids() {
+                        writeln!(buffer, "N{} -> N{} [color=blue, style=dotted];", id, to).unwrap();
+                    }
+                }
+                core::TypeNode::Use(utype_head) => {
+                    for to in utype_head.ids() {
+                        writeln!(buffer, "N{} -> N{} [color=red, style=dotted];", id, to).unwrap();
+                    }
+                }
+            }
+        }
+
+        let graph = self.engine.reachability();
+        for (id, _) in self.engine.iter() {
+            for succ in graph.successors(id) {
+                writeln!(buffer, "N{} -> N{};", id, succ).unwrap();
+            }
+        }
+
+        writeln!(buffer, "}}").unwrap();
+
+        buffer
+    }
+
+    // ------------ PRINTING ---------------
+
+    pub fn to_string(&self, value: core::Value) -> String {
+        let mut f = String::new();
+        self.fmt_value(value, &mut f);
+        f
+    }
+
+    fn fmt_value_head(&self, value: &core::VTypeHead, f: &mut String) {
+        match value {
+            core::VTypeHead::VBool => f.push_str("Bool"),
+            core::VTypeHead::VNumber => f.push_str("Number"),
+            core::VTypeHead::VString => f.push_str("String"),
+            core::VTypeHead::VError => f.push_str("Error"),
+            core::VTypeHead::VKeyword => f.push_str("Keyword"),
+            core::VTypeHead::VList { items } => {
+                f.push('(');
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        f.push_str(", ");
+                    }
+                    self.fmt_value(*item, f);
+                }
+                f.push(')');
+            }
+            core::VTypeHead::VObj { .. } => todo!(),
+            core::VTypeHead::VFunc { pattern, ret } => {
+                self.fmt_use(*pattern, f);
+                f.push_str(" -> ");
+                self.fmt_value(*ret, f);
+            }
+        }
+    }
+
+    fn fmt_use_head(&self, u: &core::UTypeHead, f: &mut String) {
+        match u {
+            core::UTypeHead::UBool => f.push_str("Bool"),
+            core::UTypeHead::UNumber => f.push_str("Number"),
+            core::UTypeHead::UString => f.push_str("String"),
+            core::UTypeHead::UKeyword => f.push_str("Keyword"),
+            core::UTypeHead::UList { items } => {
+                f.push('(');
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        f.push_str(", ");
+                    }
+                    self.fmt_use(*item, f);
+                }
+                f.push(')');
+            }
+            core::UTypeHead::UListAccess { .. } => todo!(),
+            core::UTypeHead::UObj { .. } => todo!(),
+            core::UTypeHead::UObjAccess { .. } => todo!(),
+            core::UTypeHead::UFunc { .. } => todo!(),
+        }
+    }
+
+    fn fmt_use(&self, use_: core::Use, f: &mut String) {
+        use core::WithID;
+        let mut has_value = false;
+
+        for (i, node) in self
+            .engine
+            .predecessors(use_)
+            .filter_map(|pred| match pred {
+                core::TypeNode::Value(value) => Some(value),
+                _ => None,
+            })
+            .enumerate()
+        {
+            has_value = true;
+            if i > 0 {
+                f.push_str(" | ");
+            }
+            self.fmt_value_head(node, f);
+        }
+
+        if !has_value {
+            self.fmt_use_node(use_.id(), self.engine.get(use_), f);
+        }
+    }
+
+    fn fmt_use_node(&self, id: ID, node: &core::TypeNode, f: &mut String) {
+        match node {
+            core::TypeNode::Var => {
+                let mut first = true;
+                let mut any = true;
+                for (pred, pred_id) in self.engine.successors(id) {
+                    any = false;
+                    if first {
+                        first = false;
+                    } else {
+                        f.push_str(" | ");
+                    }
+                    self.fmt_use_node(pred_id, pred, f);
+                }
+                if any {
+                    f.push_str("Any");
+                }
+            }
+            core::TypeNode::Use(u) => self.fmt_use_head(u, f),
+            node => unreachable!("{:?}", node),
+        }
+    }
+
+    fn fmt_value(&self, value: core::Value, f: &mut String) {
+        match self.engine.get(value) {
+            core::TypeNode::Value(value) => {
+                self.fmt_value_head(value, f);
+            }
+            core::TypeNode::Use(_u) => unreachable!(),
+            core::TypeNode::Var => {
+                let mut first = true;
+                let mut any = true;
+                for pred in self
+                    .engine
+                    .predecessors(value)
+                    .filter_map(|pred| match pred {
+                        core::TypeNode::Value(value) => Some(value),
+                        _ => None,
+                    })
+                {
+                    any = false;
+                    if first {
+                        first = false;
+                    } else {
+                        f.push_str(" | ");
+                    }
+                    self.fmt_value_head(pred, f);
+                }
+                if any {
+                    f.push_str("Any");
+                }
+            }
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+struct Env {
+    vars: BTreeMap<String, core::Value>,
+}
+
+#[derive(Debug)]
+struct Envs {
+    envs: Vec<Env>,
+}
+
+impl Default for Envs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Envs {
+    pub fn new() -> Self {
+        Self {
+            envs: vec![Env::default()],
+        }
+    }
+
+    pub fn set(&mut self, name: &str, value: core::Value) {
+        self.envs
+            .last_mut()
+            .unwrap()
+            .vars
+            .insert(name.to_string(), value);
+    }
+
+    pub fn get(&self, name: &str) -> Option<&core::Value> {
+        self.envs.iter().rev().find_map(|env| env.vars.get(name))
+    }
+
+    pub fn push(&mut self) {
+        self.envs.push(Env::default());
+    }
+
+    pub fn pop(&mut self) -> Option<BTreeMap<String, core::Value>> {
+        self.envs.pop().map(|env| env.vars)
+    }
+
+    pub fn with<T>(&mut self, f: impl FnOnce() -> T) -> T {
+        self.push();
+        let result = f();
+        self.pop();
+        result
     }
 }
 
@@ -61,11 +391,41 @@ mod tests {
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
+            let root = ast.root_id().unwrap();
             let mut env = TypeEnv::default();
-            let infered = env.infer(ast, ast.root_id().unwrap());
-            let result = env.get(infered);
 
-            format!("{:?}", result)
+            match env.check(&asts, root) {
+                Ok(infered) => env.to_string(infered),
+                Err(e) => format!("ERROR: {:?}", e),
+            }
+        })
+    }
+
+    #[test]
+    fn type_dot() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "type-dot", |input, _deps, _args| {
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).expect("Failed to parse");
+            let root = ast.root_id().unwrap();
+            let mut env = TypeEnv::default();
+
+            _ = env.check(&asts, root);
+
+            env.dot()
+        })
+    }
+
+    #[test]
+    fn type_env() -> test_runner::Result {
+        test_runner::test_snapshots("docs/", "type-env", |input, _deps, _args| {
+            let mut asts = ASTS::new();
+            let ast = asts.parse(input).expect("Failed to parse");
+            let root = ast.root_id().unwrap();
+            let mut env = TypeEnv::default();
+
+            _ = env.check(&asts, root);
+
+            format!("{:#?}", env)
         })
     }
 }

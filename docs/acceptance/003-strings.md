@@ -7,3 +7,7 @@ Basic string
 ```json
 "5"
 ```
+
+```type
+String
+```

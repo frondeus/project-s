@@ -12,6 +12,16 @@ Lists:
 6.0
 ```
 
+```
+(let (:a :b :c) (list 1 2 3))
+
+a
+```
+
+```type
+Number
+```
+
 Destructing nested lists
 
 ```
@@ -22,6 +32,16 @@ Destructing nested lists
 
 ```json
 10.0
+```
+
+```
+(let (:a (:b :c) :d) (list 1 (list 2 3) 4))
+
+b
+```
+
+```type
+Number
 ```
 
 
