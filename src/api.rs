@@ -3,7 +3,106 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use crate::runtime::value::Ref;
 use crate::runtime::{Runtime, Value};
+
+//------------- IntoValue and FromValue ------------
+
+impl<T: IntoValue> IntoValue for Result<T, String> {
+    fn try_into_value(self) -> Result<Value, String> {
+        match self {
+            Ok(v) => v.try_into_value(),
+            Err(e) => Ok(Value::Error(e)),
+        }
+    }
+}
+
+impl FromValue for Value {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        Ok(value)
+    }
+}
+impl IntoValue for Value {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(self)
+    }
+}
+
+impl FromValue for f64 {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Number(n) => Ok(n),
+            value => Err(format!("Expected number, got {:?}", value)),
+        }
+    }
+}
+
+impl IntoValue for f64 {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(Value::Number(self))
+    }
+}
+
+impl FromValue for i32 {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Number(n) => Ok(n as i32),
+            value => Err(format!("Expected number, got {:?}", value)),
+        }
+    }
+}
+
+impl IntoValue for i32 {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(Value::Number(self as f64))
+    }
+}
+
+impl FromValue for bool {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Bool(b) => Ok(b),
+            value => Err(format!("Expected bool, got {:?}", value)),
+        }
+    }
+}
+
+impl IntoValue for bool {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(Value::Bool(self))
+    }
+}
+
+impl FromValue for String {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::String(s) => Ok(s),
+            value => Err(format!("Expected string, got {:?}", value)),
+        }
+    }
+}
+
+impl IntoValue for String {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(Value::String(self))
+    }
+}
+
+impl FromValue for Ref {
+    fn try_from_value(value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Ref(r) => Ok(r),
+            value => Err(format!("Expected ref, got {:?}", value)),
+        }
+    }
+}
+impl IntoValue for Ref {
+    fn try_into_value(self) -> Result<Value, String> {
+        Ok(Value::Ref(self))
+    }
+}
+
+// ------------- Definitions ------------
 
 pub trait IntoValue {
     fn try_into_value(self) -> Result<Value, String>;
@@ -46,6 +145,10 @@ impl<T> Rest<T>
 where
     T: FromValue,
 {
+    pub fn new(values: Vec<T>) -> Self {
+        Self { values }
+    }
+
     fn try_from_values(values: Rest<Value>) -> Result<Self, String> {
         let values = values
             .values
@@ -53,6 +156,14 @@ where
             .map(T::try_from_value)
             .collect::<Result<Vec<T>, String>>()?;
         Ok(Self { values })
+    }
+
+    pub fn with_arity<const N: usize>(self) -> Result<[T; N], String>
+    where
+        T: std::fmt::Debug,
+    {
+        assert_arity(N, &self.values)?;
+        Ok(self.values.try_into().unwrap())
     }
 }
 impl<T> From<Rest<T>> for Vec<T> {
@@ -81,7 +192,7 @@ impl<T> IntoIterator for Rest<T> {
     }
 }
 
-fn assert_arity(len: usize, values: &[Value]) -> Result<(), String> {
+fn assert_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
     if values.len() != len {
         return Err(format!("Expected {len} arguments, got {}", values.len()));
     }
@@ -117,8 +228,8 @@ tuple_len!(
 // 2. With arguments in the middle
 // 3. With rest at the end
 
-struct WithRuntime;
-struct WithRest;
+pub struct WithRuntime;
+pub struct WithRest;
 // struct WithArgs;
 
 macro_rules! fnlike {
@@ -411,95 +522,6 @@ fnlike!(
 fnlike!(
     RTRE, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16,
 );
-
-/*
-impl<F, O, A1> IntoNativeFunction<(O, A1, WithRuntime)> for F
-where
-    F: Fn(&mut Runtime, A1) -> O,
-    F: 'static,
-    O: IntoValue + 'static,
-    A1: FromValue + 'static,
-{
-    fn into_native_function(self) -> Box<dyn NativeFunction> {
-        FnLike::<F, (O, A1, WithRuntime)>::box_new(self)
-    }
-}
-
-impl<F, O, A1> NativeFunction for FnLike<F, (O, A1, WithRuntime)>
-where
-    F: Fn(&mut Runtime, A1) -> O,
-    O: IntoValue,
-    A1: FromValue,
-{
-    fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
-        let [p1] = artiy::<1>(values)?;
-
-        let p1 = A1::try_from_value(p1)?;
-
-        let o = (self.f)(rt, p1);
-
-        O::try_into_value(o)
-    }
-}
-
-impl<F, O, A1, R> IntoNativeFunction<(O, A1, R, WithRest)> for F
-where
-    F: Fn(A1, Rest<R>) -> O,
-    F: 'static,
-    O: IntoValue + 'static,
-    A1: FromValue + 'static,
-    R: FromValue + 'static,
-{
-    fn into_native_function(self) -> Box<dyn NativeFunction> {
-        FnLike::<F, (O, A1, R, WithRest)>::box_new(self)
-    }
-}
-
-impl<F, O, A1, R> NativeFunction for FnLike<F, (O, A1, R, WithRest)>
-where
-    F: Fn(A1, Rest<R>) -> O,
-    A1: FromValue,
-    R: FromValue,
-    O: IntoValue,
-{
-    fn try_call(&self, _rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
-        let ([p1], rest) = at_least::<1>(values)?;
-        let p1 = A1::try_from_value(p1)?;
-        let rest = Rest::<R>::try_from_values(rest)?;
-        let o = (self.f)(p1, rest);
-        O::try_into_value(o)
-    }
-}
-*/
-
-//-------------
-//
-
-impl FromValue for Value {
-    fn try_from_value(value: Value) -> Result<Self, String> {
-        Ok(value)
-    }
-}
-impl IntoValue for Value {
-    fn try_into_value(self) -> Result<Value, String> {
-        Ok(self)
-    }
-}
-
-impl FromValue for i32 {
-    fn try_from_value(value: Value) -> Result<Self, String> {
-        match value {
-            Value::Number(n) => Ok(n as i32),
-            _ => Err(format!("Expected number, got {:?}", value)),
-        }
-    }
-}
-
-impl IntoValue for i32 {
-    fn try_into_value(self) -> Result<Value, String> {
-        Ok(Value::Number(self as f64))
-    }
-}
 
 #[cfg(test)]
 mod tests {

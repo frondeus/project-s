@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::{cell::RefCell, collections::BTreeMap, ops::Deref, rc::Rc};
 
 use crate::{
     ast::{AST, SExp, SExpId},
@@ -20,9 +20,20 @@ pub enum Value {
     Thunk(Thunk),
     Constructor(Constructor),
     /// Mutable reference that lives on a heap
-    Ref(Rc<RefCell<Value>>),
+    Ref(Ref),
     /// For error handling
     Error(String),
+}
+
+#[derive(Clone, Debug)]
+pub struct Ref(Rc<RefCell<Value>>);
+
+impl Deref for Ref {
+    type Target = Rc<RefCell<Value>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 #[derive(Clone)]
@@ -151,12 +162,12 @@ impl Value {
     }
 
     pub fn ref_(val: Value) -> Self {
-        Value::Ref(Rc::new(RefCell::new(val)))
+        Value::Ref(Ref(Rc::new(RefCell::new(val))))
     }
 
     pub fn deref(&self) -> Value {
         match self {
-            Value::Ref(rc) => rc.borrow().clone(),
+            Value::Ref(rc) => rc.0.borrow().clone(),
             _ => self.clone(),
         }
     }
@@ -207,7 +218,7 @@ impl Value {
         }
     }
 
-    pub fn as_ref(&self) -> Option<&RefCell<Value>> {
+    pub fn as_ref(&self) -> Option<&Ref> {
         match self {
             Value::Ref(rc) => Some(rc),
             _ => None,

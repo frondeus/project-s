@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::collections::BTreeMap;
 
 use crate::runtime::value::Value;
 
@@ -57,6 +57,6 @@ impl Runtime {
 
     pub fn new_ref_obj(&self, obj: BTreeMap<String, Value>) -> Value {
         let self_ = Value::Object(obj);
-        Value::Ref(Rc::new(RefCell::new(self_)))
+        Value::ref_(self_)
     }
 }

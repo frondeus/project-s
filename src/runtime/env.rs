@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
+    api::IntoNativeFunction,
     ast::SExpId,
     builder::{ASTBuilder, error},
 };
@@ -21,20 +22,6 @@ impl Env {
         self.vars.keys().map(|k| k.as_str())
     }
 
-    pub fn with_fn(
-        mut self,
-        name: impl ToString,
-        body: impl Fn(&mut Runtime, Vec<Value>) -> Value + 'static,
-    ) -> Self {
-        self.vars.insert(
-            name.to_string(),
-            Value::Function(Function::Rust {
-                body: Rc::new(body),
-            }),
-        );
-        self
-    }
-
     pub fn with_macro(
         mut self,
         name: impl ToString,
@@ -49,15 +36,16 @@ impl Env {
         self
     }
 
-    pub fn with_try_fn(
-        self,
-        name: &str,
-        body: impl Fn(&mut Runtime, Vec<Value>) -> Result<Value, String> + 'static,
-    ) -> Self {
-        self.with_fn(name, move |rt, args| {
-            let result = body(rt, args);
-            result.unwrap_or_else(Value::Error)
-        })
+    pub fn with_fn<CTX>(mut self, name: impl ToString, body: impl IntoNativeFunction<CTX>) -> Self {
+        let body = body.into_native_function();
+
+        self.vars.insert(
+            name.to_string(),
+            Value::Function(Function::Rust {
+                body: Rc::new(move |rt, values| body.call(rt, values)),
+            }),
+        );
+        self
     }
 
     pub fn with_try_macro(

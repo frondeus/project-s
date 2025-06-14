@@ -20,7 +20,7 @@ mod quotes;
 pub mod s_std;
 mod structs;
 mod thunks;
-mod value;
+pub mod value;
 
 #[macro_export]
 macro_rules! try_err {
