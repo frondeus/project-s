@@ -224,6 +224,73 @@ where
 
 // ------------- Definitions ------------
 
+pub trait OverloadedFunction {
+    fn call(&self, rt: &mut Runtime, values: Vec<Value>) -> Value;
+}
+
+impl<T> OverloadedFunction for (T,)
+where
+    T: NativeFunction,
+{
+    fn call(&self, rt: &mut Runtime, values: Vec<Value>) -> Value {
+        let (f,) = self;
+        f.call(rt, values)
+    }
+}
+
+impl<T1, T2> OverloadedFunction for (T1, T2)
+where
+    T1: NativeFunction,
+    T2: NativeFunction,
+{
+    fn call(&self, rt: &mut Runtime, values: Vec<Value>) -> Value {
+        let (f1, f2) = self;
+        if f1.signature_matches(&values) {
+            return f1.call(rt, values);
+        }
+        if f2.signature_matches(&values) {
+            return f2.call(rt, values);
+        }
+        Value::Error("Calling function with no matching signature".into())
+    }
+}
+
+pub trait IntoOverloadedFunction<Ctx> {
+    fn into_overloaded_function(self) -> Box<dyn OverloadedFunction>;
+}
+
+impl<T, Ctx> IntoOverloadedFunction<Ctx> for T
+where
+    T: IntoNativeFunction<Ctx>,
+{
+    fn into_overloaded_function(self) -> Box<dyn OverloadedFunction> {
+        Box::new((self.into_native_function(),))
+    }
+}
+
+impl<T, Ctx> IntoOverloadedFunction<(Ctx,)> for (T,)
+where
+    T: IntoNativeFunction<Ctx>,
+{
+    fn into_overloaded_function(self) -> Box<dyn OverloadedFunction> {
+        let (f,) = self;
+        let f = f.into_native_function();
+        Box::new((f,))
+    }
+}
+impl<T1, T2, Ctx1, Ctx2> IntoOverloadedFunction<(Ctx1, Ctx2)> for (T1, T2)
+where
+    T1: IntoNativeFunction<Ctx1>,
+    T2: IntoNativeFunction<Ctx2>,
+{
+    fn into_overloaded_function(self) -> Box<dyn OverloadedFunction> {
+        let (f1, f2) = self;
+        let f1 = f1.into_native_function();
+        let f2 = f2.into_native_function();
+        Box::new((f1, f2))
+    }
+}
+
 pub trait IntoValue {
     fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String>;
 }
@@ -241,6 +308,16 @@ pub trait NativeFunction {
     }
 
     fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String>;
+}
+
+impl NativeFunction for Box<dyn NativeFunction> {
+    fn signature_matches(&self, values: &[Value]) -> bool {
+        self.as_ref().signature_matches(values)
+    }
+
+    fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+        self.as_ref().try_call(rt, values)
+    }
 }
 
 pub trait IntoNativeFunction<Ctx> {

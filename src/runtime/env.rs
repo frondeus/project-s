@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
-    api::IntoNativeFunction,
+    api::IntoOverloadedFunction,
     ast::SExpId,
     builder::{ASTBuilder, error},
 };
@@ -36,8 +36,12 @@ impl Env {
         self
     }
 
-    pub fn with_fn<CTX>(mut self, name: impl ToString, body: impl IntoNativeFunction<CTX>) -> Self {
-        let body = body.into_native_function();
+    pub fn with_fn<CTX>(
+        mut self,
+        name: impl ToString,
+        body: impl IntoOverloadedFunction<CTX>,
+    ) -> Self {
+        let body = body.into_overloaded_function();
 
         self.vars.insert(
             name.to_string(),
