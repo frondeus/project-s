@@ -16,6 +16,8 @@ pub mod types;
 
 pub mod modules;
 
+pub mod api;
+
 pub mod runtime;
 pub use runtime::s_std;
 

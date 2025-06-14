@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, rc::Rc};
 pub use env::Env;
 use env::Envs;
 // use structs::Structs;
-use value::{Function, InnerThunk, Macro, Thunk, Value};
+pub use value::{Function, InnerThunk, Macro, Thunk, Value};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
