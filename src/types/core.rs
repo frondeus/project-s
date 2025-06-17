@@ -80,11 +80,32 @@ pub enum UTypeHead {
     UNumber,
     UString,
     UKeyword,
-    UList { items: Vec<Use> },
-    UListAccess { index: Use },
-    UObj { fields: HashMap<String, Use> },
-    UObjAccess { field: (String, Use) },
-    UFunc { args: Value, ret: Use },
+    /// A tuple where each element might have a different type.
+    /// Tuple has a fixed number of elements.
+    UTuple {
+        items: Vec<Use>,
+    },
+    /// Access to a specific element of a tuple.
+    UTupleAccess {
+        index: Use,
+    },
+    /// A list where all elements have the same type.
+    /// It might have a fixed number of elements but it doesnt have to.
+    UList {
+        items: Use,
+        min_len: usize,
+        max_len: Option<usize>,
+    },
+    UObj {
+        fields: HashMap<String, Use>,
+    },
+    UObjAccess {
+        field: (String, Use),
+    },
+    UFunc {
+        args: Value,
+        ret: Use,
+    },
 }
 
 impl UTypeHead {
@@ -92,11 +113,18 @@ impl UTypeHead {
         let mut ids = Vec::new();
         match self {
             UTypeHead::UBool | UTypeHead::UNumber | UTypeHead::UString | UTypeHead::UKeyword => (),
-            UTypeHead::UList { items } => {
+            UTypeHead::UTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
             }
-            UTypeHead::UListAccess { index } => {
+            UTypeHead::UTupleAccess { index } => {
                 ids.push(index.id());
+            }
+            UTypeHead::UList {
+                items,
+                min_len,
+                max_len,
+            } => {
+                ids.push(items.id());
             }
             UTypeHead::UObj { fields } => {
                 ids.extend(fields.values().copied().map(WithID::id));
@@ -261,13 +289,19 @@ impl TypeCheckerCore {
         self.new_val(VTypeHead::VList { items })
     }
 
-    pub fn list_use(&mut self, items: Vec<Use>) -> Use {
-        // self.new_use(UTypeHead::UListAccess { index })
-        // todo!("LIST USE: {items:?}")
-        self.new_use(UTypeHead::UList { items })
+    pub fn tuple_use(&mut self, items: Vec<Use>) -> Use {
+        self.new_use(UTypeHead::UTuple { items })
     }
-    pub fn list_access_use(&mut self, index: Use) -> Use {
-        self.new_use(UTypeHead::UListAccess { index })
+    pub fn tuple_access_use(&mut self, index: Use) -> Use {
+        self.new_use(UTypeHead::UTupleAccess { index })
+    }
+
+    pub fn list_use(&mut self, items: Use, min_len: usize, max_len: Option<usize>) -> Use {
+        self.new_use(UTypeHead::UList {
+            items,
+            min_len,
+            max_len,
+        })
     }
 
     pub fn obj(&mut self, fields: Vec<(String, Value)>) -> Value {
@@ -330,7 +364,28 @@ impl TypeCheckerCore {
                     Ok(())
                 }
             },
-            (VList { items }, UList { items: args }) => {
+            (
+                VList { items },
+                &UList {
+                    items: args,
+                    min_len,
+                    max_len,
+                },
+            ) => {
+                if items.len() < min_len {
+                    return Err(TypeError::WrongNumberOfArguments(min_len, items.len()));
+                }
+                if let Some(max_len) = max_len {
+                    if items.len() > max_len {
+                        return Err(TypeError::WrongNumberOfArguments(max_len, items.len()));
+                    }
+                }
+                for item in items {
+                    out.push((*item, args));
+                }
+                Ok(())
+            }
+            (VList { items }, UTuple { items: args }) => {
                 if items.len() != args.len() {
                     return Err(TypeError::WrongNumberOfArguments(args.len(), items.len()));
                 }

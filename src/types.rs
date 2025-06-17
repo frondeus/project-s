@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use core::ID;
+use core::{ID, WithID};
 use std::collections::BTreeMap;
 
 use crate::{
@@ -11,7 +11,6 @@ use crate::{
 mod core;
 mod reachability;
 
-
 #[derive(Default, Debug)]
 pub struct TypeEnv {
     engine: core::TypeCheckerCore,
@@ -19,6 +18,27 @@ pub struct TypeEnv {
 }
 
 impl TypeEnv {
+    pub fn with_prelude(mut self) -> Self {
+        self.engine.number();
+        self.engine.string();
+        self.engine.bool();
+        self.engine.keyword();
+
+        let pattern = Pattern::Single("args".into());
+        self.envs.push();
+        let pattern_bound = self.check_pattern(pattern);
+        let ret_type = *self.envs.get("args").unwrap();
+        let (_any_var, any_bound) = self.engine.var();
+        let list_bound = self.engine.list_use(any_bound, 0, None);
+        self.engine.flow(ret_type, list_bound).unwrap();
+        self.envs.pop();
+
+        let func = self.engine.func(pattern_bound, ret_type);
+        self.envs.set("list", func);
+
+        self
+    }
+
     fn check(&mut self, asts: &ASTS, id: SExpId) -> core::Result<core::Value> {
         let sexp = asts.get(id);
         match sexp {
@@ -132,7 +152,7 @@ impl TypeEnv {
                     bounds.push(bound);
                 }
 
-                self.engine.list_use(bounds)
+                self.engine.tuple_use(bounds)
             }
             Pattern::Object(patterns) => {
                 let mut bounds = Vec::new();
@@ -155,13 +175,15 @@ impl TypeEnv {
     }
 
     // ------------ DEBUG ---------------
-    pub fn dot(&self) -> String {
+    pub fn dot(&self, root: core::Value) -> String {
         use std::fmt::Write;
         let mut buffer = String::new();
         writeln!(buffer, "digraph G {{").unwrap();
         for (id, node) in self.engine.iter() {
             writeln!(buffer, "N{id} [label=\"{id}: {node:?}\"];").unwrap();
         }
+
+        writeln!(buffer, "START -> N{}", root.id()).unwrap();
 
         for (id, node) in self.engine.iter() {
             match node {
@@ -195,11 +217,12 @@ impl TypeEnv {
 
     pub fn to_string(&self, value: core::Value) -> String {
         let mut f = String::new();
-        self.fmt_value(value, &mut f);
+        let mut visited = Vec::new();
+        self.fmt_value(value, &mut f, &mut visited);
         f
     }
 
-    fn fmt_value_head(&self, value: &core::VTypeHead, f: &mut String) {
+    fn fmt_value_head(&self, value: &core::VTypeHead, f: &mut String, visited: &mut Vec<ID>) {
         match value {
             core::VTypeHead::VBool => f.push_str("Bool"),
             core::VTypeHead::VNumber => f.push_str("Number"),
@@ -212,44 +235,64 @@ impl TypeEnv {
                     if i > 0 {
                         f.push_str(", ");
                     }
-                    self.fmt_value(*item, f);
+                    self.fmt_value(*item, f, visited);
                 }
                 f.push(')');
             }
             core::VTypeHead::VObj { .. } => todo!(),
             core::VTypeHead::VFunc { pattern, ret } => {
-                self.fmt_use(*pattern, f);
+                self.fmt_use(*pattern, f, visited);
                 f.push_str(" -> ");
-                self.fmt_value(*ret, f);
+                self.fmt_value(*ret, f, visited);
             }
         }
     }
 
-    fn fmt_use_head(&self, u: &core::UTypeHead, f: &mut String) {
+    fn fmt_use_head(&self, u: &core::UTypeHead, f: &mut String, visited: &mut Vec<ID>) {
         match u {
             core::UTypeHead::UBool => f.push_str("Bool"),
             core::UTypeHead::UNumber => f.push_str("Number"),
             core::UTypeHead::UString => f.push_str("String"),
             core::UTypeHead::UKeyword => f.push_str("Keyword"),
-            core::UTypeHead::UList { items } => {
+            core::UTypeHead::UTuple { items } => {
                 f.push('(');
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 {
                         f.push_str(", ");
                     }
-                    self.fmt_use(*item, f);
+                    self.fmt_use(*item, f, visited);
                 }
                 f.push(')');
             }
-            core::UTypeHead::UListAccess { .. } => todo!(),
+            core::UTypeHead::UList {
+                items,
+                min_len,
+                max_len,
+            } => {
+                f.push('[');
+                self.fmt_use(*items, f, visited);
+                f.push(';');
+                f.push_str(&min_len.to_string());
+                if let Some(max_len) = max_len {
+                    f.push(':');
+                    f.push_str(&max_len.to_string());
+                }
+                f.push(']');
+            }
+            core::UTypeHead::UTupleAccess { .. } => todo!(),
             core::UTypeHead::UObj { .. } => todo!(),
             core::UTypeHead::UObjAccess { .. } => todo!(),
             core::UTypeHead::UFunc { .. } => todo!(),
         }
     }
 
-    fn fmt_use(&self, use_: core::Use, f: &mut String) {
+    fn fmt_use(&self, use_: core::Use, f: &mut String, visited: &mut Vec<ID>) {
         use core::WithID;
+        if self.check_visited(use_, visited) {
+            f.push_str("<recursive>");
+            return;
+        }
+
         let mut has_value = false;
 
         for (i, node) in self
@@ -265,15 +308,21 @@ impl TypeEnv {
             if i > 0 {
                 f.push_str(" | ");
             }
-            self.fmt_value_head(node, f);
+            self.fmt_value_head(node, f, visited);
         }
 
         if !has_value {
-            self.fmt_use_node(use_.id(), self.engine.get(use_), f);
+            self.fmt_use_node(use_.id(), self.engine.get(use_), f, visited);
         }
+        visited.pop();
     }
 
-    fn fmt_use_node(&self, id: ID, node: &core::TypeNode, f: &mut String) {
+    fn fmt_use_node(&self, id: ID, node: &core::TypeNode, f: &mut String, visited: &mut Vec<ID>) {
+        if self.check_visited(id, visited) {
+            f.push_str("<recursive>");
+            return;
+        }
+
         match node {
             core::TypeNode::Var => {
                 let mut first = true;
@@ -285,21 +334,35 @@ impl TypeEnv {
                     } else {
                         f.push_str(" | ");
                     }
-                    self.fmt_use_node(pred_id, pred, f);
+                    self.fmt_use_node(pred_id, pred, f, visited);
                 }
                 if any {
                     f.push_str("Any");
                 }
             }
-            core::TypeNode::Use(u) => self.fmt_use_head(u, f),
+            core::TypeNode::Use(u) => self.fmt_use_head(u, f, visited),
             node => unreachable!("{:?}", node),
         }
+        visited.pop();
     }
 
-    fn fmt_value(&self, value: core::Value, f: &mut String) {
+    fn check_visited(&self, id: impl WithID, visited: &mut Vec<ID>) -> bool {
+        let id = id.id();
+        if visited.contains(&id) {
+            return true;
+        }
+        visited.push(id);
+        false
+    }
+
+    fn fmt_value(&self, value: core::Value, f: &mut String, visited: &mut Vec<ID>) {
+        if self.check_visited(value, visited) {
+            f.push_str("<recursive>");
+            return;
+        }
         match self.engine.get(value) {
             core::TypeNode::Value(value) => {
-                self.fmt_value_head(value, f);
+                self.fmt_value_head(value, f, visited);
             }
             core::TypeNode::Use(_u) => unreachable!(),
             core::TypeNode::Var => {
@@ -319,13 +382,14 @@ impl TypeEnv {
                     } else {
                         f.push_str(" | ");
                     }
-                    self.fmt_value_head(pred, f);
+                    self.fmt_value_head(pred, f, visited);
                 }
                 if any {
                     f.push_str("Any");
                 }
             }
         }
+        visited.pop();
     }
 }
 
@@ -380,6 +444,7 @@ impl Envs {
     }
 }
 
+#[allow(clippy::print_stderr)]
 #[cfg(test)]
 mod tests {
     use crate::ast::ASTS;
@@ -389,43 +454,43 @@ mod tests {
     #[test]
     fn type_() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
+            eprintln!("Before parsing");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
-            let root = ast.root_id().unwrap();
-            let mut env = TypeEnv::default();
+            eprintln!("After parsing");
 
-            match env.check(&asts, root) {
-                Ok(infered) => env.to_string(infered),
-                Err(e) => format!("ERROR: {:?}", e),
-            }
+            let root = ast.root_id().unwrap();
+
+            eprintln!("Before prelude");
+
+            let mut env = TypeEnv::default().with_prelude();
+
+            eprintln!("After prelude");
+
+            eprintln!("Before infering");
+
+            let infered = match env.check(&asts, root) {
+                Ok(infered) => infered,
+                Err(e) => return format!("ERROR: {:?}", e),
+            };
+
+            eprintln!("After infering");
+
+            env.to_string(infered)
         })
     }
 
     #[test]
     fn type_dot() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "type-dot", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", "graphviz", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
             let root = ast.root_id().unwrap();
-            let mut env = TypeEnv::default();
+            let mut env = TypeEnv::default().with_prelude();
 
-            _ = env.check(&asts, root);
+            let root = env.check(&asts, root).unwrap();
 
-            env.dot()
-        })
-    }
-
-    #[test]
-    fn type_env() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "type-env", |input, _deps, _args| {
-            let mut asts = ASTS::new();
-            let ast = asts.parse(input).expect("Failed to parse");
-            let root = ast.root_id().unwrap();
-            let mut env = TypeEnv::default();
-
-            _ = env.check(&asts, root);
-
-            format!("{:#?}", env)
+            env.dot(root)
         })
     }
 }

@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md:70
+```
+(fn (:x) x)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md
++++ type-007
+@@ -72,7 +72,7 @@
+ ```
+ 
+ ```type
+-(Any) -> Any
++<recursive> -> Any
+ ```
+ 
+ ```
