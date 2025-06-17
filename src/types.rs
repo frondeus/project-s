@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use core::{ID, WithID};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -24,19 +24,29 @@ impl TypeEnv {
         self.engine.bool();
         self.engine.keyword();
 
-        let pattern = Pattern::Single("args".into());
-        self.envs.push();
-        let pattern_bound = self.check_pattern(pattern);
-        let ret_type = *self.envs.get("args").unwrap();
-        let (_any_var, any_bound) = self.engine.var();
-        let list_bound = self.engine.list_use(any_bound, 0, None);
-        self.engine.flow(ret_type, list_bound).unwrap();
-        self.envs.pop();
+        self.envs.set(
+            "list",
+            core::Scheme::Polymorphic(Rc::new(|this, _asts| {
+                let pattern = Pattern::Single("args".into());
+                this.envs.push();
+                let pattern_bound = this.check_pattern(pattern);
+                let ret_type = this.envs.get("args").unwrap();
+                let ret_type = ret_type.as_mono().unwrap();
+                let (_any_var, any_bound) = this.engine.var();
+                let list_bound = this.engine.list_use(any_bound, 0, None);
+                this.engine.flow(ret_type, list_bound).unwrap();
+                this.envs.pop();
 
-        let func = self.engine.func(pattern_bound, ret_type);
-        self.envs.set("list", func);
+                let func = this.engine.func(pattern_bound, ret_type);
+                Ok(func)
+            })),
+        );
 
         self
+    }
+
+    fn null(&mut self) -> core::Value {
+        self.engine.list(vec![])
     }
 
     fn check(&mut self, asts: &ASTS, id: SExpId) -> core::Result<core::Value> {
@@ -46,11 +56,16 @@ impl TypeEnv {
             SExp::String(_) => Ok(self.engine.string()),
             SExp::Bool(_) => Ok(self.engine.bool()),
             SExp::Keyword(_) => Ok(self.engine.keyword()),
-            SExp::Symbol(symbol) => self
-                .envs
-                .get(symbol)
-                .copied()
-                .ok_or_else(|| core::TypeError::UndefinedVariable(symbol.to_owned())),
+            SExp::Symbol(symbol) => match self.envs.get(symbol) {
+                Some(scheme) => match scheme {
+                    core::Scheme::Monomorphic(value) => Ok(*value),
+                    core::Scheme::Polymorphic(f) => {
+                        let f = f.clone();
+                        f(self, asts)
+                    }
+                },
+                None => Err(core::TypeError::UndefinedVariable(symbol.to_owned())),
+            },
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
                 [] => Ok(self.engine.list(vec![])),
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
@@ -59,8 +74,13 @@ impl TypeEnv {
                     self.engine.flow(cond_type, bound)?;
 
                     let then_type = self.check(asts, *then_branch)?;
-                    // TODO: Force that then_type is a `()` type
-                    Ok(then_type)
+                    let else_type = self.null();
+
+                    let (merged, merged_bound) = self.engine.var();
+                    self.engine.flow(then_type, merged_bound)?;
+                    self.engine.flow(else_type, merged_bound)?;
+
+                    Ok(merged)
                 }
                 [first, condition, then_branch, else_branch]
                     if Self::is_symbol(asts, *first, "if") =>
@@ -108,12 +128,11 @@ impl TypeEnv {
                     let pattern = Pattern::parse(*pattern, asts)
                         .map_err(core::TypeError::UnreadablePattern)?;
 
-                    let value_type = self.check(asts, *value)?;
-                    let pattern_bound = self.check_pattern(pattern);
+                    let value = *value;
 
-                    self.engine.flow(value_type, pattern_bound)?;
+                    self.polymorphic_check_pattern(pattern, value);
 
-                    Ok(value_type)
+                    Ok(self.null())
                 }
                 [callee, args @ ..] => {
                     let callee_type = self.check(asts, *callee)?;
@@ -138,11 +157,43 @@ impl TypeEnv {
         }
     }
 
+    fn polymorphic_check_pattern(&mut self, pattern: Pattern, value: SExpId) {
+        match pattern {
+            Pattern::Single(key) => {
+                self.envs.set(
+                    &key,
+                    core::Scheme::Polymorphic(Rc::new(move |this, asts| {
+                        let value_type = this.check(asts, value)?;
+                        Ok(value_type)
+                    })),
+                );
+            }
+            Pattern::List(patterns) => {
+                let mut bounds = Vec::new();
+                for pattern in patterns {
+                    let bound = self.check_pattern(pattern);
+                    bounds.push(bound);
+                }
+
+                self.engine.tuple_use(bounds);
+            }
+            Pattern::Object(patterns) => {
+                let mut bounds = Vec::new();
+                for (key, pattern) in patterns {
+                    let bound = self.check_pattern(pattern);
+                    bounds.push((key, bound));
+                }
+
+                self.engine.obj_use(bounds);
+            }
+        }
+    }
+
     fn check_pattern(&mut self, pattern: Pattern) -> core::Use {
         match pattern {
             Pattern::Single(key) => {
                 let (value, bound) = self.engine.var();
-                self.envs.set(&key, value);
+                self.envs.set(&key, core::Scheme::Monomorphic(value));
                 bound
             }
             Pattern::List(patterns) => {
@@ -395,7 +446,7 @@ impl TypeEnv {
 
 #[derive(Default, Debug)]
 struct Env {
-    vars: BTreeMap<String, core::Value>,
+    vars: BTreeMap<String, core::Scheme>,
 }
 
 #[derive(Debug)]
@@ -416,7 +467,7 @@ impl Envs {
         }
     }
 
-    pub fn set(&mut self, name: &str, value: core::Value) {
+    pub fn set(&mut self, name: &str, value: core::Scheme) {
         self.envs
             .last_mut()
             .unwrap()
@@ -424,7 +475,7 @@ impl Envs {
             .insert(name.to_string(), value);
     }
 
-    pub fn get(&self, name: &str) -> Option<&core::Value> {
+    pub fn get(&self, name: &str) -> Option<&core::Scheme> {
         self.envs.iter().rev().find_map(|env| env.vars.get(name))
     }
 
@@ -432,7 +483,7 @@ impl Envs {
         self.envs.push(Env::default());
     }
 
-    pub fn pop(&mut self) -> Option<BTreeMap<String, core::Value>> {
+    pub fn pop(&mut self) -> Option<BTreeMap<String, core::Scheme>> {
         self.envs.pop().map(|env| env.vars)
     }
 

@@ -1,8 +1,10 @@
 #![allow(unused_variables)]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use thiserror::Error;
+
+use crate::ast::ASTS;
 
 use super::reachability::Reachability;
 
@@ -33,6 +35,32 @@ impl WithID for Use {
 impl WithID for Value {
     fn id(self) -> ID {
         self.0
+    }
+}
+
+pub type PolyFunc = Rc<dyn Fn(&mut super::TypeEnv, &ASTS) -> Result<Value>>;
+
+#[derive(Clone)]
+pub enum Scheme {
+    Monomorphic(Value),
+    Polymorphic(PolyFunc),
+}
+
+impl Scheme {
+    pub fn as_mono(&self) -> Option<Value> {
+        match self {
+            Self::Monomorphic(value) => Some(*value),
+            Self::Polymorphic(_) => None,
+        }
+    }
+}
+
+impl std::fmt::Debug for Scheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Monomorphic(arg0) => f.debug_tuple("Monomorphic").field(arg0).finish(),
+            Self::Polymorphic(arg0) => f.debug_tuple("Polymorphic").finish(),
+        }
     }
 }
 

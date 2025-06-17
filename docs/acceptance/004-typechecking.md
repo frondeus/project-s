@@ -38,7 +38,7 @@ x
 ```
 
 ```type
-String | Number
+Number | String
 ```
 
 ## If else the same type 
@@ -62,7 +62,7 @@ x
 ```
 
 ```type
-Number
+Number | ()
 ```
 
 ## Functions

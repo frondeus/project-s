@@ -41,7 +41,7 @@ b
 ```
 
 ```type
-ERROR: WrongNumberOfArguments(3, 2)
+Number
 ```
 
 
