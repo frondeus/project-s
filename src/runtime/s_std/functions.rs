@@ -166,7 +166,7 @@ impl FromValue for StructKey {
         match value {
             Value::String(_) => true,
             Value::SExp(id) => matches!(
-                rt.asts.get(*id),
+                rt.asts.get(*id).item,
                 SExp::Symbol(_) | SExp::Keyword(_) | SExp::String(_)
             ),
             _ => false,
@@ -176,7 +176,7 @@ impl FromValue for StructKey {
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         let key = match value {
             Value::String(s) => s,
-            Value::SExp(id) => match rt.asts.get(id) {
+            Value::SExp(id) => match &rt.asts.get(id).item {
                 SExp::Symbol(s) => s.to_string(),
                 SExp::Keyword(s) => s.to_string(),
                 SExp::String(s) => s.to_string(),
@@ -213,7 +213,7 @@ pub fn insert_to_struct(
 pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
     match to_eval {
         Value::SExp(id) => {
-            let ast = rt.asts.get(id);
+            let ast = &rt.asts.get(id).item;
             let Some(list) = ast.as_list() else {
                 return Err("Expected list".into());
             };
@@ -222,7 +222,7 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
             let mut iter = list.into_iter();
             let mut last = None;
             while let Some(key) = iter.next() {
-                let key = rt.asts.get(key);
+                let key = &rt.asts.get(key).item;
                 let Some(key) = key.as_keyword() else {
                     return Err("Expected keyword".into());
                 };
@@ -266,7 +266,7 @@ pub struct SymbolOrKeyword(String);
 impl FromValue for SymbolOrKeyword {
     fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
         match value {
-            Value::SExp(id) => matches!(rt.asts.get(*id), SExp::Symbol(_) | SExp::Keyword(_)),
+            Value::SExp(id) => matches!(&rt.asts.get(*id).item, SExp::Symbol(_) | SExp::Keyword(_)),
             _ => false,
         }
     }
@@ -274,7 +274,7 @@ impl FromValue for SymbolOrKeyword {
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         let sexp = value.as_sexp().ok_or("Expected symbol or keyword")?;
         let sexp = rt.asts.get(*sexp);
-        match sexp {
+        match &sexp.item {
             SExp::Symbol(s) | SExp::Keyword(s) => Ok(Self(s.to_string())),
             _ => Err("Expected symbol or keyword".into()),
         }

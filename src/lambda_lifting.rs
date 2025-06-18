@@ -5,6 +5,7 @@ use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     builder::ASTBuilder,
     patterns::Pattern,
+    source::Span,
 };
 
 const SPECIAL_FORMS: &[&str] = &[
@@ -46,6 +47,7 @@ impl<'a> LambdaPass<'a> {
 
     fn visit_mut_list(
         &mut self,
+        span: Span,
         mut new_sexp_ids: Vec<SExpId>,
         mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
@@ -57,7 +59,7 @@ impl<'a> LambdaPass<'a> {
             }
         }
         if edited {
-            Some(self.new_ast().add_node(SExp::List(new_sexp_ids)))
+            Some(self.new_ast().add_node(SExp::List(new_sexp_ids), span))
         } else {
             None
         }
@@ -65,38 +67,41 @@ impl<'a> LambdaPass<'a> {
 
     fn process_do(
         &mut self,
+        span: Span,
         sexp_ids: Vec<SExpId>,
         f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
         self.envs.push(EnvKind::Local);
-        let result = self.visit_mut_list(sexp_ids, f);
+        let result = self.visit_mut_list(span, sexp_ids, f);
         self.envs.pop();
         result
     }
 
     fn process_let(
         &mut self,
+        span: Span,
         sexp_ids: Vec<SExpId>,
         f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
         // 0 - "let"
         // 1 - name
         // 2 - value
-        let name = self.asts.get(sexp_ids[1]).as_keyword()?;
+        let name = self.asts.get(sexp_ids[1]).item.as_keyword()?;
         self.envs.set(name);
 
-        self.visit_mut_list(sexp_ids, f)
+        self.visit_mut_list(span, sexp_ids, f)
     }
 
     fn process_struct(
         &mut self,
+        span: Span,
         sexp_ids: Vec<SExpId>,
         mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
         // println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
         self.envs.push(EnvKind::Object);
         // println!("processing struct: {}", self.asts.fmt_list(&sexp_ids));
-        let result = self.process_struct_body(sexp_ids.to_vec(), |pass, id| f(pass, id));
+        let result = self.process_struct_body(span, sexp_ids.to_vec(), |pass, id| f(pass, id));
         self.envs.pop();
         result
 
@@ -116,6 +121,7 @@ impl<'a> LambdaPass<'a> {
 
     fn process_struct_body(
         &mut self,
+        span: Span,
         mut list: Vec<SExpId>,
         mut f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
@@ -127,7 +133,7 @@ impl<'a> LambdaPass<'a> {
         list_iter.next(); // Skip struct keyword
         while let Some(id) = list_iter.next() {
             // println!("Struct item: {}", self.asts.fmt(*id));
-            if self.asts.get(*id).as_symbol_or_keyword().is_some() {
+            if self.asts.get(*id).item.as_symbol_or_keyword().is_some() {
                 // Key value pair
                 if let Some(value) = list_iter.next() {
                     // println!(
@@ -142,7 +148,7 @@ impl<'a> LambdaPass<'a> {
             }
         }
         if edited {
-            Some(self.new_ast().add_node(SExp::List(list)))
+            Some(self.new_ast().add_node(SExp::List(list), span))
         } else {
             None
         }
@@ -150,20 +156,22 @@ impl<'a> LambdaPass<'a> {
     }
 
     fn pass_inner(&mut self, root: SExpId) -> Option<SExpId> {
-        if let SExp::List(sexp_ids) = self.asts.get(root) {
+        let sexp = self.asts.get(root);
+        let span = sexp.span.clone();
+        if let SExp::List(sexp_ids) = &sexp.item {
             let first_id = sexp_ids.first().copied()?;
             if self.is_one_of(first_id, &["quote", "quasiquote"]) {
                 None
             } else if self.is_symbol(first_id, "do") {
-                self.process_do(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
+                self.process_do(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
             } else if self.is_one_of(first_id, &["let", "let-rec", "let*"]) {
                 let sexp_ids = sexp_ids.to_vec();
-                self.process_let(sexp_ids, |pass, id| pass.pass_inner(id))
+                self.process_let(span, sexp_ids, |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "struct") {
-                self.process_struct(sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
+                self.process_struct(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
             } else if self.is_symbol(first_id, "thunk") {
                 let free_vars = sexp_ids[1];
-                let free_vars = self.asts.get(free_vars).as_list().unwrap().to_vec();
+                let free_vars = self.asts.get(free_vars).item.as_list().unwrap().to_vec();
                 let body = sexp_ids[2];
                 self.process_thunk(first_id, free_vars, body)
             } else if self.is_symbol(first_id, "fn") {
@@ -172,7 +180,7 @@ impl<'a> LambdaPass<'a> {
                 let pattern = Pattern::parse(pattern_id, self.asts).ok()?;
                 self.process_fn(first_id, pattern_id, pattern, body)
             } else {
-                self.visit_mut_list(sexp_ids.clone(), |pass, id| pass.pass_inner(id))
+                self.visit_mut_list(span, sexp_ids.clone(), |pass, id| pass.pass_inner(id))
             }
         } else {
             None
@@ -198,7 +206,7 @@ impl<'a> LambdaPass<'a> {
         if let Some((new_body, new_free_vars)) = maybe_new_body {
             let mut free_vars = free_vars
                 .into_iter()
-                .map(|id| self.asts.get(id).as_symbol().unwrap().to_string())
+                .map(|id| self.asts.get(id).item.as_symbol().unwrap().to_string())
                 .collect::<BTreeSet<String>>();
 
             free_vars.extend(new_free_vars);
@@ -276,19 +284,22 @@ impl<'a> LambdaPass<'a> {
 
     fn process_quasiquote(
         &mut self,
+        span: Span,
         sexp_ids: Vec<SExpId>,
         free_vars: &mut BTreeSet<String>,
     ) -> Option<SExpId> {
         // println!("processing quasiquote: {}", self.asts.fmt_list(&sexp_ids));
-        self.visit_mut_list(sexp_ids.clone(), |pass, id| {
-            if let Some(list) = pass.asts.get(id).as_list() {
+        self.visit_mut_list(span, sexp_ids.clone(), |pass, id| {
+            let sexp = pass.asts.get(id);
+            let span = sexp.span.clone();
+            if let Some(list) = sexp.item.as_list() {
                 let first = list[0];
                 let list = list.to_vec();
                 if pass.is_symbol(first, "unquote") {
-                    if let Some(new_id) = pass.process_unquote(list.clone(), free_vars) {
+                    if let Some(new_id) = pass.process_unquote(span, list.clone(), free_vars) {
                         return Some(new_id);
                     }
-                } else if let Some(new_id) = pass.process_quasiquote(list, free_vars) {
+                } else if let Some(new_id) = pass.process_quasiquote(span, list, free_vars) {
                     return Some(new_id);
                 }
             }
@@ -298,18 +309,21 @@ impl<'a> LambdaPass<'a> {
 
     fn process_unquote(
         &mut self,
+        span: Span,
         sexp_ids: Vec<SExpId>,
         free_vars: &mut BTreeSet<String>,
     ) -> Option<SExpId> {
         // println!("processing unquote: {}", self.asts.fmt(sexp_ids[0]));
-        self.visit_mut_list(sexp_ids.clone(), |pass, id| {
+        self.visit_mut_list(span, sexp_ids.clone(), |pass, id| {
             pass.process_fn_decl_body(id, free_vars)
         })
     }
 
     fn process_captured(&mut self, id: SExpId, free_vars: &mut BTreeSet<String>) -> Option<SExpId> {
-        let list = self.asts.get(id).as_list()?;
-        self.visit_mut_list(list.to_vec(), |pass, id| {
+        let sexp = self.asts.get(id);
+        let span = sexp.span.clone();
+        let list = sexp.item.as_list()?;
+        self.visit_mut_list(span, list.to_vec(), |pass, id| {
             pass.process_fn_decl_body(id, free_vars)
         })
     }
@@ -319,7 +333,9 @@ impl<'a> LambdaPass<'a> {
         body: SExpId,
         free_vars: &mut BTreeSet<String>,
     ) -> Option<SExpId> {
-        match self.asts.get(body) {
+        let sexp = self.asts.get(body);
+        let span = sexp.span.clone();
+        match &sexp.item {
             SExp::Symbol(s) if SPECIAL_FORMS.contains(&s.as_str()) => None,
             SExp::Symbol(s) => match self.envs.has(s) {
                 Some(VariableKind::Free) => {
@@ -338,21 +354,21 @@ impl<'a> LambdaPass<'a> {
                     return None;
                 }
                 if self.is_symbol(first, "quasiquote") {
-                    return self.process_quasiquote(sexp_ids.clone(), free_vars);
+                    return self.process_quasiquote(span, sexp_ids.clone(), free_vars);
                 }
                 if self.is_symbol(first, "do") {
-                    return self.process_do(sexp_ids.clone(), move |pass, id| {
+                    return self.process_do(span, sexp_ids.clone(), move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
                 if self.is_one_of(first, &["let", "let-rec", "let*"]) {
                     let sexp_ids = sexp_ids.to_vec();
-                    return self.process_let(sexp_ids, move |pass, id| {
+                    return self.process_let(span, sexp_ids, move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
                 if self.is_symbol(first, "struct") {
-                    return self.process_struct(sexp_ids.clone(), move |pass, id| {
+                    return self.process_struct(span, sexp_ids.clone(), move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
@@ -369,7 +385,7 @@ impl<'a> LambdaPass<'a> {
                     return self.process_captured(captured, free_vars);
                 }
 
-                self.visit_mut_list(sexp_ids.clone(), |pass, id| {
+                self.visit_mut_list(span, sexp_ids.clone(), |pass, id| {
                     pass.process_fn_decl_body(id, free_vars)
                 })
             }
@@ -378,14 +394,14 @@ impl<'a> LambdaPass<'a> {
     }
 
     fn is_symbol(&self, sexp_id: SExpId, symbol: &str) -> bool {
-        match self.asts.get(sexp_id) {
+        match &self.asts.get(sexp_id).item {
             SExp::Symbol(s) => s == symbol,
             _ => false,
         }
     }
 
     fn is_one_of(&self, sexp_id: SExpId, symbols: &[&str]) -> bool {
-        match self.asts.get(sexp_id) {
+        match &self.asts.get(sexp_id).item {
             SExp::Symbol(s) => symbols.contains(&s.as_str()),
             _ => false,
         }

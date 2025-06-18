@@ -280,7 +280,7 @@ impl Runtime {
     fn as_symbol_or_keyword(&self, value: &Value) -> Option<&str> {
         let sexp = value.as_sexp()?;
         let sexp = self.asts.get(*sexp);
-        match sexp {
+        match &sexp.item {
             SExp::Symbol(s) => Some(s),
             SExp::Keyword(s) => Some(s),
             _ => None,
@@ -289,7 +289,7 @@ impl Runtime {
 
     pub fn eval(&mut self, id: SExpId) -> Value {
         let sexp = self.asts.get(id).clone();
-        match sexp {
+        match sexp.item {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
@@ -310,7 +310,7 @@ impl Runtime {
                     todo!("Empty tuple");
                 };
                 let first_id = first_id.unwrap();
-                match first {
+                match &first.item {
                     SExp::Symbol(tag) if tag == "do" => self.do_(&items[1..]),
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)

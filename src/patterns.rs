@@ -12,14 +12,14 @@ pub enum Pattern {
 impl Pattern {
     fn is_special_case(asts: &ASTS, ident: SExpId, name: &str) -> bool {
         let ident = asts.get(ident);
-        let Some(ident) = ident.as_symbol() else {
+        let Some(ident) = ident.item.as_symbol() else {
             return false;
         };
         ident == name
     }
 
     pub fn parse(ident: SExpId, asts: &ASTS) -> Result<Self, String> {
-        match asts.get(ident).clone() {
+        match asts.get(ident).item.clone() {
             SExp::Keyword(k) => Ok(Pattern::Single(k)),
             SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![])),
             SExp::List(items) => {
@@ -28,13 +28,13 @@ impl Pattern {
                     let mut patterns = HashMap::new();
                     let mut items = items.into_iter().skip(1).peekable();
                     while let Some(item) = items.next() {
-                        let Some(key) = asts.get(item).as_keyword() else {
+                        let Some(key) = asts.get(item).item.as_keyword() else {
                             return Err(format!("Expected keyword, found: {:?}", asts.fmt(item)));
                         };
 
                         if let Some(next) = items.peek() {
                             let next = asts.get(*next);
-                            match next {
+                            match &next.item {
                                 SExp::Symbol(renamed) => {
                                     patterns.insert(
                                         key.to_owned(),

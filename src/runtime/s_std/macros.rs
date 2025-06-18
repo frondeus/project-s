@@ -23,7 +23,7 @@ pub fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String>
 
     while let Some(arg_id) = args.next() {
         let arg = rt.asts.get(arg_id);
-        if let Some(key) = arg.as_keyword() {
+        if let Some(key) = arg.item.as_keyword() {
             let Some(value) = args.next() else {
                 return Err("Expected value".into());
             };

@@ -5,7 +5,7 @@ use super::{Runtime, value::Value};
 impl Runtime {
     pub(crate) fn quote(&self, id: &SExpId) -> Value {
         let sexp = self.asts.get(*id);
-        match sexp {
+        match &sexp.item {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
@@ -18,7 +18,7 @@ impl Runtime {
 
     pub(crate) fn quasiquote(&mut self, id: &SExpId) -> Value {
         let sexp = self.asts.get(*id);
-        match sexp {
+        match &sexp.item {
             SExp::Number(n) => Value::Number(*n),
             SExp::String(s) => Value::String(s.clone()),
             SExp::Symbol(_) => Value::SExp(*id),
@@ -36,7 +36,10 @@ impl Runtime {
     }
 
     fn traverse_unquote(&mut self, new_ast: &mut AST, id: &SExpId) -> SExpId {
-        match self.asts.get(*id).clone() {
+        let original = self.asts.get(*id);
+        let span = original.span.clone();
+
+        match original.item.clone() {
             SExp::List(items) => {
                 let Some(first) = items.first() else {
                     return *id;
@@ -57,7 +60,7 @@ impl Runtime {
                     //     return *id;
                     // }
                     let new_list = SExp::List(result);
-                    new_ast.set(parent, new_list);
+                    new_ast.set(parent, new_list, span);
                     parent
                 }
             }
@@ -67,7 +70,7 @@ impl Runtime {
 
     fn is_unquote(&self, id: &SExpId) -> bool {
         let sexp = self.asts.get(*id);
-        match sexp {
+        match &sexp.item {
             SExp::Symbol(s) => s == "unquote",
             _ => false,
         }

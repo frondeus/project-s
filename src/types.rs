@@ -52,7 +52,7 @@ impl TypeEnv {
 
     fn check(&mut self, asts: &ASTS, id: SExpId) -> core::Result<core::Value> {
         let sexp = asts.get(id);
-        match sexp {
+        match &sexp.item {
             SExp::Number(_) => Ok(self.engine.number()),
             SExp::String(_) => Ok(self.engine.string()),
             SExp::Bool(_) => Ok(self.engine.bool()),
@@ -220,7 +220,7 @@ impl TypeEnv {
 
     fn is_symbol(asts: &ASTS, sexp: SExpId, name: &str) -> bool {
         let sexp = asts.get(sexp);
-        match sexp {
+        match &sexp.item {
             SExp::Symbol(symbol) => symbol == name,
             _ => false,
         }
@@ -327,27 +327,17 @@ mod tests {
     #[test]
     fn type_() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
-            eprintln!("Before parsing");
             let mut asts = ASTS::new();
             let ast = asts.parse(input).expect("Failed to parse");
-            eprintln!("After parsing");
 
             let root = ast.root_id().unwrap();
 
-            eprintln!("Before prelude");
-
             let mut env = TypeEnv::default().with_prelude();
-
-            eprintln!("After prelude");
-
-            eprintln!("Before infering");
 
             let infered = match env.check(&asts, root) {
                 Ok(infered) => infered,
                 Err(e) => return format!("ERROR: {:?}", e),
             };
-
-            eprintln!("After infering");
 
             env.to_string(infered)
         })

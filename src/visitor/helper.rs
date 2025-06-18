@@ -1,6 +1,7 @@
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     builder::ASTBuilder,
+    source::WithSpan,
 };
 
 use super::List;
@@ -26,7 +27,7 @@ impl VisitorHelper<'_> {
         self.asts.get_ast_by_generation(self.new_ast_id)
     }
 
-    pub fn get_sexp(&self, id: SExpId) -> &SExp {
+    pub fn get_sexp(&self, id: SExpId) -> &WithSpan<SExp> {
         self.asts.get(id)
     }
 
@@ -61,14 +62,14 @@ impl VisitorHelper<'_> {
     }
 
     pub fn is_symbol(&self, sexp_id: SExpId, symbol: &str) -> bool {
-        match self.asts.get(sexp_id) {
+        match &self.asts.get(sexp_id).item {
             SExp::Symbol(s) => s == symbol,
             _ => false,
         }
     }
 
     pub fn is_one_of(&self, sexp_id: SExpId, symbols: &[&str]) -> bool {
-        match self.asts.get(sexp_id) {
+        match &self.asts.get(sexp_id).item {
             SExp::Symbol(s) => symbols.contains(&s.as_str()),
             _ => false,
         }

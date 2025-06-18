@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
-use crate::ast::{AST, ASTS, SExp, SExpId};
+use crate::{
+    ast::{AST, ASTS, SExp, SExpId},
+    source::Span,
+};
 
 pub trait ASTBuilder {
     fn assemble(self, ast: &mut AST) -> SExpId;
@@ -28,9 +31,9 @@ pub fn symbol(name: &str) -> impl ASTBuilder {
     |ast: &mut AST| {
         if name.starts_with(":") {
             let name = name.trim_start_matches(':');
-            ast.add_node(SExp::Keyword(name.to_string()))
+            ast.add_node(SExp::Keyword(name.to_string()), Span::default())
         } else {
-            ast.add_node(SExp::Symbol(name.to_string()))
+            ast.add_node(SExp::Symbol(name.to_string()), Span::default())
         }
     }
 }
@@ -44,7 +47,7 @@ pub fn rest(name: &str, mut rest: Vec<SExpId>) -> impl ASTBuilder {
 }
 
 pub fn error() -> impl ASTBuilder {
-    |ast: &mut AST| ast.add_node(SExp::Error)
+    |ast: &mut AST| ast.add_node(SExp::Error, Span::default())
 }
 
 impl ASTBuilder for &str {
@@ -70,7 +73,7 @@ impl<T: ASTBuilder + Copy> ASTBuilder for &[T] {
         for item in self {
             items.push(item.assemble(ast));
         }
-        ast.set(list, SExp::List(items));
+        ast.set(list, SExp::List(items), Span::default());
         list
     }
 }
@@ -81,7 +84,7 @@ impl<T: ASTBuilder> ASTBuilder for BTreeSet<T> {
         for item in self {
             items.push(item.assemble(ast));
         }
-        ast.set(list, SExp::List(items));
+        ast.set(list, SExp::List(items), Span::default());
         list
     }
 }
@@ -89,7 +92,7 @@ impl<T: ASTBuilder> ASTBuilder for BTreeSet<T> {
 pub fn list() -> impl ASTBuilder {
     |ast: &mut AST| {
         let list = ast.reserve();
-        ast.add_node(SExp::List(vec![]));
+        ast.add_node(SExp::List(vec![]), Span::default());
         list
     }
 }
@@ -108,7 +111,7 @@ impl ASTBuilder for &SExpId {
 
 impl ASTBuilder for () {
     fn assemble(self, ast: &mut AST) -> SExpId {
-        ast.add_node(SExp::List(vec![]))
+        ast.add_node(SExp::List(vec![]), Span::default())
     }
 }
 
@@ -122,7 +125,7 @@ macro_rules! impl_list {
                 let ($($t,)*) = self;
                 $( let $t = $t.assemble(ast); )*
 
-                ast.set(list, SExp::List(vec![$($t),*]));
+                ast.set(list, SExp::List(vec![$($t),*]), Span::default());
                 list
             }
         }

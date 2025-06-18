@@ -3,6 +3,7 @@ use std::{cell::RefCell, collections::BTreeMap, ops::Deref, rc::Rc};
 use crate::{
     ast::{AST, SExp, SExpId},
     patterns::Pattern,
+    source::Span,
 };
 
 use super::Runtime;
@@ -267,17 +268,17 @@ impl Value {
     pub fn to_sexp(&self, target: &mut AST) -> SExpId {
         match self {
             Value::SExp(sexp_id) => *sexp_id,
-            Value::Number(n) => target.add_node(SExp::Number(*n)),
-            Value::String(s) => target.add_node(SExp::String(s.clone())),
-            Value::Bool(b) => target.add_node(SExp::Bool(*b)),
+            Value::Number(n) => target.add_node(SExp::Number(*n), Span::default()),
+            Value::String(s) => target.add_node(SExp::String(s.clone()), Span::default()),
+            Value::Bool(b) => target.add_node(SExp::Bool(*b), Span::default()),
             Value::Error(err) => {
                 tracing::error!("Error: {err}");
-                target.add_node(SExp::Error)
+                target.add_node(SExp::Error, Span::default())
             }
             Value::List(list) => {
                 if list.iter().all(|v| matches!(v, Value::SExp(_))) {
                     let list = list.iter().filter_map(|v| v.as_sexp()).copied().collect();
-                    target.add_node(SExp::List(list))
+                    target.add_node(SExp::List(list), Span::default())
                 } else {
                     todo!("Could not convert List to SExp: {:?}", list)
                 }

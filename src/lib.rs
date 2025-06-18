@@ -4,6 +4,9 @@ use ast::{ASTS, SExpId};
 use lambda_lifting::LambdaPass;
 use runtime::Env;
 
+pub mod cst;
+pub mod source;
+
 pub mod ast;
 pub mod builder;
 

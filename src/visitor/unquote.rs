@@ -20,7 +20,7 @@ where
         self.0.helper()
     }
     fn visit_sexp(&mut self, id: SExpId) -> Option<SExpId> {
-        match self.helper().asts.get(id) {
+        match &self.helper().asts.get(id).item {
             SExp::List(list) => {
                 let first = list.first().copied()?;
                 if self.helper().is_symbol(first, "unquote") {
