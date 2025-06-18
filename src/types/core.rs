@@ -243,8 +243,8 @@ impl TypeCheckerCore {
         &self.r
     }
 
-    pub fn predecessors(&self, id: impl WithID) -> impl Iterator<Item = &TypeNode> {
-        self.r.predecessors(id.id()).map(|id| &self.types[id])
+    pub fn predecessors(&self, id: impl WithID) -> impl Iterator<Item = (&TypeNode, ID)> {
+        self.r.predecessors(id.id()).map(|id| (&self.types[id], id))
     }
 
     pub fn successors(&self, id: impl WithID) -> impl Iterator<Item = (&TypeNode, ID)> {

@@ -82,7 +82,7 @@ Number | ()
 ```
 
 ```type
-(Bool, Any) -> Any
+(Bool, Any) -> Any | ()
 ```
 
 ```
@@ -93,7 +93,7 @@ f
 ```
 
 ```type
-(Number) -> Number
+(Any) -> Any
 ```
 
 ## Functions with ifs
@@ -107,7 +107,7 @@ f
 ```
 
 ```type
-(Bool, String) -> String
+(Bool, Any) -> Any | ()
 ```
 
 Else the same type
@@ -121,7 +121,7 @@ f
 ```
 
 ```type
-(Bool, String) -> String
+(Bool, Any) -> Any | String
 ```
 
 
@@ -137,7 +137,7 @@ f
 ```
 
 ```type
-(Bool, Number) -> String | Number
+(Bool, Any) -> Any | String
 ```
 
 # Dynamically:

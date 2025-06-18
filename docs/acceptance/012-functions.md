@@ -43,7 +43,7 @@ f
 ```
 
 ```type
-(Number) -> Number
+(Any) -> Any
 ```
 
 # Closures
