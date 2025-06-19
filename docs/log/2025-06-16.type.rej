@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-16.md:6
+```
+(let :x (if true 5 3))
+
+x
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-16.md
++++ type
+@@ -10,7 +10,7 @@
+ ```
+ 
+ ```type
+-Number
++Number | Number
+ ```
+ 
+ ```graphviz

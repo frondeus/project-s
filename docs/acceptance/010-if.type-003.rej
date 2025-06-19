@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/acceptance/010-if.md:71
+```
+(if false 4 5)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/010-if.md
++++ type-003
+@@ -77,7 +77,7 @@
+ ```
+ 
+ ```type
+-Number
++Number | Number
+ ```
+ 
+ 

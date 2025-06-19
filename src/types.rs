@@ -5,6 +5,7 @@ use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
+    diagnostics::Diagnostics,
     patterns::Pattern,
     source::Span,
 };
@@ -29,7 +30,7 @@ impl TypeEnv {
 
         self.envs.set(
             "list",
-            core::Scheme::Polymorphic(Rc::new(move |this, _asts| {
+            core::Scheme::Polymorphic(Rc::new(move |this, _asts, diagnostics| {
                 let pattern = Pattern::Single("args".into());
                 this.envs.push();
                 let pattern_bound = this.check_pattern(prelude_span.clone(), pattern);
@@ -39,13 +40,11 @@ impl TypeEnv {
                 let list_bound = this
                     .engine
                     .list_use(any_bound, 0, None, prelude_span.clone());
-                this.engine.flow(ret_type, list_bound).unwrap();
+                this.engine.flow(ret_type, list_bound, diagnostics);
                 this.envs.pop();
 
-                let func = this
-                    .engine
-                    .func(pattern_bound, ret_type, prelude_span.clone());
-                Ok(func)
+                this.engine
+                    .func(pattern_bound, ret_type, prelude_span.clone())
             })),
         );
 
@@ -57,98 +56,107 @@ impl TypeEnv {
     }
 
     #[allow(clippy::result_large_err)]
-    fn check(&mut self, asts: &ASTS, id: SExpId) -> core::Result<core::Value> {
+    fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
         let sexp = asts.get(id);
         let span = sexp.span.clone();
         match &sexp.item {
-            SExp::Number(_) => Ok(self.engine.number(span)),
-            SExp::String(_) => Ok(self.engine.string(span)),
-            SExp::Bool(_) => Ok(self.engine.bool(span)),
-            SExp::Keyword(_) => Ok(self.engine.keyword(span)),
+            SExp::Number(_) => self.engine.number(span),
+            SExp::String(_) => self.engine.string(span),
+            SExp::Bool(_) => self.engine.bool(span),
+            SExp::Keyword(_) => self.engine.keyword(span),
             SExp::Symbol(symbol) => match self.envs.get(symbol) {
                 Some(scheme) => match scheme {
-                    core::Scheme::Monomorphic(value) => Ok(*value),
+                    core::Scheme::Monomorphic(value) => *value,
                     core::Scheme::Polymorphic(f) => {
                         let f = f.clone();
-                        f(self, asts)
+                        f(self, asts, diagnostics)
                     }
                 },
-                None => Err(core::TypeError::UndefinedVariable(symbol.to_owned())),
+                None => {
+                    diagnostics.add(span.clone(), format!("Undefined variable: {}", symbol));
+                    self.engine.error(span)
+                }
             },
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
-                [] => Ok(self.engine.list(vec![], span)),
+                [] => self.engine.list(vec![], span),
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
-                    let cond_type = self.check(asts, *condition)?;
+                    let cond_type = self.check(asts, *condition, diagnostics);
                     let bound = self.engine.bool_use(span.clone());
-                    self.engine.flow(cond_type, bound)?;
+                    self.engine.flow(cond_type, bound, diagnostics);
 
-                    let then_type = self.check(asts, *then_branch)?;
+                    let then_type = self.check(asts, *then_branch, diagnostics);
                     let else_type = self.null(span.clone());
 
                     let (merged, merged_bound) = self.engine.var();
-                    self.engine.flow(then_type, merged_bound)?;
-                    self.engine.flow(else_type, merged_bound)?;
+                    self.engine.flow(then_type, merged_bound, diagnostics);
+                    self.engine.flow(else_type, merged_bound, diagnostics);
 
-                    Ok(merged)
+                    merged
                 }
                 [first, condition, then_branch, else_branch]
                     if Self::is_symbol(asts, *first, "if") =>
                 {
-                    let cond_type = self.check(asts, *condition)?;
+                    let cond_type = self.check(asts, *condition, diagnostics);
                     let bound = self.engine.bool_use(span.clone());
-                    self.engine.flow(cond_type, bound)?;
+                    self.engine.flow(cond_type, bound, diagnostics);
 
-                    let then_type = self.check(asts, *then_branch)?;
-                    let else_type = self.check(asts, *else_branch)?;
+                    let then_type = self.check(asts, *then_branch, diagnostics);
+                    let else_type = self.check(asts, *else_branch, diagnostics);
 
                     let (merged, merged_bound) = self.engine.var();
-                    self.engine.flow(then_type, merged_bound)?;
-                    self.engine.flow(else_type, merged_bound)?;
+                    self.engine.flow(then_type, merged_bound, diagnostics);
+                    self.engine.flow(else_type, merged_bound, diagnostics);
 
-                    Ok(merged)
+                    merged
                 }
                 [first, pattern, body] if Self::is_symbol(asts, *first, "fn") => {
-                    let pattern = Pattern::parse(*pattern, asts)
-                        .map_err(core::TypeError::UnreadablePattern)?;
+                    let pattern = match Pattern::parse(*pattern, asts) {
+                        Ok(pattern) => pattern,
+                        Err(e) => {
+                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
+                            return self.engine.error(span);
+                        }
+                    };
 
                     self.envs.push();
                     let pattern_bound = self.check_pattern(span.clone(), pattern);
                     // let pattern_must_be_list = self.engine.list_use
 
-                    let body_type = self.check(asts, *body);
+                    let body_type = self.check(asts, *body, diagnostics);
                     self.envs.pop();
-                    let body_type = body_type?;
 
-                    Ok(self.engine.func(pattern_bound, body_type, span))
+                    self.engine.func(pattern_bound, body_type, span)
                 }
                 [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
                     self.envs.push();
                     for arg in args {
-                        if let Err(e) = self.check(asts, *arg) {
-                            self.envs.pop();
-                            return Err(e);
-                        }
+                        self.check(asts, *arg, diagnostics);
                     }
-                    let last_type = self.check(asts, *last);
+                    let last_type = self.check(asts, *last, diagnostics);
                     self.envs.pop();
                     last_type
                 }
                 [first, pattern, value] if Self::is_symbol(asts, *first, "let") => {
-                    let pattern = Pattern::parse(*pattern, asts)
-                        .map_err(core::TypeError::UnreadablePattern)?;
+                    let pattern = match Pattern::parse(*pattern, asts) {
+                        Ok(pattern) => pattern,
+                        Err(e) => {
+                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
+                            return self.engine.error(span);
+                        }
+                    };
 
                     let value = *value;
 
                     self.polymorphic_check_pattern(span.clone(), pattern, value);
 
-                    Ok(self.null(span))
+                    self.null(span)
                 }
                 [callee, args @ ..] => {
-                    let callee_type = self.check(asts, *callee)?;
+                    let callee_type = self.check(asts, *callee, diagnostics);
                     let args_types = args
                         .iter()
-                        .map(|arg| self.check(asts, *arg))
-                        .collect::<core::Result<Vec<_>>>()?;
+                        .map(|arg| self.check(asts, *arg, diagnostics))
+                        .collect::<Vec<_>>();
 
                     let (ret_type, ret_bound) = self.engine.var();
                     // This will only work if the callee is a function
@@ -158,11 +166,11 @@ impl TypeEnv {
                     // * macros
                     // * (in future) arrays
                     let bound = self.engine.func_use(args_types, ret_bound, span.clone());
-                    self.engine.flow(callee_type, bound)?;
-                    Ok(ret_type)
+                    self.engine.flow(callee_type, bound, diagnostics);
+                    ret_type
                 }
             },
-            SExp::Error => Ok(self.engine.error(span)),
+            SExp::Error => self.engine.error(span),
         }
     }
 
@@ -171,9 +179,8 @@ impl TypeEnv {
             Pattern::Single(key) => {
                 self.envs.set(
                     &key,
-                    core::Scheme::Polymorphic(Rc::new(move |this, asts| {
-                        let value_type = this.check(asts, value)?;
-                        Ok(value_type)
+                    core::Scheme::Polymorphic(Rc::new(move |this, asts, diagnostics| {
+                        this.check(asts, value, diagnostics)
                     })),
                 );
             }
@@ -336,16 +343,18 @@ mod tests {
     fn type_() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input).expect("Failed to parse");
+            let ast = asts.parse(input, "<input>").expect("Failed to parse");
 
             let root = ast.root_id().unwrap();
 
             let mut env = TypeEnv::default().with_prelude();
 
-            let infered = match env.check(&asts, root) {
-                Ok(infered) => infered,
-                Err(e) => return format!("ERROR: {:?}", e),
-            };
+            let mut diagnostics = Diagnostics::default();
+            let infered = env.check(&asts, root, &mut diagnostics);
+            if diagnostics.has_errors() {
+                unsafe { std::env::set_var("NO_COLOR", "1") }
+                return diagnostics.pretty_print();
+            }
 
             env.to_string(infered)
         })
@@ -355,11 +364,12 @@ mod tests {
     fn type_dot() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "graphviz", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input).expect("Failed to parse");
+            let ast = asts.parse(input, "<input>").expect("Failed to parse");
             let root = ast.root_id().unwrap();
             let mut env = TypeEnv::default().with_prelude();
 
-            let root = env.check(&asts, root).unwrap();
+            let mut diagnostics = Diagnostics::default();
+            let root = env.check(&asts, root, &mut diagnostics);
 
             env.dot(root)
         })

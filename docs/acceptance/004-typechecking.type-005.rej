@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md:46
+```
+(let :x (if true 5 3))
+
+x
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md
++++ type-005
+@@ -50,7 +50,7 @@
+ ```
+ 
+ ```type
+-Number
++Number | Number
+ ```
+ 
+ ## If only

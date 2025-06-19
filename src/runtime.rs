@@ -415,7 +415,7 @@ mod tests {
 
     fn eval_to_value(input: &str, modules: MemoryModules) -> (Runtime, Value) {
         let mut asts = ASTS::new();
-        let ast = asts.parse(input).unwrap();
+        let ast = asts.parse(input, "<input>").unwrap();
         let root_id = ast.root_id().unwrap();
         tracing::trace!("Before process");
         let prelude = prelude();
@@ -523,7 +523,7 @@ mod tests {
         test_runner::test_snapshots("docs/", "processed", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
-            let ast = asts.parse(input).unwrap();
+            let ast = asts.parse(input, "<input>").unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
             let root_id = crate::process_ast(&mut asts, root_id, &[prelude]);

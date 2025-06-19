@@ -535,7 +535,7 @@ mod tests {
     fn lift() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "lift", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input).unwrap();
+            let ast = asts.parse(input, "<input>").unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
             let new_root = LambdaPass::pass(&mut asts, root_id, &[prelude]);

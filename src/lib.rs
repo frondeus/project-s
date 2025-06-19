@@ -17,6 +17,8 @@ pub mod lambda_lifting;
 pub mod patterns;
 pub mod types;
 
+pub mod diagnostics;
+
 pub mod modules;
 
 pub mod api;

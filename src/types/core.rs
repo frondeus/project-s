@@ -2,9 +2,7 @@
 
 use std::{collections::HashMap, rc::Rc};
 
-use thiserror::Error;
-
-use crate::{ast::ASTS, source::Span};
+use crate::{ast::ASTS, diagnostics::Diagnostics, source::Span};
 
 use super::reachability::Reachability;
 
@@ -38,7 +36,7 @@ impl WithID for Value {
     }
 }
 
-pub type PolyFunc = Rc<dyn Fn(&mut super::TypeEnv, &ASTS) -> Result<Value>>;
+pub type PolyFunc = Rc<dyn Fn(&mut super::TypeEnv, &ASTS, &mut Diagnostics) -> Value>;
 
 #[derive(Clone)]
 pub enum Scheme {
@@ -75,6 +73,21 @@ pub enum VTypeHead {
     VList { items: Vec<Value> },
     VObj { fields: HashMap<String, Value> },
     VFunc { pattern: Use, ret: Value },
+}
+
+impl std::fmt::Display for VTypeHead {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VTypeHead::VBool => write!(f, "bool"),
+            VTypeHead::VNumber => write!(f, "number"),
+            VTypeHead::VString => write!(f, "string"),
+            VTypeHead::VError => write!(f, "error"),
+            VTypeHead::VKeyword => write!(f, "keyword"),
+            VTypeHead::VList { items } => write!(f, "list"),
+            VTypeHead::VObj { fields } => write!(f, "object"),
+            VTypeHead::VFunc { pattern, ret } => write!(f, "function"),
+        }
+    }
 }
 
 impl VTypeHead {
@@ -136,6 +149,26 @@ pub enum UTypeHead {
     },
 }
 
+impl std::fmt::Display for UTypeHead {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UTypeHead::UBool => write!(f, "bool"),
+            UTypeHead::UNumber => write!(f, "number"),
+            UTypeHead::UString => write!(f, "string"),
+            UTypeHead::UKeyword => write!(f, "keyword"),
+            UTypeHead::UTuple { items } => write!(f, "tuple"),
+            UTypeHead::UTupleAccess { index } => write!(f, "tuple_access"),
+            UTypeHead::UList {
+                items,
+                min_len,
+                max_len,
+            } => write!(f, "list"),
+            UTypeHead::UObj { fields } => write!(f, "object"),
+            UTypeHead::UObjAccess { field } => write!(f, "object_access"),
+            UTypeHead::UFunc { args, ret } => write!(f, "function"),
+        }
+    }
+}
 impl UTypeHead {
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         let mut ids = Vec::new();
@@ -176,6 +209,7 @@ pub enum TypeNode {
     Var,
     Value(VTypeHead, Span),
     Use(UTypeHead, Span),
+    // Def(VTypeDef, Option<Span>)
 }
 
 impl std::fmt::Debug for TypeNode {
@@ -184,30 +218,10 @@ impl std::fmt::Debug for TypeNode {
             Self::Var => write!(f, "Var"),
             Self::Value(arg0, _) => f.debug_tuple("Value").field(arg0).finish(),
             Self::Use(arg0, _) => f.debug_tuple("Use").field(arg0).finish(),
+            // Self::Def(arg0, _) => f.debug_tuple("Def").field(arg0).finish(),
         }
     }
 }
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Error)]
-pub enum TypeError {
-    #[error("Undefined variable: {0}")]
-    UndefinedVariable(String),
-
-    #[error("Unreadable pattern: {0}")]
-    UnreadablePattern(String),
-
-    #[error("Undefined field: {0}")]
-    UndefinedField(String),
-
-    #[error("Incompatible types: {0:?} and {1:?} at {2:?} and {3:?}")]
-    IncompatibleTypes(VTypeHead, UTypeHead, Span, Span),
-
-    #[error("Wrong number of arguments: {0}. Expected {1}.")]
-    WrongNumberOfArguments(usize, usize),
-}
-
-pub type Result<T, E = TypeError> = std::result::Result<T, E>;
 
 #[derive(Default, Debug)]
 pub(crate) struct TypeCheckerCore {
@@ -217,14 +231,14 @@ pub(crate) struct TypeCheckerCore {
 
 impl TypeCheckerCore {
     fn new_val(&mut self, val_type: VTypeHead, span: Span) -> Value {
-        if let Some(i) = self
-            .types
-            .iter()
-            .position(|t| matches!(t, TypeNode::Value(t, _) if t == &val_type))
-        // .position(|t| matches!(t, TypeNode::Value(t, s) if t == &val_type && s == &span))
-        {
-            return Value(i);
-        }
+        // if let Some(i) = self
+        //     .types
+        //     .iter()
+        //     .position(|t| matches!(t, TypeNode::Value(t, _) if t == &val_type))
+        // // .position(|t| matches!(t, TypeNode::Value(t, s) if t == &val_type && s == &span))
+        // {
+        //     return Value(i);
+        // }
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
@@ -233,14 +247,14 @@ impl TypeCheckerCore {
     }
 
     fn new_use(&mut self, constraint: UTypeHead, span: Span) -> Use {
-        if let Some(i) = self
-            .types
-            .iter()
-            .position(|t| matches!(t, TypeNode::Use(t, _) if t == &constraint))
-        // .position(|t| matches!(t, TypeNode::Use(t, s) if t == &constraint && s == &span))
-        {
-            return Use(i);
-        }
+        // if let Some(i) = self
+        //     .types
+        //     .iter()
+        //     .position(|t| matches!(t, TypeNode::Use(t, _) if t == &constraint))
+        // // .position(|t| matches!(t, TypeNode::Use(t, s) if t == &constraint && s == &span))
+        // {
+        //     return Use(i);
+        // }
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
@@ -375,7 +389,7 @@ impl TypeCheckerCore {
     }
 
     #[allow(clippy::result_large_err)]
-    pub fn flow(&mut self, lhs: Value, rhs: Use) -> Result<()> {
+    pub fn flow(&mut self, lhs: Value, rhs: Use, diagnostics: &mut Diagnostics) {
         let mut pending_edges = vec![(lhs, rhs)];
         let mut type_pairs_to_check = Vec::new();
         while let Some((lhs, rhs)) = pending_edges.pop() {
@@ -391,13 +405,13 @@ impl TypeCheckerCore {
                             lhs_span,
                             rhs_span,
                             &mut pending_edges,
-                        )?;
+                            diagnostics,
+                        );
                     }
                 }
             }
         }
         assert!(pending_edges.is_empty() && type_pairs_to_check.is_empty());
-        Ok(())
     }
 
     #[allow(clippy::result_large_err)]
@@ -407,20 +421,20 @@ impl TypeCheckerCore {
         lhs_span: &Span,
         rhs_span: &Span,
         out: &mut Vec<(Value, Use)>,
-    ) -> Result<()> {
+        diagnostics: &mut Diagnostics,
+    ) {
         use UTypeHead::*;
         use VTypeHead::*;
 
         match (lhs, rhs) {
-            (VError, _) => Ok(()), // We assume that error type is like ! type in Rust.
-            (VBool, UBool) => Ok(()),
-            (VNumber, UNumber) => Ok(()),
-            (VString, UString) => Ok(()),
-            (VKeyword, UKeyword) => Ok(()),
+            (VError, _) => (), // We assume that error type is like ! type in Rust.
+            (VBool, UBool) => (),
+            (VNumber, UNumber) => (),
+            (VString, UString) => (),
+            (VKeyword, UKeyword) => (),
             (&VFunc { pattern, ret }, &UFunc { args, ret: ret_use }) => {
                 out.push((args, pattern));
                 out.push((ret, ret_use));
-                Ok(())
             }
             (
                 VObj { fields },
@@ -428,10 +442,11 @@ impl TypeCheckerCore {
                     field: (ref field, field_use),
                 },
             ) => match fields.get(field) {
-                None => Err(TypeError::UndefinedField(field.to_owned())),
+                None => {
+                    diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
+                }
                 Some(field_ty) => {
                     out.push((*field_ty, field_use));
-                    Ok(())
                 }
             },
             (
@@ -443,34 +458,53 @@ impl TypeCheckerCore {
                 },
             ) => {
                 if items.len() < min_len {
-                    return Err(TypeError::WrongNumberOfArguments(min_len, items.len()));
+                    diagnostics.add(
+                        lhs_span.clone(),
+                        format!(
+                            "Wrong number of arguments: {} expected {}",
+                            items.len(),
+                            min_len
+                        ),
+                    );
                 }
                 if let Some(max_len) = max_len {
                     if items.len() > max_len {
-                        return Err(TypeError::WrongNumberOfArguments(max_len, items.len()));
+                        diagnostics.add(
+                            lhs_span.clone(),
+                            format!(
+                                "Wrong number of arguments: {} expected {}",
+                                items.len(),
+                                max_len
+                            ),
+                        );
                     }
                 }
                 for item in items {
                     out.push((*item, args));
                 }
-                Ok(())
             }
             (VList { items }, UTuple { items: args }) => {
                 if items.len() != args.len() {
-                    return Err(TypeError::WrongNumberOfArguments(args.len(), items.len()));
+                    diagnostics.add(
+                        lhs_span.clone(),
+                        format!(
+                            "Wrong number of arguments: {} expected {}",
+                            items.len(),
+                            args.len()
+                        ),
+                    );
                 }
 
                 for (item, arg) in items.iter().zip(args) {
                     out.push((*item, *arg));
                 }
-                Ok(())
             }
-            _ => Err(TypeError::IncompatibleTypes(
-                lhs.clone(),
-                rhs.clone(),
-                lhs_span.clone(),
-                rhs_span.clone(),
-            )),
+            _ => {
+                diagnostics
+                    .add(rhs_span.clone(), "Incompatible types")
+                    .add_extra(format!("Expected {rhs}"), Some(rhs_span.clone()))
+                    .add_extra(format!("But got {lhs}"), Some(lhs_span.clone()));
+            }
         }
     }
 }

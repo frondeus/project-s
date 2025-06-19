@@ -19,6 +19,7 @@ tower-lsp-server = "0.21.1"
 tokio = { version = "1.45.1", features = ["full"] }
 tracing-subscriber = "0.3.19"
 tree-sitter-highlight = "0.25.6"
+ariadne = { version = "0.5.1", features = ["auto-color"] }
 
 [dev-dependencies]
 tempfile = "3.20.0"

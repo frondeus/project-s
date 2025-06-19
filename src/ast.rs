@@ -52,9 +52,9 @@ impl ASTS {
         SExpFmtList { list, asts: self }
     }
 
-    pub fn parse(&mut self, input: &str) -> Result<&AST, ParseError> {
-        let parser = SExpParser::new(self)?;
-        let ast = parser.parse(input)?;
+    pub fn parse(&mut self, input: &str, filename: &str) -> Result<&AST, ParseError> {
+        let parser = SExpParser::new(self, Arc::from(filename), Arc::from(input))?;
+        let ast = parser.parse()?;
         let root = ast.root_id().unwrap();
         self.add_ast(ast);
         Ok(self.get_ast(root))
@@ -290,10 +290,12 @@ pub enum ParseError {
 pub struct SExpParser {
     parser: TSParser,
     ast: AST,
+    filename: Arc<str>,
+    source: Arc<str>,
 }
 
 impl SExpParser {
-    pub fn new(asts: &mut ASTS) -> Result<Self, ParseError> {
+    pub fn new(asts: &mut ASTS, filename: Arc<str>, source: Arc<str>) -> Result<Self, ParseError> {
         let mut parser = TSParser::new();
         parser
             .set_language(&tree_sitter_s::LANGUAGE.into())
@@ -302,24 +304,22 @@ impl SExpParser {
         Ok(SExpParser {
             parser,
             ast: asts.new_ast(),
+            filename,
+            source,
         })
     }
 
     #[allow(clippy::only_used_in_recursion)]
-    fn node_to_sexp(
-        &mut self,
-        node: tree_sitter::Node,
-        source: Arc<str>,
-    ) -> Result<SExpId, ParseError> {
+    fn node_to_sexp(&mut self, node: tree_sitter::Node) -> Result<SExpId, ParseError> {
         let span = Span {
             range: node.range(),
-            source: source.clone(),
-            filename: Arc::from("<todo>"),
+            source: self.source.clone(),
+            filename: self.filename.clone(),
         };
         match node.kind() {
             "float" | "integer" => {
                 let text = node
-                    .utf8_text(source.as_bytes())
+                    .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 let value = text
                     .parse::<f64>()
@@ -328,7 +328,7 @@ impl SExpParser {
             }
             "boolean" => {
                 let text = node
-                    .utf8_text(source.as_bytes())
+                    .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 let value = text == "true";
                 Ok(self.ast.add_node(SExp::Bool(value), span))
@@ -338,20 +338,20 @@ impl SExpParser {
                     .child_by_field_name("inner")
                     .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
                 let text = inner
-                    .utf8_text(source.as_bytes())
+                    .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(self.ast.add_node(SExp::String(text.to_string()), span))
             }
             "keyword" => {
                 let text = node
-                    .utf8_text(source.as_bytes())
+                    .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 let text = text.trim_start_matches(':');
                 Ok(self.ast.add_node(SExp::Keyword(text.to_string()), span))
             }
             "symbol" => {
                 let text = node
-                    .utf8_text(source.as_bytes())
+                    .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 Ok(self.ast.add_node(SExp::Symbol(text.to_string()), span))
             }
@@ -361,7 +361,7 @@ impl SExpParser {
                 let mut child = node.named_child(0);
                 while let Some(n) = child {
                     if !n.is_extra() {
-                        items.push(self.node_to_sexp(n, source.clone())?);
+                        items.push(self.node_to_sexp(n)?);
                     }
                     child = n.next_named_sibling();
                 }
@@ -378,7 +378,7 @@ impl SExpParser {
                 );
                 while let Some(n) = child {
                     if !n.is_extra() {
-                        children.push(self.node_to_sexp(n, source.clone())?);
+                        children.push(self.node_to_sexp(n)?);
                     }
                     child = n.next_named_sibling();
                 }
@@ -395,17 +395,17 @@ impl SExpParser {
                 );
                 while let Some(n) = child {
                     if !n.is_extra() {
-                        items.push(self.node_to_sexp(n, source.clone())?);
+                        items.push(self.node_to_sexp(n)?);
                     }
                     child = n.next_named_sibling();
                 }
                 self.ast.set(array, SExp::List(items), span);
                 Ok(array)
             }
-            "quote" => self.shortcut(span, node, source, "quote"),
-            "quasiquote" => self.shortcut(span, node, source, "quasiquote"),
-            "unquote" => self.shortcut(span, node, source, "unquote"),
-            "splice" => self.shortcut(span, node, source, "splice"),
+            "quote" => self.shortcut(span, node, "quote"),
+            "quasiquote" => self.shortcut(span, node, "quasiquote"),
+            "unquote" => self.shortcut(span, node, "unquote"),
+            "splice" => self.shortcut(span, node, "splice"),
 
             kind => Err(ParseError::UnexpectedNode(format!(
                 "Unexpected node kind: {}",
@@ -418,7 +418,6 @@ impl SExpParser {
         &mut self,
         span: Span,
         node: tree_sitter::Node,
-        source: Arc<str>,
         symbol: &str,
     ) -> Result<SExpId, ParseError> {
         let parent = self.ast.reserve();
@@ -432,17 +431,16 @@ impl SExpParser {
             .child_by_field_name("inner")
             .ok_or_else(|| ParseError::TreeSitterError("No inner node".to_string()))?;
 
-        let inner = self.node_to_sexp(inner, source)?;
+        let inner = self.node_to_sexp(inner)?;
         items.push(inner);
         self.ast.set(parent, SExp::List(items), span);
         Ok(parent)
     }
 
-    pub fn parse(mut self, input: &str) -> Result<AST, ParseError> {
-        let input: Arc<str> = Arc::from(input);
+    pub fn parse(mut self) -> Result<AST, ParseError> {
         let tree = self
             .parser
-            .parse(input.as_bytes(), None)
+            .parse(self.source.as_bytes(), None)
             .ok_or_else(|| ParseError::TreeSitterError("Failed to parse input".to_string()))?;
 
         let root = tree.root_node();
@@ -464,7 +462,7 @@ impl SExpParser {
         loop {
             let node = cursor.node();
             if !node.is_extra() {
-                let id = self.node_to_sexp(node, input.clone())?;
+                let id = self.node_to_sexp(node)?;
                 ids.push(id);
             }
             if !cursor.goto_next_sibling() {
@@ -473,8 +471,8 @@ impl SExpParser {
         }
         let span = Span {
             range: root.range(),
-            source: input.clone(),
-            filename: Arc::from("<todo>"),
+            source: self.source.clone(),
+            filename: self.filename.clone(),
         };
         let do_symbol = self
             .ast
@@ -536,7 +534,7 @@ mod tests {
     fn ast() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "ast", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input).expect("Failed to parse");
+            let ast = asts.parse(input, "<input>").expect("Failed to parse");
             let root_id = ast.root_id().unwrap();
             let result = asts.get(root_id);
             let result = result.fmt(&asts);

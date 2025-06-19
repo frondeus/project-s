@@ -5,7 +5,7 @@ use crate::{
         CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Rest, WithConstructor,
         WithoutConstructor,
     },
-    ast::{SExp, SExpParser},
+    ast::SExp,
     builder::ASTBuilder,
     runtime::{
         Function, Runtime, Value,
@@ -303,16 +303,14 @@ pub fn make_list(args: Rest<Value>) -> Value {
 
 pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
     let modules = rt.modules();
-    let path = PathBuf::from(path);
-    let Some(module) = modules.get_module(&path) else {
-        return Err(format!("Module not found: {}", path.display()));
+    let path_buf = PathBuf::from(&path);
+    let Some(module) = modules.get_module(&path_buf) else {
+        return Err(format!("Module not found: {}", path_buf.display()));
     };
     let module = module.to_string();
 
-    let parser = SExpParser::new(&mut rt.asts).map_err(|e| e.to_string())?;
-    let ast = parser.parse(&module).map_err(|e| e.to_string())?;
+    let ast = rt.asts.parse(&module, &path).map_err(|e| e.to_string())?;
     let root = ast.root_id().ok_or("Import: Expected root")?;
-    rt.asts.add_ast(ast);
 
     Ok(rt.eval(root))
 }
