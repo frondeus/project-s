@@ -26,7 +26,7 @@ impl<T> WithSpan<Option<T>> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Span {
     pub range: Range,
     pub filename: Arc<str>,

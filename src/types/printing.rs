@@ -87,7 +87,7 @@ impl TypeEnv {
             .engine
             .predecessors(use_)
             .filter_map(|(pred, _)| match pred {
-                core::TypeNode::Value(value) => Some(value),
+                core::TypeNode::Value(value, _) => Some(value),
                 _ => None,
             })
             .enumerate()
@@ -128,7 +128,7 @@ impl TypeEnv {
                     f.push_str("Any");
                 }
             }
-            core::TypeNode::Use(u) => self.fmt_use_head(u, f, visited),
+            core::TypeNode::Use(u, _) => self.fmt_use_head(u, f, visited),
             node => unreachable!("{:?}", node),
         }
         visited.pop();
@@ -149,17 +149,17 @@ impl TypeEnv {
             return;
         }
         match self.engine.get(value) {
-            core::TypeNode::Value(value) => {
+            core::TypeNode::Value(value, _) => {
                 self.fmt_value_head(value, f, visited);
             }
-            core::TypeNode::Use(_u) => unreachable!(),
+            core::TypeNode::Use(_u, _) => unreachable!(),
             core::TypeNode::Var => {
                 let mut first = true;
                 let mut any = true;
                 for (pred, pred_id) in self.engine.predecessors(value) {
                     match pred {
-                        core::TypeNode::Use(_) => continue,
-                        core::TypeNode::Value(value) => {
+                        core::TypeNode::Use(_u, _) => continue,
+                        core::TypeNode::Value(value, _) => {
                             any = false;
                             if first {
                                 first = false;

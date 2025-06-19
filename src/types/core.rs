@@ -4,7 +4,7 @@ use std::{collections::HashMap, rc::Rc};
 
 use thiserror::Error;
 
-use crate::ast::ASTS;
+use crate::{ast::ASTS, source::Span};
 
 use super::reachability::Reachability;
 
@@ -171,13 +171,24 @@ impl UTypeHead {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum TypeNode {
     Var,
-    Value(VTypeHead),
-    Use(UTypeHead),
+    Value(VTypeHead, Span),
+    Use(UTypeHead, Span),
 }
 
+impl std::fmt::Debug for TypeNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Var => write!(f, "Var"),
+            Self::Value(arg0, _) => f.debug_tuple("Value").field(arg0).finish(),
+            Self::Use(arg0, _) => f.debug_tuple("Use").field(arg0).finish(),
+        }
+    }
+}
+
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum TypeError {
     #[error("Undefined variable: {0}")]
@@ -189,8 +200,8 @@ pub enum TypeError {
     #[error("Undefined field: {0}")]
     UndefinedField(String),
 
-    #[error("Incompatible types: {0:?} and {1:?}")]
-    IncompatibleTypes(VTypeHead, UTypeHead),
+    #[error("Incompatible types: {0:?} and {1:?} at {2:?} and {3:?}")]
+    IncompatibleTypes(VTypeHead, UTypeHead, Span, Span),
 
     #[error("Wrong number of arguments: {0}. Expected {1}.")]
     WrongNumberOfArguments(usize, usize),
@@ -205,33 +216,35 @@ pub(crate) struct TypeCheckerCore {
 }
 
 impl TypeCheckerCore {
-    fn new_val(&mut self, val_type: VTypeHead) -> Value {
+    fn new_val(&mut self, val_type: VTypeHead, span: Span) -> Value {
         if let Some(i) = self
             .types
             .iter()
-            .position(|t| matches!(t, TypeNode::Value(t) if t == &val_type))
+            .position(|t| matches!(t, TypeNode::Value(t, _) if t == &val_type))
+        // .position(|t| matches!(t, TypeNode::Value(t, s) if t == &val_type && s == &span))
         {
             return Value(i);
         }
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
-        self.types.push(TypeNode::Value(val_type));
+        self.types.push(TypeNode::Value(val_type, span));
         Value(i)
     }
 
-    fn new_use(&mut self, constraint: UTypeHead) -> Use {
+    fn new_use(&mut self, constraint: UTypeHead, span: Span) -> Use {
         if let Some(i) = self
             .types
             .iter()
-            .position(|t| matches!(t, TypeNode::Use(t) if t == &constraint))
+            .position(|t| matches!(t, TypeNode::Use(t, _) if t == &constraint))
+        // .position(|t| matches!(t, TypeNode::Use(t, s) if t == &constraint && s == &span))
         {
             return Use(i);
         }
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
-        self.types.push(TypeNode::Use(constraint));
+        self.types.push(TypeNode::Use(constraint, span));
         Use(i)
     }
 
@@ -268,84 +281,100 @@ impl TypeCheckerCore {
         (Value(i), Use(i))
     }
 
-    pub fn bool(&mut self) -> Value {
-        self.new_val(VTypeHead::VBool)
+    pub fn bool(&mut self, span: Span) -> Value {
+        self.new_val(VTypeHead::VBool, span)
     }
 
-    pub fn bool_use(&mut self) -> Use {
-        self.new_use(UTypeHead::UBool)
+    pub fn bool_use(&mut self, span: Span) -> Use {
+        self.new_use(UTypeHead::UBool, span)
     }
 
-    pub fn keyword(&mut self) -> Value {
-        self.new_val(VTypeHead::VKeyword)
+    pub fn keyword(&mut self, span: Span) -> Value {
+        self.new_val(VTypeHead::VKeyword, span)
     }
 
-    pub fn keyword_use(&mut self) -> Use {
-        self.new_use(UTypeHead::UKeyword)
+    pub fn keyword_use(&mut self, span: Span) -> Use {
+        self.new_use(UTypeHead::UKeyword, span)
     }
 
-    pub fn string(&mut self) -> Value {
-        self.new_val(VTypeHead::VString)
+    pub fn string(&mut self, span: Span) -> Value {
+        self.new_val(VTypeHead::VString, span)
     }
 
-    pub fn string_use(&mut self) -> Use {
-        self.new_use(UTypeHead::UString)
+    pub fn string_use(&mut self, span: Span) -> Use {
+        self.new_use(UTypeHead::UString, span)
     }
 
-    pub fn number(&mut self) -> Value {
-        self.new_val(VTypeHead::VNumber)
+    pub fn number(&mut self, span: Span) -> Value {
+        self.new_val(VTypeHead::VNumber, span)
     }
 
-    pub fn number_use(&mut self) -> Use {
-        self.new_use(UTypeHead::UNumber)
+    pub fn number_use(&mut self, span: Span) -> Use {
+        self.new_use(UTypeHead::UNumber, span)
     }
 
-    pub fn error(&mut self) -> Value {
-        self.new_val(VTypeHead::VError)
+    pub fn error(&mut self, span: Span) -> Value {
+        self.new_val(VTypeHead::VError, span)
     }
 
-    pub fn func(&mut self, pattern: Use, ret: Value) -> Value {
-        self.new_val(VTypeHead::VFunc { pattern, ret })
+    pub fn func(&mut self, pattern: Use, ret: Value, span: Span) -> Value {
+        self.new_val(VTypeHead::VFunc { pattern, ret }, span)
     }
 
-    pub fn func_use(&mut self, args: Vec<Value>, ret: Use) -> Use {
-        let args = self.list(args);
-        self.new_use(UTypeHead::UFunc { args, ret })
+    pub fn func_use(&mut self, args: Vec<Value>, ret: Use, span: Span) -> Use {
+        let args = self.list(args, span.clone());
+        self.new_use(UTypeHead::UFunc { args, ret }, span)
     }
 
-    pub fn list(&mut self, items: Vec<Value>) -> Value {
-        self.new_val(VTypeHead::VList { items })
+    pub fn list(&mut self, items: Vec<Value>, span: Span) -> Value {
+        self.new_val(VTypeHead::VList { items }, span)
     }
 
-    pub fn tuple_use(&mut self, items: Vec<Use>) -> Use {
-        self.new_use(UTypeHead::UTuple { items })
+    pub fn tuple_use(&mut self, items: Vec<Use>, span: Span) -> Use {
+        self.new_use(UTypeHead::UTuple { items }, span)
     }
-    pub fn tuple_access_use(&mut self, index: Use) -> Use {
-        self.new_use(UTypeHead::UTupleAccess { index })
-    }
-
-    pub fn list_use(&mut self, items: Use, min_len: usize, max_len: Option<usize>) -> Use {
-        self.new_use(UTypeHead::UList {
-            items,
-            min_len,
-            max_len,
-        })
+    pub fn tuple_access_use(&mut self, index: Use, span: Span) -> Use {
+        self.new_use(UTypeHead::UTupleAccess { index }, span)
     }
 
-    pub fn obj(&mut self, fields: Vec<(String, Value)>) -> Value {
-        self.new_val(VTypeHead::VObj {
-            fields: fields.into_iter().collect(),
-        })
-    }
-    pub fn obj_use(&mut self, fields: Vec<(String, Use)>) -> Use {
-        self.new_use(UTypeHead::UObj {
-            fields: fields.into_iter().collect(),
-        })
-    }
-    pub fn obj_field_access_use(&mut self, field: (String, Use)) -> Use {
-        self.new_use(UTypeHead::UObjAccess { field })
+    pub fn list_use(
+        &mut self,
+        items: Use,
+        min_len: usize,
+        max_len: Option<usize>,
+        span: Span,
+    ) -> Use {
+        self.new_use(
+            UTypeHead::UList {
+                items,
+                min_len,
+                max_len,
+            },
+            span,
+        )
     }
 
+    pub fn obj(&mut self, fields: Vec<(String, Value)>, span: Span) -> Value {
+        self.new_val(
+            VTypeHead::VObj {
+                fields: fields.into_iter().collect(),
+            },
+            span,
+        )
+    }
+    pub fn obj_use(&mut self, fields: Vec<(String, Use)>, span: Span) -> Use {
+        self.new_use(
+            UTypeHead::UObj {
+                fields: fields.into_iter().collect(),
+            },
+            span,
+        )
+    }
+    pub fn obj_field_access_use(&mut self, field: (String, Use), span: Span) -> Use {
+        self.new_use(UTypeHead::UObjAccess { field }, span)
+    }
+
+    #[allow(clippy::result_large_err)]
     pub fn flow(&mut self, lhs: Value, rhs: Use) -> Result<()> {
         let mut pending_edges = vec![(lhs, rhs)];
         let mut type_pairs_to_check = Vec::new();
@@ -354,9 +383,15 @@ impl TypeCheckerCore {
 
             // Check if adding that edge resulted in any new type pairs needing to be checked
             while let Some((lhs, rhs)) = type_pairs_to_check.pop() {
-                if let TypeNode::Value(lhs_head) = &self.types[lhs] {
-                    if let TypeNode::Use(rhs_head) = &self.types[rhs] {
-                        Self::check_heads(lhs_head, rhs_head, &mut pending_edges)?;
+                if let TypeNode::Value(lhs_head, lhs_span) = &self.types[lhs] {
+                    if let TypeNode::Use(rhs_head, rhs_span) = &self.types[rhs] {
+                        Self::check_heads(
+                            lhs_head,
+                            rhs_head,
+                            lhs_span,
+                            rhs_span,
+                            &mut pending_edges,
+                        )?;
                     }
                 }
             }
@@ -365,7 +400,14 @@ impl TypeCheckerCore {
         Ok(())
     }
 
-    fn check_heads(lhs: &VTypeHead, rhs: &UTypeHead, out: &mut Vec<(Value, Use)>) -> Result<()> {
+    #[allow(clippy::result_large_err)]
+    fn check_heads(
+        lhs: &VTypeHead,
+        rhs: &UTypeHead,
+        lhs_span: &Span,
+        rhs_span: &Span,
+        out: &mut Vec<(Value, Use)>,
+    ) -> Result<()> {
         use UTypeHead::*;
         use VTypeHead::*;
 
@@ -423,7 +465,12 @@ impl TypeCheckerCore {
                 }
                 Ok(())
             }
-            _ => Err(TypeError::IncompatibleTypes(lhs.clone(), rhs.clone())),
+            _ => Err(TypeError::IncompatibleTypes(
+                lhs.clone(),
+                rhs.clone(),
+                lhs_span.clone(),
+                rhs_span.clone(),
+            )),
         }
     }
 }
