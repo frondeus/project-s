@@ -23,10 +23,10 @@ pub struct TypeEnv {
 impl TypeEnv {
     pub fn with_prelude(mut self) -> Self {
         let prelude_span = Span::default();
-        self.engine.number(prelude_span.clone());
-        self.engine.string(prelude_span.clone());
-        self.engine.bool(prelude_span.clone());
-        self.engine.keyword(prelude_span.clone());
+        self.engine.number_def();
+        self.engine.string_def();
+        self.engine.bool_def();
+        self.engine.keyword_def();
 
         self.envs.set(
             "list",
@@ -52,7 +52,10 @@ impl TypeEnv {
     }
 
     fn null(&mut self, span: Span) -> core::Value {
-        self.engine.list(vec![], span)
+        let def = self.engine.tuple_def(vec![], None);
+        let list = self.engine.list(vec![], span);
+        self.engine.new_def_edge(def, list);
+        list
     }
 
     #[allow(clippy::result_large_err)]
@@ -81,7 +84,8 @@ impl TypeEnv {
                 [] => self.engine.list(vec![], span),
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
                     let cond_type = self.check(asts, *condition, diagnostics);
-                    let bound = self.engine.bool_use(span.clone());
+                    let bool_span = self.span_of(*condition, asts);
+                    let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
                     let then_type = self.check(asts, *then_branch, diagnostics);
@@ -97,7 +101,8 @@ impl TypeEnv {
                     if Self::is_symbol(asts, *first, "if") =>
                 {
                     let cond_type = self.check(asts, *condition, diagnostics);
-                    let bound = self.engine.bool_use(span.clone());
+                    let bool_span = self.span_of(*condition, asts);
+                    let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
                     let then_type = self.check(asts, *then_branch, diagnostics);
@@ -125,7 +130,9 @@ impl TypeEnv {
                     let body_type = self.check(asts, *body, diagnostics);
                     self.envs.pop();
 
-                    self.engine.func(pattern_bound, body_type, span)
+                    let func_def = self.engine.func_def(span.clone());
+                    let func = self.engine.func(pattern_bound, body_type, span);
+                    self.engine.new_def_edge(func_def, func)
                 }
                 [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
                     self.envs.push();
@@ -172,6 +179,11 @@ impl TypeEnv {
             },
             SExp::Error => self.engine.error(span),
         }
+    }
+
+    fn span_of(&self, sexp: SExpId, asts: &ASTS) -> Span {
+        let sexp = asts.get(sexp);
+        sexp.span.clone()
     }
 
     fn polymorphic_check_pattern(&mut self, span: Span, pattern: Pattern, value: SExpId) {
@@ -255,6 +267,7 @@ impl TypeEnv {
         for (id, node) in self.engine.iter() {
             match node {
                 core::TypeNode::Var => (),
+                core::TypeNode::Def(_, _) => (),
                 core::TypeNode::Value(vtype_head, _) => {
                     for to in vtype_head.ids() {
                         writeln!(buffer, "N{} -> N{} [color=blue, style=dotted];", id, to).unwrap();

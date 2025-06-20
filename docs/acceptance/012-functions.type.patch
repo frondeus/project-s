@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/acceptance/012-functions.md:10
+```
+(fn (:x) x)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ type
+@@ -12,7 +12,7 @@
+ ```
+ 
+ ```type
+-(Any) -> Any
++function
+ ```
+ 
+ # Calling a function

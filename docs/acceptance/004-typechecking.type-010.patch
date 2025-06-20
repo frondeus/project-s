@@ -1,0 +1,20 @@
+/Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md:101
+```
+(let :f (fn (:x :y) (if x y)))
+
+(f true "3")
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md
++++ type-010
+@@ -107,7 +107,7 @@
+ ```
+ 
+ ```type
+-(Bool, Any) -> Any | ()
++function
+ ```
+ 
+ Else the same type

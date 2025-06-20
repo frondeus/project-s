@@ -1,15 +1,125 @@
+use itertools::Itertools;
+
 use super::TypeEnv;
 use super::core;
-use core::{ID, WithID};
+use super::core::WithID;
+
+struct Formatter<'a> {
+    f: &'a mut String,
+    visited: &'a mut Vec<core::ID>,
+}
+
+impl Formatter<'_> {
+    fn def_ids(&mut self, def_ids: Vec<usize>, engine: &core::TypeCheckerCore) {
+        let defs = def_ids
+            .iter()
+            .map(|id| engine.get(*id))
+            .filter_map(|node| match node {
+                core::TypeNode::Def(def, _span) => Some(def),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        if defs.is_empty() {
+            self.f.push_str("Any");
+        } else {
+            for (i, def) in defs.into_iter().enumerate() {
+                if i > 0 {
+                    self.f.push_str(" | ");
+                }
+                self.def(def, engine);
+            }
+        }
+    }
+    fn refdef(&mut self, def: core::Def, engine: &core::TypeCheckerCore) {
+        if self.visited.contains(&def.id()) {
+            self.f.push_str("<recursive>");
+            return;
+        }
+        self.visited.push(def.id());
+        let def = engine.get(def);
+        match def {
+            core::TypeNode::Def(def, _span) => self.def(def, engine),
+            _ => unreachable!(),
+        }
+        self.visited.pop();
+    }
+    fn def(&mut self, def: &core::TypeDef, engine: &core::TypeCheckerCore) {
+        match def {
+            core::TypeDef::Bool
+            | core::TypeDef::Number
+            | core::TypeDef::String
+            | core::TypeDef::Error
+            | core::TypeDef::Keyword => {
+                self.f.push_str(&def.to_string());
+            }
+            core::TypeDef::Tuple(items) => {
+                self.f.push('(');
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        self.f.push_str(", ");
+                    }
+                    self.refdef(*item, engine);
+                }
+                self.f.push(')');
+            }
+            core::TypeDef::Obj => todo!(),
+            core::TypeDef::Func => {
+                self.f.push_str("function");
+            }
+        }
+    }
+    fn value(&mut self, value: core::Value, engine: &core::TypeCheckerCore) {
+        match engine.get(value) {
+            core::TypeNode::Var => {
+                let def_ids = engine
+                    .predecessors(value)
+                    .flat_map(|(_pred, pred_id)| {
+                        engine
+                            .successors(pred_id)
+                            .filter_map(|(succ, succ_id)| match succ {
+                                core::TypeNode::Def(_def, _span) => Some(succ_id),
+                                _ => None,
+                            })
+                    })
+                    .unique()
+                    .collect::<Vec<_>>();
+
+                self.def_ids(def_ids, engine);
+            }
+            core::TypeNode::Use(_, _) | core::TypeNode::Value(_, _) => {
+                let def_ids = engine
+                    .successors(value)
+                    .filter_map(|(succ, succ_id)| match succ {
+                        core::TypeNode::Def(_def, _span) => Some(succ_id),
+                        _ => None,
+                    })
+                    .unique()
+                    .collect::<Vec<_>>();
+
+                self.def_ids(def_ids, engine);
+            }
+            core::TypeNode::Def(type_def, _span) => {
+                self.def(type_def, engine);
+            }
+        }
+    }
+}
 
 impl TypeEnv {
     pub fn to_string(&self, value: core::Value) -> String {
         let mut f = String::new();
         let mut visited = Vec::new();
-        self.fmt_value(value, &mut f, &mut visited);
+        Formatter {
+            f: &mut f,
+            visited: &mut visited,
+        }
+        .value(value, &self.engine);
+        // self.fmt_value(value, &mut f, &mut visited);
         f
     }
 
+    /*
     fn fmt_value_head(&self, value: &core::VTypeHead, f: &mut String, visited: &mut Vec<ID>) {
         match value {
             core::VTypeHead::VBool => f.push_str("Bool"),
@@ -152,6 +262,9 @@ impl TypeEnv {
             core::TypeNode::Value(value, _) => {
                 self.fmt_value_head(value, f, visited);
             }
+            core::TypeNode::Def(def, _) => {
+                f.push_str(&def.to_string());
+            }
             core::TypeNode::Use(_u, _) => unreachable!(),
             core::TypeNode::Var => {
                 let mut first = true;
@@ -159,6 +272,9 @@ impl TypeEnv {
                 for (pred, pred_id) in self.engine.predecessors(value) {
                     match pred {
                         core::TypeNode::Use(_u, _) => continue,
+                        core::TypeNode::Def(def, _) => {
+                            f.push_str(&def.to_string());
+                        }
                         core::TypeNode::Value(value, _) => {
                             any = false;
                             if first {
@@ -190,4 +306,5 @@ impl TypeEnv {
         }
         visited.pop();
     }
+    */
 }

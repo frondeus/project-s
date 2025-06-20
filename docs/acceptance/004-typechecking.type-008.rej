@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md:78
+```
+(fn (:x :y) (
+    if x y
+))
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/004-typechecking.md
++++ type-008
+@@ -82,7 +82,7 @@
+ ```
+ 
+ ```type
+-(Bool, Any) -> Any | ()
++Any
+ ```
+ 
+ ```

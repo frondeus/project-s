@@ -14,6 +14,9 @@ pub struct Use(ID);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Value(ID);
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Def(ID);
+
 pub trait WithID {
     fn id(self) -> ID;
 }
@@ -31,6 +34,12 @@ impl WithID for Use {
 }
 
 impl WithID for Value {
+    fn id(self) -> ID {
+        self.0
+    }
+}
+
+impl WithID for Def {
     fn id(self) -> ID {
         self.0
     }
@@ -58,6 +67,33 @@ impl std::fmt::Debug for Scheme {
         match self {
             Self::Monomorphic(arg0) => f.debug_tuple("Monomorphic").field(arg0).finish(),
             Self::Polymorphic(arg0) => f.debug_tuple("Polymorphic").finish(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TypeDef {
+    Bool,
+    Number,
+    String,
+    Error,
+    Keyword,
+    Tuple(Vec<Def>),
+    Obj,
+    Func,
+}
+
+impl std::fmt::Display for TypeDef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bool => write!(f, "bool"),
+            Self::Number => write!(f, "number"),
+            Self::String => write!(f, "string"),
+            Self::Error => write!(f, "error"),
+            Self::Keyword => write!(f, "keyword"),
+            Self::Tuple(items) => write!(f, "tuple"),
+            Self::Obj => write!(f, "object"),
+            Self::Func => write!(f, "function"),
         }
     }
 }
@@ -209,7 +245,7 @@ pub enum TypeNode {
     Var,
     Value(VTypeHead, Span),
     Use(UTypeHead, Span),
-    // Def(VTypeDef, Option<Span>)
+    Def(TypeDef, Option<Span>),
 }
 
 impl std::fmt::Debug for TypeNode {
@@ -218,7 +254,7 @@ impl std::fmt::Debug for TypeNode {
             Self::Var => write!(f, "Var"),
             Self::Value(arg0, _) => f.debug_tuple("Value").field(arg0).finish(),
             Self::Use(arg0, _) => f.debug_tuple("Use").field(arg0).finish(),
-            // Self::Def(arg0, _) => f.debug_tuple("Def").field(arg0).finish(),
+            Self::Def(arg0, _) => f.debug_tuple("Def").field(arg0).finish(),
         }
     }
 }
@@ -230,6 +266,21 @@ pub(crate) struct TypeCheckerCore {
 }
 
 impl TypeCheckerCore {
+    fn new_def(&mut self, def: TypeDef, span: Option<Span>) -> Def {
+        if let Some(i) = self
+            .types
+            .iter()
+            .position(|t| matches!(t, TypeNode::Def(d, s) if d == &def && s == &span))
+        {
+            return Def(i);
+        }
+
+        let i = self.r.add_node();
+        assert!(i == self.types.len());
+        self.types.push(TypeNode::Def(def, span));
+        Def(i)
+    }
+
     fn new_val(&mut self, val_type: VTypeHead, span: Span) -> Value {
         // if let Some(i) = self
         //     .types
@@ -260,6 +311,11 @@ impl TypeCheckerCore {
         assert!(i == self.types.len());
         self.types.push(TypeNode::Use(constraint, span));
         Use(i)
+    }
+
+    pub fn new_def_edge(&mut self, def: Def, value: Value) -> Value {
+        self.r.add_edge(value.id(), def.id(), &mut vec![]);
+        value
     }
 
     pub fn get(&self, id: impl WithID) -> &TypeNode {
@@ -296,11 +352,17 @@ impl TypeCheckerCore {
     }
 
     pub fn bool(&mut self, span: Span) -> Value {
-        self.new_val(VTypeHead::VBool, span)
+        let def = self.bool_def();
+        let bool = self.new_val(VTypeHead::VBool, span);
+        self.new_def_edge(def, bool)
     }
 
     pub fn bool_use(&mut self, span: Span) -> Use {
         self.new_use(UTypeHead::UBool, span)
+    }
+
+    pub fn bool_def(&mut self) -> Def {
+        self.new_def(TypeDef::Bool, None)
     }
 
     pub fn keyword(&mut self, span: Span) -> Value {
@@ -311,28 +373,52 @@ impl TypeCheckerCore {
         self.new_use(UTypeHead::UKeyword, span)
     }
 
+    pub fn keyword_def(&mut self) -> Def {
+        self.new_def(TypeDef::Keyword, None)
+    }
+
     pub fn string(&mut self, span: Span) -> Value {
-        self.new_val(VTypeHead::VString, span)
+        let def = self.string_def();
+        let string = self.new_val(VTypeHead::VString, span);
+        self.new_def_edge(def, string)
     }
 
     pub fn string_use(&mut self, span: Span) -> Use {
         self.new_use(UTypeHead::UString, span)
     }
 
+    pub fn string_def(&mut self) -> Def {
+        self.new_def(TypeDef::String, None)
+    }
+
     pub fn number(&mut self, span: Span) -> Value {
-        self.new_val(VTypeHead::VNumber, span)
+        let def = self.number_def();
+        let number = self.new_val(VTypeHead::VNumber, span);
+        self.new_def_edge(def, number)
     }
 
     pub fn number_use(&mut self, span: Span) -> Use {
         self.new_use(UTypeHead::UNumber, span)
     }
 
+    pub fn number_def(&mut self) -> Def {
+        self.new_def(TypeDef::Number, None)
+    }
+
     pub fn error(&mut self, span: Span) -> Value {
         self.new_val(VTypeHead::VError, span)
     }
 
+    pub fn error_def(&mut self) -> Def {
+        self.new_def(TypeDef::Error, None)
+    }
+
     pub fn func(&mut self, pattern: Use, ret: Value, span: Span) -> Value {
         self.new_val(VTypeHead::VFunc { pattern, ret }, span)
+    }
+
+    pub fn func_def(&mut self, span: Span) -> Def {
+        self.new_def(TypeDef::Func, Some(span))
     }
 
     pub fn func_use(&mut self, args: Vec<Value>, ret: Use, span: Span) -> Use {
@@ -342,6 +428,10 @@ impl TypeCheckerCore {
 
     pub fn list(&mut self, items: Vec<Value>, span: Span) -> Value {
         self.new_val(VTypeHead::VList { items }, span)
+    }
+
+    pub fn tuple_def(&mut self, items: Vec<Def>, span: Option<Span>) -> Def {
+        self.new_def(TypeDef::Tuple(items), span)
     }
 
     pub fn tuple_use(&mut self, items: Vec<Use>, span: Span) -> Use {
@@ -376,6 +466,11 @@ impl TypeCheckerCore {
             span,
         )
     }
+
+    pub fn obj_def(&mut self, span: Span) -> Def {
+        self.new_def(TypeDef::Obj, Some(span))
+    }
+
     pub fn obj_use(&mut self, fields: Vec<(String, Use)>, span: Span) -> Use {
         self.new_use(
             UTypeHead::UObj {

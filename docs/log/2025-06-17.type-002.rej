@@ -1,0 +1,17 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-17.md:19
+```
+(let :x (list 1 2 3))
+x
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-17.md
++++ type-002
+@@ -22,7 +22,7 @@
+ ```
+ 
+ ```type
+-(Number, Number, Number)
++Any
+ ```
+ 
+ and two uses

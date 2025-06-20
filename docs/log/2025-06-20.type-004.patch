@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-20.md:70
+```
+(fn (:x) x)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-20.md
++++ type-004
+@@ -72,7 +72,7 @@
+ ```
+ 
+ ```type
+-(Any) -> Any
++function
+ ```
+ 
+ ```

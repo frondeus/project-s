@@ -1,0 +1,19 @@
+/Users/frondeus/Code/project-s/docs/acceptance/012-functions.md:38
+```
+(let :f (fn (:x) x))
+
+(f 5)
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ type-003
+@@ -43,7 +43,7 @@
+ ```
+ 
+ ```type
+-(Any) -> Any
++Any
+ ```
+ 
+ # Closures
