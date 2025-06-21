@@ -72,5 +72,5 @@ x
 ```
 
 ```type
-number
+Number
 ```

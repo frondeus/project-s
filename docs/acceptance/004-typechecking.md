@@ -7,7 +7,7 @@
 ```
 
 ```type
-number
+Number
 ```
 
 ```
@@ -15,7 +15,7 @@ number
 ```
 
 ```type
-string
+String
 ```
 
 ## Let expressions
@@ -26,7 +26,7 @@ x
 ```
 
 ```type
-number
+Number
 ```
 
 ## If else
@@ -38,7 +38,7 @@ x
 ```
 
 ```type
-number | string
+Number | String
 ```
 
 ## If else the same type 
@@ -50,7 +50,7 @@ x
 ```
 
 ```type
-number
+Number
 ```
 
 ## If only
@@ -62,7 +62,7 @@ x
 ```
 
 ```type
-number | ()
+Number | ()
 ```
 
 ## Functions

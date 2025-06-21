@@ -32,7 +32,7 @@
 ```
 
 ```type
-number
+Number
 ```
 
 ```

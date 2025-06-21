@@ -10,6 +10,7 @@ use crate::{
     source::Span,
 };
 
+mod canonical;
 mod core;
 mod printing;
 mod reachability;
@@ -23,10 +24,6 @@ pub struct TypeEnv {
 impl TypeEnv {
     pub fn with_prelude(mut self) -> Self {
         let prelude_span = Span::default();
-        self.engine.number_def();
-        self.engine.string_def();
-        self.engine.bool_def();
-        self.engine.keyword_def();
 
         self.envs.set(
             "list",
@@ -52,10 +49,7 @@ impl TypeEnv {
     }
 
     fn null(&mut self, span: Span) -> core::Value {
-        let def = self.engine.tuple_def(vec![], None);
-        let list = self.engine.list(vec![], span);
-        self.engine.new_def_edge(def, list);
-        list
+        self.engine.list(vec![], span)
     }
 
     #[allow(clippy::result_large_err)]
@@ -130,9 +124,7 @@ impl TypeEnv {
                     let body_type = self.check(asts, *body, diagnostics);
                     self.envs.pop();
 
-                    let func_def = self.engine.func_def(span.clone());
-                    let func = self.engine.func(pattern_bound, body_type, span);
-                    self.engine.new_def_edge(func_def, func)
+                    self.engine.func(pattern_bound, body_type, span)
                 }
                 [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
                     self.envs.push();
@@ -267,7 +259,6 @@ impl TypeEnv {
         for (id, node) in self.engine.iter() {
             match node {
                 core::TypeNode::Var => (),
-                core::TypeNode::Def(_, _) => (),
                 core::TypeNode::Value(vtype_head, _) => {
                     for to in vtype_head.ids() {
                         writeln!(buffer, "N{} -> N{} [color=blue, style=dotted];", id, to).unwrap();
@@ -350,7 +341,7 @@ impl Envs {
 mod tests {
     use crate::ast::ASTS;
 
-    use super::*;
+    use super::{canonical::Canonicalizer, *};
 
     #[test]
     fn type_() -> test_runner::Result {
@@ -375,7 +366,7 @@ mod tests {
 
     #[test]
     fn type_dot() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "graphviz", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", "graphviz", |input, _deps, args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input, "<input>").expect("Failed to parse");
             let root = ast.root_id().unwrap();
@@ -383,6 +374,12 @@ mod tests {
 
             let mut diagnostics = Diagnostics::default();
             let root = env.check(&asts, root, &mut diagnostics);
+
+            if args.contains(&"canon") {
+                let (canon_id, canonical) =
+                    Canonicalizer::default().canonicalize(root, &env.engine);
+                return canonical.dot(canon_id);
+            }
 
             env.dot(root)
         })
