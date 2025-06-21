@@ -101,6 +101,24 @@ impl Canonicalizer {
     }
 
     fn canon_value_var(&mut self, value: core::Value, engine: &core::TypeCheckerCore) -> CanonId {
+        let ids = self.value_predecessors(value, engine);
+        match &ids[..] {
+            [] => self.add_canon(Canonical::Any(None)),
+            [id] => *id,
+            ids => {
+                let mut ids = ids.to_vec();
+                ids.sort_unstable();
+                ids.dedup();
+                self.add_canon(Canonical::Or(ids))
+            }
+        }
+    }
+
+    fn value_predecessors(
+        &mut self,
+        value: impl WithID,
+        engine: &core::TypeCheckerCore,
+    ) -> Vec<CanonId> {
         let mut ids = Vec::new();
         for (pred, pred_id) in engine.predecessors(value) {
             match pred {
@@ -116,16 +134,7 @@ impl Canonicalizer {
                 _ => continue,
             }
         }
-        match &ids[..] {
-            [] => self.add_canon(Canonical::Any(None)),
-            [id] => *id,
-            ids => {
-                let mut ids = ids.to_vec();
-                ids.sort_unstable();
-                ids.dedup();
-                self.add_canon(Canonical::Or(ids))
-            }
-        }
+        ids
     }
 
     fn canon_value_head(
@@ -189,13 +198,15 @@ impl Canonicalizer {
     }
 
     fn canon_use_var(&mut self, use_: core::Use, engine: &core::TypeCheckerCore) -> CanonId {
-        let mut ids = Vec::new();
-        for (pred, _pred_id) in engine.successors(use_) {
-            match pred {
-                TypeNode::Use(use_, _) => {
-                    ids.push(self.canon_use_head(use_, engine));
+        let mut ids = self.value_predecessors(use_, engine);
+        if ids.is_empty() {
+            for (succ, _) in engine.successors(use_) {
+                match succ {
+                    TypeNode::Use(use_, _) => {
+                        ids.push(self.canon_use_head(use_, engine));
+                    }
+                    _ => continue,
                 }
-                _ => continue,
             }
         }
         match &ids[..] {
