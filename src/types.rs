@@ -187,6 +187,8 @@ impl TypeEnv {
         diagnostics: &mut Diagnostics,
     ) {
         let bound = match pattern {
+            // If its not a value, we cant generalize it so we treat is as monomorphic scheme.
+            _ if !Self::is_expression_value(value, asts) => self.check_pattern(span, pattern),
             Pattern::Single(key) => {
                 self.envs.set(
                     &key,
@@ -244,6 +246,38 @@ impl TypeEnv {
 
                 self.engine.obj_use(bounds, span)
             }
+        }
+    }
+
+    /// Is the expression a value in the context of "value restriciton" used to determine
+    /// if we can generalize a type returned by this expression or not.
+    ///
+    /// For now, we say that the expression is a value if it does not contain any function
+    /// calls.
+    fn is_expression_value(sexp: SExpId, asts: &ASTS) -> bool {
+        match &asts.get(sexp).item {
+            SExp::Number(_)
+            | SExp::String(_)
+            | SExp::Bool(_)
+            | SExp::Symbol(_)
+            | SExp::Error
+            | SExp::Keyword(_) => true,
+            SExp::List(sexp_ids) => match sexp_ids.as_slice() {
+                [first, ..] if Self::is_symbol(asts, *first, "fn") => true,
+                [first, rest @ ..] if Self::is_symbols(asts, *first, &["do", "if", "let"]) => rest
+                    .iter()
+                    .all(|sexp_id| Self::is_expression_value(*sexp_id, asts)),
+                // Its a function call
+                _ => false,
+            },
+        }
+    }
+
+    fn is_symbols(asts: &ASTS, sexp: SExpId, names: &[&str]) -> bool {
+        let sexp = asts.get(sexp);
+        match &sexp.item {
+            SExp::Symbol(symbol) => names.contains(&symbol.as_str()),
+            _ => false,
         }
     }
 
