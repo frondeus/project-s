@@ -146,7 +146,7 @@ impl TypeEnv {
 
                     let value = *value;
 
-                    self.polymorphic_check_pattern(span.clone(), pattern, value);
+                    self.polymorphic_check_pattern(span.clone(), pattern, value, asts, diagnostics);
 
                     self.null(span)
                 }
@@ -178,8 +178,15 @@ impl TypeEnv {
         sexp.span.clone()
     }
 
-    fn polymorphic_check_pattern(&mut self, span: Span, pattern: Pattern, value: SExpId) {
-        match pattern {
+    fn polymorphic_check_pattern(
+        &mut self,
+        span: Span,
+        pattern: Pattern,
+        value: SExpId,
+        asts: &ASTS,
+        diagnostics: &mut Diagnostics,
+    ) {
+        let bound = match pattern {
             Pattern::Single(key) => {
                 self.envs.set(
                     &key,
@@ -187,6 +194,7 @@ impl TypeEnv {
                         this.check(asts, value, diagnostics)
                     })),
                 );
+                return;
             }
             Pattern::List(patterns) => {
                 let mut bounds = Vec::new();
@@ -195,7 +203,7 @@ impl TypeEnv {
                     bounds.push(bound);
                 }
 
-                self.engine.tuple_use(bounds, span);
+                self.engine.tuple_use(bounds, span)
             }
             Pattern::Object(patterns) => {
                 let mut bounds = Vec::new();
@@ -204,9 +212,11 @@ impl TypeEnv {
                     bounds.push((key, bound));
                 }
 
-                self.engine.obj_use(bounds, span);
+                self.engine.obj_use(bounds, span)
             }
-        }
+        };
+        let value = self.check(asts, value, diagnostics);
+        self.engine.flow(value, bound, diagnostics);
     }
 
     fn check_pattern(&mut self, span: Span, pattern: Pattern) -> core::Use {
