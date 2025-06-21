@@ -12,7 +12,7 @@
  
  ```type
 -(Bool, Any) -> Any | ()
-+Any
++function
  ```
  
  ```

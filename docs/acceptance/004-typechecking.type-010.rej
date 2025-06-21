@@ -14,7 +14,7 @@ f
  
  ```type
 -(Bool, Any) -> Any | ()
-+Any
++function
  ```
  
  Else the same type

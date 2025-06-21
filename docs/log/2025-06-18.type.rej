@@ -14,7 +14,7 @@ f
 -```type 
 -(Any) -> Number | Any
 +```type
-+Any
++function
  ```
  
  

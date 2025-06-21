@@ -10,7 +10,7 @@
  
  ```type
 -(Any) -> Any
-+Any
++function
  ```
  
  ```

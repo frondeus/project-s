@@ -14,7 +14,7 @@ f
  
  ```type
 -(Bool, Any) -> Any | String
-+Any
++function
  ```
  
  # Dynamically:
