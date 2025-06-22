@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/log/2025-05-31.md:52
+```
+(({
+  :a 42.0
+  :b (fn () (self :a))
+} :b))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-05-31.md
++++ json-002
+@@ -61,7 +61,17 @@
+ ```
+ 
+ ```json
+-42.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:3 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:3:14 ]
++   │
++ 3 │   :b (fn () (self :a))
++───╯
++
+ ```
+ 
+ Okay, self works. Now root!

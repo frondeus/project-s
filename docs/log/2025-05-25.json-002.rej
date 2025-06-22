@@ -1,0 +1,67 @@
+/Users/frondeus/Code/project-s/docs/log/2025-05-25.md:45
+```
+(+ {
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+(thunk () {
+  :another 9
+  :self (+ 1 (self :another))
+  :super (+ 1 (super :another))
+}))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-05-25.md
++++ json-002
+@@ -60,15 +60,37 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 9.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 10.0
+-  },
+-  "self": 10.0,
+-  "super": 5.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:4 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:4:8 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:6:14 ]
++   │
++ 6 │     :b (+ 1 (root :another))
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:10:11 ]
++    │
++    │ 
++────╯
++Error: Undefined variable: self
++    ╭─[ <input>:12:15 ]
++    │
++ 12 │   :self (+ 1 (self :another))
++────╯
++Error: Undefined variable: super
++    ╭─[ <input>:13:16 ]
++    │
++ 13 │   :super (+ 1 (super :another))
++────╯
++
+ ```
+ 
+ For now we are cloning supers over and over. That should

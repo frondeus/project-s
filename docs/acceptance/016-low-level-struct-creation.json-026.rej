@@ -1,0 +1,28 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:649
+```
+(obj/struct
+  (let :x 2)
+  :a x
+  :b x
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-026
+@@ -655,10 +655,12 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 2.0,
+-  "b": 2.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (obj/struct
++───╯
++
+ ```
+ 
+ # Using obj+

@@ -1,0 +1,25 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-11.md:457
+```
+(let :foo (import "foo.s"))
+
+foo
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-11.md
++++ json-014
+@@ -466,9 +466,10 @@
+ 
+ 
+ ```json
+-[
+-  1.0,
+-  2.0,
+-  3.0
+-]
++Error: Undefined variable: import
++   ╭─[ <input>:1:12 ]
++   │
++ 1 │ (let :foo (import "foo.s"))
++───╯
++
+ ```

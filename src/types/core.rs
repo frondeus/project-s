@@ -148,9 +148,13 @@ pub enum UTypeHead {
     UObjAccess {
         field: (String, Use),
     },
-    UFunc {
+    UApplication {
         args: Value,
         ret: Use,
+        // In case its object access
+        // field: (String, Use),
+        // In case its list access
+        index: (Option<usize>, Use),
     },
 }
 
@@ -170,7 +174,7 @@ impl std::fmt::Display for UTypeHead {
             } => write!(f, "list"),
             UTypeHead::UObj { fields } => write!(f, "object"),
             UTypeHead::UObjAccess { field } => write!(f, "object_access"),
-            UTypeHead::UFunc { args, ret } => write!(f, "function"),
+            UTypeHead::UApplication { .. } => write!(f, "function"),
         }
     }
 }
@@ -200,9 +204,16 @@ impl UTypeHead {
             } => {
                 ids.push(field_use.id());
             }
-            UTypeHead::UFunc { args, ret } => {
+            UTypeHead::UApplication {
+                args,
+                ret,
+                // field: (_, field_use),
+                index: (_, index_use),
+            } => {
                 ids.push(args.id());
                 ids.push(ret.id());
+                // ids.push(field_use.id());
+                ids.push(index_use.id());
             }
         }
         ids.into_iter()
@@ -338,9 +349,15 @@ impl TypeCheckerCore {
         self.new_val(VTypeHead::VFunc { pattern, ret }, span)
     }
 
-    pub fn func_use(&mut self, args: Vec<Value>, ret: Use, span: Span) -> Use {
+    pub fn application_use(
+        &mut self,
+        args: Vec<Value>,
+        ret: Use,
+        index: (Option<usize>, Use),
+        span: Span,
+    ) -> Use {
         let args = self.tuple(args, span.clone());
-        self.new_use(UTypeHead::UFunc { args, ret }, span)
+        self.new_use(UTypeHead::UApplication { args, ret, index }, span)
     }
 
     pub fn list(&mut self, item: Value, span: Span) -> Value {
@@ -440,7 +457,52 @@ impl TypeCheckerCore {
             (VNumber, UNumber) => (),
             (VString, UString) => (),
             (VKeyword, UKeyword) => (),
-            (&VFunc { pattern, ret }, &UFunc { args, ret: ret_use }) => {
+            (
+                &VList { item },
+                &UApplication {
+                    args,
+                    ret: ret_use,
+                    // field: (ref field_name, field_use),
+                    index: (index, index_use),
+                },
+            ) => {
+                out.push((item, ret_use));
+                out.push((args, index_use));
+            }
+            (
+                VTuple { items },
+                &UApplication {
+                    args,
+                    ret: ret_use,
+                    index: (index, index_use),
+                },
+            ) => {
+                let Some(index) = index else {
+                    diagnostics.add(
+                        lhs_span.clone(),
+                        "Expected int literal to access tuple element",
+                    );
+                    return;
+                };
+                if index >= items.len() {
+                    diagnostics.add(
+                        lhs_span.clone(),
+                        format!(
+                            "Tuple index out of bounds: {} expected {}",
+                            index,
+                            items.len()
+                        ),
+                    );
+                }
+                out.push((args, index_use));
+                out.push((items[index], ret_use));
+            }
+            (
+                &VFunc { pattern, ret },
+                &UApplication {
+                    args, ret: ret_use, ..
+                },
+            ) => {
                 out.push((args, pattern));
                 out.push((ret, ret_use));
             }

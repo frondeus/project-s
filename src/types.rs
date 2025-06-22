@@ -3,7 +3,11 @@
 use core::WithID;
 use std::{collections::BTreeMap, rc::Rc};
 
-use builder::{TypeBuilder, canon::CanonBuilder};
+use builder::{
+    TypeBuilder,
+    canon::{CanonBuilder, number},
+    u_canonical,
+};
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -47,6 +51,7 @@ impl TypeEnv {
         env.with_poly("list", || func(list(any(0)), list(any(0))), Span::default());
         env.with_poly("tuple", || func(any(0), any(0)), Span::default());
 
+        env.with_mono("+", func(list(number()), number()), Span::default());
         env.with_mono("-", func(list(number()), number()), Span::default());
         env.with_mono(">", func((number(), number()), bool()), Span::default());
         env.with_poly("print", || func(list(any(None)), number()), Span::default());
@@ -59,17 +64,17 @@ impl TypeEnv {
         F: 'static + Fn() -> C,
         C: CanonBuilder,
     {
-        use builder::canonical;
+        use builder::v_canonical;
         self.envs.set(
             name,
             core::Scheme::Polymorphic(Rc::new(move |env, _asts, diagnostics| {
-                canonical(value(), span.clone()).build(env, diagnostics)
+                v_canonical(value(), span.clone()).build(env, diagnostics)
             })),
         );
     }
     fn with_mono(&mut self, name: &str, value: impl CanonBuilder, span: Span) {
-        use builder::canonical;
-        let value = canonical(value, span).build(self, &mut Diagnostics::default());
+        use builder::v_canonical;
+        let value = v_canonical(value, span).build(self, &mut Diagnostics::default());
         self.envs.set(name, core::Scheme::Monomorphic(value));
     }
 
@@ -215,13 +220,29 @@ impl TypeEnv {
                         .collect::<Vec<_>>();
 
                     let (ret_type, ret_bound) = self.engine.var();
+
+                    let index_use = u_canonical((number(),), span.clone()).build(self, diagnostics);
+
+                    let first_arg = args
+                        .first()
+                        .and_then(|arg| match asts.get(*arg).item {
+                            SExp::Number(idx) => Some(idx),
+                            _ => None,
+                        })
+                        .map(|idx| idx as usize);
+
                     // This will only work if the callee is a function
                     // We need to also be able to handle:
                     // * objects
                     // * constructors
                     // * macros
                     // * (in future) arrays
-                    let bound = self.engine.func_use(args_types, ret_bound, span.clone());
+                    let bound = self.engine.application_use(
+                        args_types,
+                        ret_bound,
+                        (first_arg, index_use),
+                        span.clone(),
+                    );
                     self.engine.flow(callee_type, bound, diagnostics);
                     ret_type
                 }

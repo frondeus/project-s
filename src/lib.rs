@@ -1,7 +1,7 @@
 #![deny(clippy::print_stdout, clippy::print_stderr)]
 
 use ast::{ASTS, SExpId};
-// use diagnostics::Diagnostics;
+use diagnostics::Diagnostics;
 use lambda_lifting::LambdaPass;
 use runtime::Env;
 
@@ -29,21 +29,21 @@ pub use runtime::s_std;
 
 pub mod lsp;
 
-pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> SExpId {
+pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
     root = LambdaPass::pass(asts, root, envs);
     // root = ThunkPass::pass(asts, root);
 
-    // let mut type_env = types::TypeEnv::default().with_prelude();
-    // let mut diagnostics = Diagnostics::default();
-    // type_env.check(asts, root, &mut diagnostics);
-    // if diagnostics.has_errors() {
-    //     let p = diagnostics.pretty_print();
-    //     tracing::error!("{}", p);
-    //     // println!("{}", p);
-    //     // panic!("ERROR: {}", p);
-    // }
+    let mut type_env = types::TypeEnv::default().with_prelude();
+    let mut diagnostics = Diagnostics::default();
+    type_env.check(asts, root, &mut diagnostics);
+    if diagnostics.has_errors() {
+        let p = diagnostics.pretty_print();
+        tracing::error!("{}", p);
+        // println!("{}", p);
+        // panic!("ERROR: {}", p);
+    }
 
-    root
+    (root, diagnostics)
 }
 
 #[cfg(test)]

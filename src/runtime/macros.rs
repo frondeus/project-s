@@ -47,8 +47,13 @@ impl Runtime {
 
         // tracing::debug!("Macro call result: {}", self.asts.fmt(result));
         let envs = self.envs.slice();
-        let processed = crate::process_ast(&mut self.asts, result, envs);
+        let (processed, diag) = crate::process_ast(&mut self.asts, result, envs);
         tracing::debug!("Expanded: {}", self.asts.fmt(processed));
+
+        if diag.has_errors() {
+            let p = diag.pretty_print();
+            tracing::error!("{}", p);
+        }
 
         Ok(processed)
     }

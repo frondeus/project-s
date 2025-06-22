@@ -1,0 +1,50 @@
+/Users/frondeus/Code/project-s/docs/acceptance/012-functions.md:101
+```
+(( (+ {
+  :a 42.0
+}
+
+{
+  :a (fn () (+ (super :a) 10.0))
+}) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
++++ json-006
+@@ -109,5 +109,35 @@
+ ```
+ 
+ ```json
+-52.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:7 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:5:1 ]
++   │
++   ┆ 
++───╯
++Error: Undefined variable: super
++   ╭─[ <input>:6:17 ]
++   │
++ 6 │   :a (fn () (+ (super :a) 10.0))
++───╯
++Error: Incompatible types
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ ╭─▶ (( (+ {
++   ┆ ┆   
++ 7 │ ├─▶ }) :a))
++   │ │            
++   │ ╰──────────── Expected function
++   │
++   ├─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ But got number
++───╯
++
+ ```

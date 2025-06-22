@@ -28,7 +28,24 @@ Probably a lot of more lol.
 Like vertical stack
 * [x] LSP
   * [x] LSP highlights
-* [ ] Type checker!
+* [/] Type checker!
+  * [ ] + operator
+  * [ ] let-rec and let*
+  * [ ] Structs
+  * [ ] has?
+  * [ ] macro expansion
+  * [ ] Symbols
+  * [ ] Splices
+  * [ ] n-ary operators
+  * [ ] Operator overloading
+  * [ ] Ref
+  * [ ] import
+  * [ ] Application
+     * [x] Tuples
+     * [x] Lists
+     * [ ] Objects
+     * [ ] Macros
+
 * [ ] JIT
 * [ ] REPL
 * [ ] Macro expansion in a pass.

@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:109
+```
+(let :x {
+  :key 42.0
+})
+  (has? x :key)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-007
+@@ -114,7 +114,17 @@
+ ```
+ 
+ ```json
+-true
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:9 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: has?
++   ╭─[ <input>:4:4 ]
++   │
++ 4 │   (has? x :key)
++───╯
++
+ ```
+ 
+ ```

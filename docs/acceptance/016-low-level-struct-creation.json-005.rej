@@ -1,0 +1,62 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:71
+```
+(let :foo (obj/condef
+  (obj/put :b 4)
+  (obj/put :a 5)
+))
+
+(let :bar (obj/condef
+  (obj/put :b 10)
+  (obj/put :c foo)
+))
+
+bar
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-005
+@@ -83,13 +83,37 @@
+ ```
+ 
+ ```json
+-{
+-  "b": 10.0,
+-  "c": {
+-    "a": 5.0,
+-    "b": 4.0
+-  }
+-}
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:1:12 ]
++   │
++ 1 │ (let :foo (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:2:4 ]
++   │
++ 2 │   (obj/put :b 4)
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:3:4 ]
++   │
++ 3 │   (obj/put :a 5)
++───╯
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:6:12 ]
++   │
++ 6 │ (let :bar (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:7:4 ]
++   │
++ 7 │   (obj/put :b 10)
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:8:4 ]
++   │
++ 8 │   (obj/put :c foo)
++───╯
++
+ ```
+ 
+ 

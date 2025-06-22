@@ -409,18 +409,23 @@ mod tests {
     use test_runner::CowStr;
     use tracing_subscriber::{Layer, layer::SubscriberExt};
 
-    use crate::modules::MemoryModules;
+    use crate::{diagnostics::Diagnostics, modules::MemoryModules};
 
     use super::{s_std::prelude, *};
 
-    fn eval_to_value(input: &str, modules: MemoryModules) -> (Runtime, Value) {
+    fn eval_to_value(input: &str, modules: MemoryModules) -> Result<(Runtime, Value), Diagnostics> {
         let mut asts = ASTS::new();
         let ast = asts.parse(input, "<input>").unwrap();
         let root_id = ast.root_id().unwrap();
         tracing::trace!("Before process");
         let prelude = prelude();
         let envs = [prelude];
-        let root_id = crate::process_ast(&mut asts, root_id, &envs);
+        let (root_id, diag) = crate::process_ast(&mut asts, root_id, &envs);
+
+        if diag.has_errors() {
+            return Err(diag);
+        }
+
         let [prelude] = envs;
 
         let modules = Box::new(modules);
@@ -428,11 +433,16 @@ mod tests {
         runtime.with_env(prelude);
         tracing::trace!("Before eval");
         let value = runtime.eval(root_id);
-        (runtime, value)
+        Ok((runtime, value))
     }
 
     fn eval_to_json(input: &str, modules: MemoryModules, eager: bool) -> String {
-        let (mut runtime, value) = eval_to_value(input, modules);
+        let (mut runtime, value) = match eval_to_value(input, modules) {
+            Ok((runtime, value)) => (runtime, value),
+            Err(diag) => {
+                return diag.pretty_print();
+            }
+        };
         tracing::trace!("Value: {value:?}");
         let value = runtime.to_json(value, eager);
         serde_json::to_string_pretty(&value).unwrap()
@@ -507,8 +517,9 @@ mod tests {
 
                 tracing::subscriber::with_default(subscriber, move || {
                     let modules = MemoryModules::default();
-                    let (mut runtime, value) = eval_to_value(input, modules);
-                    runtime.to_json(value, true);
+                    // let (mut runtime, value) = eval_to_value(input, modules);
+                    // runtime.to_json(value, true);
+                    eval_to_json(input, modules, true)
                 });
             }
 
@@ -526,7 +537,10 @@ mod tests {
             let ast = asts.parse(input, "<input>").unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
-            let root_id = crate::process_ast(&mut asts, root_id, &[prelude]);
+            let (root_id, diag) = crate::process_ast(&mut asts, root_id, &[prelude]);
+            if diag.has_errors() {
+                return diag.pretty_print();
+            }
 
             asts.fmt(root_id).to_string()
         })

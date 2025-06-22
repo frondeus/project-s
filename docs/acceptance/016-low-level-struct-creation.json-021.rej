@@ -1,0 +1,106 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:490
+```
+(obj/condef
+    (obj/put :a "the most top a")
+    (obj/put :b (+
+        (obj/condef
+            (obj/put :d "left side d")
+            (obj/put :a "left side a")
+        )
+        (obj/condef
+            (obj/put :a "the most top a from right side")
+            (obj/put :b (obj/condef
+                (obj/put :a "the most inner a from right side")
+                (obj/put :c (root :a))
+            ))
+        )
+    ))
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-021
+@@ -507,17 +507,72 @@
+ ```
+ 
+ ```json
+-{
+-  "a": "the most top a",
+-  "b": {
+-    "a": "the most top a from right side",
+-    "b": {
+-      "a": "the most inner a from right side",
+-      "c": "the most top a from right side"
+-    },
+-    "d": "left side d"
+-  }
+-}
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:2:6 ]
++   │
++ 2 │     (obj/put :a "the most top a")
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:3:6 ]
++   │
++ 3 │     (obj/put :b (+
++───╯
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:4:10 ]
++   │
++ 4 │         (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:5:14 ]
++   │
++ 5 │             (obj/put :d "left side d")
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:6:14 ]
++   │
++ 6 │             (obj/put :a "left side a")
++───╯
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:8:10 ]
++   │
++ 8 │         (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:9:14 ]
++   │
++ 9 │             (obj/put :a "the most top a from right side")
++───╯
++Error: Undefined variable: obj/put
++    ╭─[ <input>:10:14 ]
++    │
++ 10 │             (obj/put :b (obj/condef
++────╯
++Error: Undefined variable: obj/condef
++    ╭─[ <input>:10:26 ]
++    │
++ 10 │             (obj/put :b (obj/condef
++────╯
++Error: Undefined variable: obj/put
++    ╭─[ <input>:11:18 ]
++    │
++ 11 │                 (obj/put :a "the most inner a from right side")
++────╯
++Error: Undefined variable: obj/put
++    ╭─[ <input>:12:18 ]
++    │
++ 12 │                 (obj/put :c (root :a))
++────╯
++Error: Undefined variable: root
++    ╭─[ <input>:12:30 ]
++    │
++ 12 │                 (obj/put :c (root :a))
++────╯
++
+ ```
+ 
+ ### Super

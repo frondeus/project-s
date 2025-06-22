@@ -1,0 +1,51 @@
+/Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md:62
+```
+(+ {
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+  :key 10
+})
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
++++ json-003
+@@ -76,10 +76,27 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 9.0,
+-  "key": 10.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:4 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:4:8 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:6:14 ]
++   │
++ 6 │     :b (+ 1 (root :another))
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:10:1 ]
++    │
++    ┆ 
++────╯
++
+ ```
+ 
+ # Deep merging

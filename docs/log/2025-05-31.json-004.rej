@@ -1,0 +1,52 @@
+/Users/frondeus/Code/project-s/docs/log/2025-05-31.md:88
+```
+(( (+ {
+  :a 42.0
+}
+
+(thunk () {
+  :a (fn () (+ (super :a) 10.0))
+})) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-05-31.md
++++ json-004
+@@ -96,7 +96,37 @@
+ ```
+ 
+ ```json
+-52.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:7 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:5:11 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: super
++   ╭─[ <input>:6:17 ]
++   │
++ 6 │   :a (fn () (+ (super :a) 10.0))
++───╯
++Error: Incompatible types
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ ╭─▶ (( (+ {
++   ┆ ┆   
++ 7 │ ├─▶ })) :a))
++   │ │             
++   │ ╰───────────── Expected function
++   │
++   ├─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ But got number
++───╯
++
+ ```
+ 
+ Ok, good. Now let's clean this code a little bit!

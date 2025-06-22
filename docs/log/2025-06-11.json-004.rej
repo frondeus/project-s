@@ -1,0 +1,23 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-11.md:306
+```
+(let { :a b } { :a 1 :b 2 :c 3})
+
+b
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-11.md
++++ json-004
+@@ -310,7 +310,12 @@
+ ```
+ 
+ ```json
+-1.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:15 ]
++   │
++ 1 │ (let { :a b } { :a 1 :b 2 :c 3})
++───╯
++
+ ```
+ 
+ Nested patterns

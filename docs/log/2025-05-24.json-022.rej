@@ -1,0 +1,43 @@
+/Users/frondeus/Code/project-s/docs/log/2025-05-24.md:387
+```
+{
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-05-24.md
++++ json-022
+@@ -396,12 +396,21 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:1 ]
++   │
++   ┆ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:4:8 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:6:14 ]
++   │
++ 6 │     :b (+ 1 (root :another))
++───╯
++
+ ```
+ 

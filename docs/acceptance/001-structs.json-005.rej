@@ -1,0 +1,43 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:64
+```
+(struct 
+  :another 4
+  :key (struct 
+    :a 1
+    :b (+ 1 (root :another))
+  )
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-005
+@@ -72,13 +72,22 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++Error: Undefined variable: struct
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (struct
++───╯
++Error: Undefined variable: struct
++   ╭─[ <input>:3:9 ]
++   │
++ 3 │   :key (struct
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:5:14 ]
++   │
++ 5 │     :b (+ 1 (root :another))
++───╯
++
+ ```
+ 
+ # Reader sugar

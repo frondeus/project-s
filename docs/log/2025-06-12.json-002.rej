@@ -1,0 +1,39 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-12.md:36
+```
+{
+    :a 3
+    :b 4
+    :c (+ (self :a) (self :b))
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-12.md
++++ json-002
+@@ -42,11 +42,22 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 3.0,
+-  "b": 4.0,
+-  "c": 7.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:1 ]
++   │
++   ┆ 
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:4:12 ]
++   │
++ 4 │     :c (+ (self :a) (self :b))
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:4:22 ]
++   │
++ 4 │     :c (+ (self :a) (self :b))
++───╯
++
+ ```
+ 
+ # Let*

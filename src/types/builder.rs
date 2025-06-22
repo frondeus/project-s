@@ -20,13 +20,23 @@ where
     }
 }
 
-pub fn canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Value> {
+pub fn v_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Value> {
     move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
         let mut builder = crate::types::canonical::CanonicalBuilder::default();
         let canon_root = canon.build(&mut builder);
         let canon = builder.finish();
         let mut vars = HashMap::new();
         canonical_value(env, &canon, &mut vars, canon_root, span)
+    }
+}
+
+pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Use> {
+    move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
+        let mut builder = crate::types::canonical::CanonicalBuilder::default();
+        let canon_root = canon.build(&mut builder);
+        let canon = builder.finish();
+        let mut vars = HashMap::new();
+        canonical_use(env, &canon, &mut vars, canon_root, span)
     }
 }
 
@@ -198,7 +208,7 @@ pub mod canon {
             impl<$($item: CanonBuilder),*> CanonBuilder for ($($item,)*) {
                 #[allow(non_snake_case)]
                 fn build(self, canon: &mut CanonicalBuilder) -> CanonId {
-                    let ($($item),*) = self;
+                    let ($($item,)*) = self;
                     $(
                         let $item = $item.build(canon);
                     )*
@@ -208,5 +218,6 @@ pub mod canon {
         }
     }
 
+    canon_tuple!(T1);
     canon_tuple!(T1, T2);
 }

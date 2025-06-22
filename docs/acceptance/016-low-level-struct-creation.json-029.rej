@@ -1,0 +1,31 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:712
+```
+(obj/struct
+  :a (self :b)
+  :b 2
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-029
+@@ -717,8 +717,15 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 2.0,
+-  "b": 2.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (obj/struct
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:2:7 ]
++   │
++ 2 │   :a (self :b)
++───╯
++
+ ```
+\ No newline at end of file

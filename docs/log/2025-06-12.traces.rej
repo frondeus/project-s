@@ -1,0 +1,42 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-12.md:54
+```
+(let* :a (fn (:x) (do
+    (print "a")
+    (if (> x 0)
+        (+ (a (- x 1)) 1)
+        0
+    )
+)))
+
+(a 3)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-12.md
++++ traces
+@@ -68,9 +68,21 @@
+ ```
+ 
+ ```traces
+- INFO project_s::runtime::s_std: String("a")
+- INFO project_s::runtime::s_std: String("a")
+- INFO project_s::runtime::s_std: String("a")
+- INFO project_s::runtime::s_std: String("a")
++ERROR project_s: Error: Undefined variable: let*
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (let* :a (fn (:x) (do
++───╯
++Error: Undefined variable: a
++   ╭─[ <input>:4:13 ]
++   │
++ 4 │         (+ (a (- x 1)) 1)
++───╯
++Error: Undefined variable: a
++   ╭─[ <input>:9:2 ]
++   │
++ 9 │ (a 3)
++───╯
++
+ 
+ ```
+\ No newline at end of file

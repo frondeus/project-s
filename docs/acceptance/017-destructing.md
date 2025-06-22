@@ -25,7 +25,7 @@ Number
 Destructing nested lists
 
 ```
-(let (:a (:b :c) :d) (list 1 (list 2 3) 4))
+(let (:a (:b :c) :d) (tuple 1 (tuple 2 3) 4))
 
 (+ a b c d)
 ```

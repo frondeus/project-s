@@ -1,0 +1,50 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-10.md:77
+```
+(+ {
+  :another 4
+  :key {
+    :b (+ 1 (root :another))
+  }
+}
+
+{
+  :another 9
+})
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-10.md
++++ json-003
+@@ -91,12 +91,27 @@
+ I mean... maybe it is what we want?
+ 
+ ```json
+-{
+-  "another": 9.0,
+-  "key": {
+-    "b": 10.0
+-  }
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:4 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:3:8 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:4:14 ]
++   │
++ 4 │     :b (+ 1 (root :another))
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:8:1 ]
++    │
++    ┆ 
++────╯
++
+ ```
+ 
+ So... Javascript version of this returns 5.

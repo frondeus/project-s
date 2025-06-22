@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-08.md:20
+```
+(let :foo { :b 4 :a (root :b )})
+foo
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-08.md
++++ json
+@@ -23,10 +23,17 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 4.0,
+-  "b": 4.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:11 ]
++   │
++ 1 │ (let :foo { :b 4 :a (root :b )})
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:1:22 ]
++   │
++ 1 │ (let :foo { :b 4 :a (root :b )})
++───╯
++
+ ```
+ 
+ ```

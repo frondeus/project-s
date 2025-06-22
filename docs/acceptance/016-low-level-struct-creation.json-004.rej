@@ -1,0 +1,37 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:55
+```
+(obj/condef 
+  (obj/put :key 5)
+  (obj/put :another 6)
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-004
+@@ -60,10 +60,22 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 6.0,
+-  "key": 5.0
+-}
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:2:4 ]
++   │
++ 2 │   (obj/put :key 5)
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:3:4 ]
++   │
++ 3 │   (obj/put :another 6)
++───╯
++
+ ```
+ 
+ # Nested simple

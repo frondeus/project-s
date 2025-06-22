@@ -1,0 +1,21 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-11.md:331
+```
+((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-11.md
++++ json-006
+@@ -333,7 +333,12 @@
+ ```
+ 
+ ```json
+-3.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:25 ]
++   │
++ 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
++───╯
++
+ ```
+ 
+ Does it mean i can now get all args at once?

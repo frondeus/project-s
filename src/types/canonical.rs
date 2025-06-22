@@ -225,7 +225,7 @@ impl Canonicalizer {
             }
             core::UTypeHead::UObj { .. } => todo!(),
             core::UTypeHead::UObjAccess { .. } => todo!(),
-            core::UTypeHead::UFunc { .. } => todo!(),
+            core::UTypeHead::UApplication { .. } => todo!(),
         }
     }
 

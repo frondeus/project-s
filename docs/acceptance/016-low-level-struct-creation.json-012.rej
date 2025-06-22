@@ -1,0 +1,59 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:243
+```
+(+
+    (obj/condef
+        (obj/put :a 1)
+    )
+    (obj/condef
+        (obj/put :a 3)
+        (obj/put :b (+ (super :a) 1))
+    )
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-012
+@@ -252,11 +252,38 @@
+ )
+ ```
+ 
+-```json 
+-{
+-  "a": 3.0,
+-  "b": 2.0
+-}
++```json
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:2:6 ]
++   │
++ 2 │     (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:3:10 ]
++   │
++ 3 │         (obj/put :a 1)
++───╯
++Error: Undefined variable: obj/condef
++   ╭─[ <input>:5:6 ]
++   │
++ 5 │     (obj/condef
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:6:10 ]
++   │
++ 6 │         (obj/put :a 3)
++───╯
++Error: Undefined variable: obj/put
++   ╭─[ <input>:7:10 ]
++   │
++ 7 │         (obj/put :b (+ (super :a) 1))
++───╯
++Error: Undefined variable: super
++   ╭─[ <input>:7:25 ]
++   │
++ 7 │         (obj/put :b (+ (super :a) 1))
++───╯
++
+ ```
+ 
+ ### Nested

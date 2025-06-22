@@ -1,0 +1,24 @@
+/Users/frondeus/Code/project-s/docs/log/2025-05-24.md:271
+```
+( 
+  (struct :key 1 :another 2)
+  :another
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-05-24.md
++++ json-016
+@@ -276,7 +276,12 @@
+ ```
+ 
+ ```json
+-2.0
++Error: Undefined variable: struct
++   ╭─[ <input>:2:4 ]
++   │
++ 2 │   (struct :key 1 :another 2)
++───╯
++
+ ```
+ 
+ In other words, structure is used as if it was a function and first

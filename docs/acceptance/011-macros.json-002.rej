@@ -1,0 +1,25 @@
+/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:14
+````
+(
+  let :var (macro (:name :value) `(let ,name ,value))
+)
+(var :x 4.2)
+x
+````
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
++++ json-002
+@@ -20,7 +20,12 @@
+ ```
+ 
+ ```json
+-4.2
++Error: Undefined variable: x
++   ╭─[ <input>:5:1 ]
++   │
++ 5 │ x
++───╯
++
+ ```
+ 
+ We can call macros in inside of struct creation

@@ -1,0 +1,25 @@
+/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:28
+````
+(
+  let :fif (macro (:name :co :the :els) `(if ,co '(,name ,the) '(,name ,els))))
+  {
+    (fif :key true 42.0 10.0)
+  }
+````
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
++++ json-003
+@@ -34,7 +34,10 @@
+ ```
+ 
+ ```json
+-{
+-  "key": 42.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:3:3 ]
++   │
++   │ 
++───╯
++
+ ```
