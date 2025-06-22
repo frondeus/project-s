@@ -215,7 +215,14 @@ impl Canonicalizer {
                 self.add_canon(Canonical::Tuple { items })
             }
             core::UTypeHead::UTupleAccess { .. } => todo!(),
-            core::UTypeHead::UList { .. } => todo!(),
+            core::UTypeHead::UList {
+                items,
+                min_len: _,
+                max_len: _,
+            } => {
+                let item = self.canon_use(*items, engine);
+                self.add_canon(Canonical::List { item })
+            }
             core::UTypeHead::UObj { .. } => todo!(),
             core::UTypeHead::UObjAccess { .. } => todo!(),
             core::UTypeHead::UFunc { .. } => todo!(),

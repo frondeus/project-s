@@ -45,6 +45,7 @@ impl TypeEnv {
         //     })),
         // );
         env.with_poly("list", || func(list(any(0)), list(any(0))), Span::default());
+        env.with_poly("tuple", || func(any(0), any(0)), Span::default());
 
         env.with_mono("-", func(list(number()), number()), Span::default());
         env.with_mono(">", func((number(), number()), bool()), Span::default());

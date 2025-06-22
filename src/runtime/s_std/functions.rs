@@ -301,6 +301,10 @@ pub fn make_list(args: Rest<Value>) -> Value {
     Value::List(args.into_iter().collect())
 }
 
+pub fn make_tuple(args: Rest<Value>) -> Value {
+    Value::List(args.into_iter().collect())
+}
+
 pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
     let modules = rt.modules();
     let path_buf = PathBuf::from(&path);

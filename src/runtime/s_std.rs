@@ -16,6 +16,7 @@ pub fn prelude() -> Env {
         .with_fn("ref", new_ref)
         .with_fn("set", set)
         .with_fn("list", make_list)
+        .with_fn("tuple", make_tuple)
         .with_fn("obj/insert", insert_to_struct)
         .with_fn("obj/con", obj_con)
         .with_try_macro("obj/condef", condef)
