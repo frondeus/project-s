@@ -1,0 +1,36 @@
+/Users/frondeus/Code/project-s/docs/log/2025-06-17.md:3
+```
+(let (:a (:b :c) :d) (list 1 (list 2 3) 4))
+
+b
+```
+
+--- /Users/frondeus/Code/project-s/docs/log/2025-06-17.md
++++ type
+@@ -7,7 +7,25 @@
+ ```
+ 
+ ```type
+-Number
++Error: Incompatible types
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ (let (:a (:b :c) :d) (list 1 (list 2 3) 4))
++   │                      │                  │    
++   │                      ╰─────────────────────── Expected tuple
++   │                                         │    
++   │                                         ╰──── But got number
++───╯
++Error: Incompatible types
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ (let (:a (:b :c) :d) (list 1 (list 2 3) 4))
++   │                      │     │                 
++   │                      ╰─────────────────────── Expected tuple
++   │                            │                 
++   │                            ╰───────────────── But got number
++───╯
++
+ ```
+ 
+ here the issue is, we use `list` to construct both tuple with 3

@@ -38,6 +38,11 @@ impl Formatter<'_> {
                 }
                 self.f.push(')');
             }
+            Canonical::List { item } => {
+                self.f.push('[');
+                self.print_canon(*item, canonical);
+                self.f.push(']');
+            }
             Canonical::Func { pattern, ret } => {
                 self.print_canon(*pattern, canonical);
                 self.f.push_str(" -> ");

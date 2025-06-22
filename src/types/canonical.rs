@@ -21,6 +21,9 @@ pub enum Canonical {
     Tuple {
         items: Vec<CanonId>,
     },
+    List {
+        item: CanonId,
+    },
     Func {
         pattern: CanonId,
         ret: CanonId,
@@ -39,7 +42,30 @@ impl Canonical {
             Canonical::Error => vec![].into_iter(),
             Canonical::Keyword => vec![].into_iter(),
             Canonical::Tuple { items } => items.clone().into_iter(),
+            Canonical::List { item } => vec![*item].into_iter(),
             Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct CanonicalBuilder {
+    canonical: Vec<Canonical>,
+}
+
+impl CanonicalBuilder {
+    pub fn add(&mut self, canon: Canonical) -> CanonId {
+        if let Some(i) = self.canonical.iter().position(|c| c == &canon) {
+            CanonId(i)
+        } else {
+            let i = self.canonical.len();
+            self.canonical.push(canon);
+            CanonId(i)
+        }
+    }
+    pub fn finish(self) -> Canonicalized {
+        Canonicalized {
+            canonical: self.canonical,
         }
     }
 }
@@ -47,7 +73,7 @@ impl Canonical {
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Canonicalizer {
     visited: Vec<core::ID>,
-    canonical: Vec<Canonical>,
+    builder: CanonicalBuilder,
 }
 
 pub struct Canonicalized {
@@ -84,12 +110,7 @@ impl Canonicalizer {
         engine: &core::TypeCheckerCore,
     ) -> (CanonId, Canonicalized) {
         let id = self.canon_value(value, engine);
-        (
-            id,
-            Canonicalized {
-                canonical: self.canonical,
-            },
-        )
+        (id, self.builder.finish())
     }
 
     fn canon_value(&mut self, value: core::Value, engine: &core::TypeCheckerCore) -> CanonId {
@@ -148,12 +169,16 @@ impl Canonicalizer {
             core::VTypeHead::VString => self.add_canon(Canonical::String),
             core::VTypeHead::VError => self.add_canon(Canonical::Error),
             core::VTypeHead::VKeyword => self.add_canon(Canonical::Keyword),
-            core::VTypeHead::VList { items } => {
+            core::VTypeHead::VTuple { items } => {
                 let items = items
                     .iter()
                     .map(|item| self.canon_value(*item, engine))
                     .collect();
                 self.add_canon(Canonical::Tuple { items })
+            }
+            core::VTypeHead::VList { item } => {
+                let item = self.canon_value(*item, engine);
+                self.add_canon(Canonical::List { item })
             }
             core::VTypeHead::VObj { .. } => todo!(),
             core::VTypeHead::VFunc { pattern, ret } => {
@@ -247,13 +272,7 @@ impl Canonicalizer {
         self.add_canon(Canonical::Recursive(CanonId(id.id())))
     }
     fn add_canon(&mut self, canon: Canonical) -> CanonId {
-        if let Some(i) = self.canonical.iter().position(|c| c == &canon) {
-            CanonId(i)
-        } else {
-            let i = self.canonical.len();
-            self.canonical.push(canon);
-            CanonId(i)
-        }
+        self.builder.add(canon)
     }
 }
 

@@ -70,7 +70,8 @@ pub enum VTypeHead {
     VString,
     VError,
     VKeyword,
-    VList { items: Vec<Value> },
+    VTuple { items: Vec<Value> },
+    VList { item: Value },
     VObj { fields: HashMap<String, Value> },
     VFunc { pattern: Use, ret: Value },
 }
@@ -83,7 +84,8 @@ impl std::fmt::Display for VTypeHead {
             VTypeHead::VString => write!(f, "string"),
             VTypeHead::VError => write!(f, "error"),
             VTypeHead::VKeyword => write!(f, "keyword"),
-            VTypeHead::VList { items } => write!(f, "list"),
+            VTypeHead::VTuple { items } => write!(f, "tuple"),
+            VTypeHead::VList { item } => write!(f, "list"),
             VTypeHead::VObj { fields } => write!(f, "object"),
             VTypeHead::VFunc { pattern, ret } => write!(f, "function"),
         }
@@ -99,8 +101,11 @@ impl VTypeHead {
             | VTypeHead::VString
             | VTypeHead::VError
             | VTypeHead::VKeyword => (),
-            VTypeHead::VList { items } => {
+            VTypeHead::VTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
+            }
+            VTypeHead::VList { item } => {
+                ids.push(item.id());
             }
             VTypeHead::VObj { fields } => {
                 ids.extend(fields.values().copied().map(WithID::id));
@@ -334,12 +339,16 @@ impl TypeCheckerCore {
     }
 
     pub fn func_use(&mut self, args: Vec<Value>, ret: Use, span: Span) -> Use {
-        let args = self.list(args, span.clone());
+        let args = self.tuple(args, span.clone());
         self.new_use(UTypeHead::UFunc { args, ret }, span)
     }
 
-    pub fn list(&mut self, items: Vec<Value>, span: Span) -> Value {
-        self.new_val(VTypeHead::VList { items }, span)
+    pub fn list(&mut self, item: Value, span: Span) -> Value {
+        self.new_val(VTypeHead::VList { item }, span)
+    }
+
+    pub fn tuple(&mut self, items: Vec<Value>, span: Span) -> Value {
+        self.new_val(VTypeHead::VTuple { items }, span)
     }
 
     pub fn tuple_use(&mut self, items: Vec<Use>, span: Span) -> Use {
@@ -449,7 +458,7 @@ impl TypeCheckerCore {
                 }
             },
             (
-                VList { items },
+                VTuple { items },
                 &UList {
                     items: args,
                     min_len,
@@ -482,7 +491,13 @@ impl TypeCheckerCore {
                     out.push((*item, args));
                 }
             }
-            (VList { items }, UTuple { items: args }) => {
+            (VList { item }, UTuple { items: args }) => {
+                // TODO: Length
+                for arg in args {
+                    out.push((*item, *arg));
+                }
+            }
+            (VTuple { items }, UTuple { items: args }) => {
                 if items.len() != args.len() {
                     diagnostics.add(
                         lhs_span.clone(),

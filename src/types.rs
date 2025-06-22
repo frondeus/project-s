@@ -3,6 +3,8 @@
 use core::WithID;
 use std::{collections::BTreeMap, rc::Rc};
 
+use builder::{TypeBuilder, canon::CanonBuilder};
+
 use crate::{
     ast::{ASTS, SExp, SExpId},
     diagnostics::Diagnostics,
@@ -10,6 +12,7 @@ use crate::{
     source::Span,
 };
 
+mod builder;
 mod canonical;
 mod core;
 mod printing;
@@ -22,38 +25,64 @@ pub struct TypeEnv {
 }
 
 impl TypeEnv {
-    pub fn with_prelude(mut self) -> Self {
-        let prelude_span = Span::default();
+    pub fn with_prelude(self) -> Self {
+        let mut env = self;
+        use builder::canon::*;
 
+        // env.envs.set(
+        //     "list",
+        //     core::Scheme::Polymorphic(Rc::new(move |env, _asts, diagnostics| {
+        //         env.envs.push();
+        //         let prelude_span = Span::default();
+        //         let pattern_bound =
+        //             rest_pattern(prelude_span.clone(), any_use()).build(env, diagnostics);
+        //         let pattern_value = env.envs.get("args").unwrap();
+        //         let pattern_value = pattern_value.as_mono().unwrap();
+        //         env.envs.pop();
+
+        //         env.engine
+        //             .func(pattern_bound, pattern_value, prelude_span.clone())
+        //     })),
+        // );
+        env.with_poly("list", || func(list(any(0)), list(any(0))), Span::default());
+
+        env.with_mono("-", func(list(number()), number()), Span::default());
+        env.with_mono(">", func((number(), number()), bool()), Span::default());
+        env.with_poly("print", || func(list(any(None)), number()), Span::default());
+
+        env
+    }
+
+    fn with_poly<F, C>(&mut self, name: &str, value: F, span: Span)
+    where
+        F: 'static + Fn() -> C,
+        C: CanonBuilder,
+    {
+        use builder::canonical;
         self.envs.set(
-            "list",
-            core::Scheme::Polymorphic(Rc::new(move |this, _asts, diagnostics| {
-                let pattern = Pattern::Single("args".into());
-                this.envs.push();
-                let pattern_bound = this.check_pattern(prelude_span.clone(), pattern);
-                let ret_type = this.envs.get("args").unwrap();
-                let ret_type = ret_type.as_mono().unwrap();
-                let (_any_var, any_bound) = this.engine.var();
-                let list_bound = this
-                    .engine
-                    .list_use(any_bound, 0, None, prelude_span.clone());
-                this.engine.flow(ret_type, list_bound, diagnostics);
-                this.envs.pop();
-
-                this.engine
-                    .func(pattern_bound, ret_type, prelude_span.clone())
+            name,
+            core::Scheme::Polymorphic(Rc::new(move |env, _asts, diagnostics| {
+                canonical(value(), span.clone()).build(env, diagnostics)
             })),
         );
-
-        self
+    }
+    fn with_mono(&mut self, name: &str, value: impl CanonBuilder, span: Span) {
+        use builder::canonical;
+        let value = canonical(value, span).build(self, &mut Diagnostics::default());
+        self.envs.set(name, core::Scheme::Monomorphic(value));
     }
 
     fn null(&mut self, span: Span) -> core::Value {
-        self.engine.list(vec![], span)
+        self.engine.tuple(vec![], span)
+    }
+
+    fn todo(&mut self) -> core::Value {
+        let (ret_type, _) = self.engine.var();
+        ret_type
     }
 
     #[allow(clippy::result_large_err)]
-    fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
+    pub fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
         let sexp = asts.get(id);
         let span = sexp.span.clone();
         match &sexp.item {
@@ -75,7 +104,7 @@ impl TypeEnv {
                 }
             },
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
-                [] => self.engine.list(vec![], span),
+                [] => self.engine.tuple(vec![], span),
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
                     let cond_type = self.check(asts, *condition, diagnostics);
                     let bool_span = self.span_of(*condition, asts);
@@ -126,6 +155,25 @@ impl TypeEnv {
 
                     self.engine.func(pattern_bound, body_type, span)
                 }
+                [first, pattern, _captured, body] if Self::is_symbol(asts, *first, "cl") => {
+                    //For now lets ignore captured...
+                    let pattern = match Pattern::parse(*pattern, asts) {
+                        Ok(pattern) => pattern,
+                        Err(e) => {
+                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
+                            return self.engine.error(span);
+                        }
+                    };
+
+                    self.envs.push();
+                    let pattern_bound = self.check_pattern(span.clone(), pattern);
+                    // let pattern_must_be_list = self.engine.list_use
+
+                    let body_type = self.check(asts, *body, diagnostics);
+                    self.envs.pop();
+
+                    self.engine.func(pattern_bound, body_type, span)
+                }
                 [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
                     self.envs.push();
                     for arg in args {
@@ -149,6 +197,14 @@ impl TypeEnv {
                     self.polymorphic_check_pattern(span.clone(), pattern, value, asts, diagnostics);
 
                     self.null(span)
+                }
+                [first, _err] if Self::is_symbol(asts, *first, "error") => self.engine.error(span),
+                [first, _captured, rest] if Self::is_symbol(asts, *first, "thunk") => {
+                    self.check(asts, *rest, diagnostics)
+                }
+                [first, ..] if Self::is_symbol(asts, *first, "macro") => self.todo(),
+                [first, ..] if Self::is_symbols(asts, *first, &["quote", "quasiquote"]) => {
+                    self.todo()
                 }
                 [callee, args @ ..] => {
                     let callee_type = self.check(asts, *callee, diagnostics);
@@ -389,6 +445,7 @@ mod tests {
 
     #[test]
     fn type_() -> test_runner::Result {
+        unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let ast = asts.parse(input, "<input>").expect("Failed to parse");
@@ -400,7 +457,6 @@ mod tests {
             let mut diagnostics = Diagnostics::default();
             let infered = env.check(&asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
-                unsafe { std::env::set_var("NO_COLOR", "1") }
                 return diagnostics.pretty_print();
             }
 
