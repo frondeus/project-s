@@ -3,6 +3,7 @@
 use ast::{ASTS, SExpId};
 use diagnostics::Diagnostics;
 use lambda_lifting::LambdaPass;
+use macro_expansion::MacroExpansionPass;
 use runtime::Env;
 
 pub mod cst;
@@ -14,6 +15,7 @@ pub mod builder;
 pub mod visitor;
 
 pub mod lambda_lifting;
+pub mod macro_expansion;
 
 pub mod patterns;
 pub mod types;
@@ -32,17 +34,11 @@ pub mod lsp;
 pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
     root = LambdaPass::pass(asts, root, envs);
     // root = ThunkPass::pass(asts, root);
+    root = MacroExpansionPass::pass(asts, root);
 
     let mut type_env = types::TypeEnv::default().with_prelude();
     let mut diagnostics = Diagnostics::default();
     type_env.check(asts, root, &mut diagnostics);
-    if diagnostics.has_errors() {
-        let p = diagnostics.pretty_print();
-        tracing::error!("{}", p);
-        // println!("{}", p);
-        // panic!("ERROR: {}", p);
-    }
-
     (root, diagnostics)
 }
 
