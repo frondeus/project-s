@@ -87,6 +87,9 @@ impl CanonicalBuilder {
             CanonId(i)
         }
     }
+    fn get(&self, id: CanonId) -> &Canonical {
+        &self.canonical[id.0]
+    }
     pub fn finish(self) -> Canonicalized {
         Canonicalized {
             canonical: self.canonical,
@@ -204,12 +207,23 @@ impl Canonicalizer {
                 let item = self.canon_value(*item, engine);
                 self.add_canon(Canonical::List { item })
             }
-            core::VTypeHead::VStruct { fields } => {
-                let fields = fields
+            core::VTypeHead::VStruct { fields, proto } => {
+                let mut proto = proto
+                    .map(|proto| self.canon_value(proto, engine))
+                    .and_then(|proto| match self.builder.get(proto) {
+                        Canonical::Struct { fields } => Some(fields.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+
+                let new_fields: Vec<(String, CanonId)> = fields
                     .iter()
                     .map(|(name, value)| (name.clone(), self.canon_value(*value, engine)))
                     .collect();
-                self.add_canon(Canonical::Struct { fields })
+
+                proto.extend(new_fields);
+
+                self.add_canon(Canonical::Struct { fields: proto })
             }
             core::VTypeHead::VFunc { pattern, ret } => {
                 let pattern = self.canon_use(*pattern, engine);

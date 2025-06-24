@@ -81,6 +81,7 @@ pub enum VTypeHead {
     },
     VStruct {
         fields: BTreeMap<String, Value>,
+        proto: Option<Value>,
     },
     VFunc {
         pattern: Use,
@@ -102,9 +103,9 @@ impl std::fmt::Display for VTypeHead {
             VTypeHead::VKeyword => write!(f, "keyword"),
             VTypeHead::VTuple { items } => write!(f, "tuple"),
             VTypeHead::VList { item } => write!(f, "list"),
-            VTypeHead::VStruct { fields } => write!(f, "struct"),
-            VTypeHead::VFunc { pattern, ret } => write!(f, "function"),
-            VTypeHead::VRef { write, read } => write!(f, "ref"),
+            VTypeHead::VStruct { .. } => write!(f, "struct"),
+            VTypeHead::VFunc { .. } => write!(f, "function"),
+            VTypeHead::VRef { .. } => write!(f, "ref"),
         }
     }
 }
@@ -124,8 +125,11 @@ impl VTypeHead {
             VTypeHead::VList { item } => {
                 ids.push(item.id());
             }
-            VTypeHead::VStruct { fields } => {
+            VTypeHead::VStruct { fields, proto } => {
                 ids.extend(fields.values().copied().map(WithID::id));
+                if let Some(proto) = proto {
+                    ids.push(proto.id());
+                }
             }
             VTypeHead::VFunc { pattern, ret } => {
                 ids.push(pattern.id());
@@ -439,10 +443,11 @@ impl TypeCheckerCore {
         )
     }
 
-    pub fn obj(&mut self, fields: Vec<(String, Value)>, span: Span) -> Value {
+    pub fn obj(&mut self, fields: Vec<(String, Value)>, proto: Option<Value>, span: Span) -> Value {
         self.new_val(
             VTypeHead::VStruct {
                 fields: fields.into_iter().collect(),
+                proto,
             },
             span,
         )
@@ -482,6 +487,8 @@ impl TypeCheckerCore {
                         Self::check_heads(
                             lhs_head,
                             rhs_head,
+                            lhs,
+                            rhs,
                             lhs_span,
                             rhs_span,
                             &mut pending_edges,
@@ -494,10 +501,12 @@ impl TypeCheckerCore {
         assert!(pending_edges.is_empty() && type_pairs_to_check.is_empty());
     }
 
-    #[allow(clippy::result_large_err)]
+    #[allow(clippy::result_large_err, clippy::too_many_arguments)]
     fn check_heads(
         lhs: &VTypeHead,
         rhs: &UTypeHead,
+        lhs_id: ID,
+        rhs_id: ID,
         lhs_span: &Span,
         rhs_span: &Span,
         out: &mut Vec<(Value, Use)>,
@@ -565,7 +574,7 @@ impl TypeCheckerCore {
                 out.push((ret, ret_use));
             }
             (
-                VStruct { fields },
+                VStruct { fields, proto },
                 &UApplication {
                     args,
                     ret,
@@ -577,18 +586,18 @@ impl TypeCheckerCore {
                     diagnostics.add(rhs_span.clone(), "Expected field name");
                     return;
                 };
-                match fields.get(field) {
-                    None => {
-                        diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
-                    }
-                    Some(field_ty) => {
-                        out.push((args, field_use));
-                        out.push((*field_ty, ret));
-                    }
+
+                if let Some(field_ty) = fields.get(field) {
+                    out.push((args, field_use));
+                    out.push((*field_ty, ret));
+                } else if let Some(proto) = proto {
+                    out.push((*proto, Use(rhs_id)));
+                } else {
+                    diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
                 }
             }
             (
-                VStruct { fields },
+                VStruct { fields, .. },
                 &UStructAccess {
                     field: (ref field, field_use),
                 },

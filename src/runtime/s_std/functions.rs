@@ -307,6 +307,21 @@ pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
     Ok(Value::Object(inner))
 }
 
+pub fn obj_extend(
+    rt: &mut Runtime,
+    obj: EagerRec<BTreeMap<String, Value>, WithConstructor>,
+    args: Rest<Value>,
+) -> Result<BTreeMap<String, Value>, String> {
+    let mut obj = obj.value;
+
+    for (key, value) in args.into_iter().tuples() {
+        let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
+        obj.insert(key.to_string(), value);
+    }
+
+    Ok(obj)
+}
+
 pub fn obj_con(constructor: EagerRec<Function, WithoutConstructor>) -> Value {
     Value::Constructor(Constructor {
         constructor: constructor.value,

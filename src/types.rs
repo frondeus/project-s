@@ -251,7 +251,23 @@ impl TypeEnv {
                         let value = self.check(asts, *value, diagnostics);
                         fields.push((key.to_string(), value));
                     }
-                    self.engine.obj(fields, span)
+                    self.engine.obj(fields, None, span)
+                }
+                [first, proto, args @ ..] if Self::is_symbol(asts, *first, "obj/extend") => {
+                    let proto = self.check(asts, *proto, diagnostics);
+                    let mut fields = Vec::new();
+                    for (key, value) in args.iter().tuples() {
+                        let key = match Self::as_keyword(asts, *key) {
+                            Some(key) => key,
+                            None => {
+                                diagnostics.add(span.clone(), "Expected keyword");
+                                return self.engine.error(span);
+                            }
+                        };
+                        let value = self.check(asts, *value, diagnostics);
+                        fields.push((key.to_string(), value));
+                    }
+                    self.engine.obj(fields, Some(proto), span)
                 }
                 [first, ref_mut, value] if Self::is_symbol(asts, *first, "set") => {
                     let ref_mut = self.check(asts, *ref_mut, diagnostics);

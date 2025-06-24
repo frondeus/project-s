@@ -91,7 +91,7 @@ fn canonical_value(
                 let value = canonical_value(env, canon, vars, *id, span.clone());
                 f.push((name.clone(), value));
             }
-            env.engine.obj(f, span)
+            env.engine.obj(f, None, span)
         }
         super::canonical::Canonical::Reference { read, write } => {
             let write = write.map(|write| canonical_use(env, canon, vars, write, span.clone()));
