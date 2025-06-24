@@ -31,9 +31,12 @@ pub enum Canonical {
     Struct {
         fields: Vec<(String, CanonId)>,
     },
-    // Applicable {
+    Reference {
+        read: Option<CanonId>,
+        write: Option<CanonId>,
+    }, // Applicable {
 
-    // }
+       // }
 }
 
 impl Canonical {
@@ -55,6 +58,16 @@ impl Canonical {
                 .map(|(_, id)| *id)
                 .collect::<Vec<_>>()
                 .into_iter(),
+            Canonical::Reference { read, write } => {
+                let mut ids = Vec::new();
+                if let Some(read) = read {
+                    ids.push(*read);
+                }
+                if let Some(write) = write {
+                    ids.push(*write);
+                }
+                ids.into_iter()
+            }
         }
     }
 }
@@ -197,6 +210,11 @@ impl Canonicalizer {
                 let ret = self.canon_value(*ret, engine);
                 self.add_canon(Canonical::Func { pattern, ret })
             }
+            core::VTypeHead::VRef { read, write } => {
+                let read = read.map(|read| self.canon_value(read, engine));
+                let write = write.map(|write| self.canon_use(write, engine));
+                self.add_canon(Canonical::Reference { read, write })
+            }
         }
     }
 
@@ -243,6 +261,11 @@ impl Canonicalizer {
             }
             core::UTypeHead::UObjAccess { .. } => todo!(),
             app @ core::UTypeHead::UApplication { .. } => todo!("{:?}", app),
+            core::UTypeHead::URef { read, write } => {
+                let read = read.map(|read| self.canon_use(read, engine));
+                let write = write.map(|write| self.canon_value(write, engine));
+                self.add_canon(Canonical::Reference { read, write })
+            }
         }
     }
 

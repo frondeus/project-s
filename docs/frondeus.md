@@ -35,23 +35,45 @@
 ```
 
 ```json
-{
-  "ancestry": "Dwarf",
-  "features": {
-    "stout": "Stout"
-  },
-  "is_stout": true,
-  "languages": [
-    "Common",
-    "Dwarvish"
-  ],
-  "stats": {
-    "cha": 13.0,
-    "con": 13.0,
-    "dex": 11.0,
-    "int": 11.0,
-    "str": 6.0,
-    "wis": 17.0
-  }
-}
+Error: Undefined variable: obj/con
+   ╭─[ :1:1 ]
+   │
+ 1 │ 
+───╯
+Error: Undefined variable: obj/con
+   ╭─[ :1:1 ]
+   │
+ 1 │ 
+───╯
+Error: Undefined variable: obj/new
+   ╭─[ <input>:8:26 ]
+   │
+ 8 │             (set origin (obj/new (+ origin {
+───╯
+Error: Undefined variable: obj/con
+   ╭─[ :1:1 ]
+   │
+ 1 │ 
+───╯
+Error: Undefined variable: obj/new
+    ╭─[ <input>:21:15 ]
+    │
+ 21 │ (let :result (obj/new (+ {
+────╯
+Error: Undefined variable: obj/con
+   ╭─[ :1:1 ]
+   │
+ 1 │ 
+───╯
+Error: Undefined variable: obj/con
+   ╭─[ :1:1 ]
+   │
+ 1 │ 
+───╯
+Error: Undefined variable: deep-eager
+    ╭─[ <input>:33:2 ]
+    │
+ 33 │ (deep-eager result)
+────╯
+
 ```

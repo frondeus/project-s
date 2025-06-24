@@ -60,6 +60,46 @@ impl Formatter<'_> {
                 }
                 self.f.push('}');
             }
+            &Canonical::Reference {
+                read: Some(read),
+                write: Some(write),
+            } if read == write => {
+                self.f.push_str("refmut<");
+                self.print_canon(read, canonical);
+                self.f.push('>');
+            }
+            &Canonical::Reference {
+                read: Some(read),
+                write: Some(write),
+            } => {
+                self.f.push_str("ref<");
+                self.print_canon(read, canonical);
+                self.f.push_str(", mut ");
+                self.print_canon(write, canonical);
+                self.f.push('>');
+            }
+            &Canonical::Reference {
+                read: Some(read),
+                write: None,
+            } => {
+                self.f.push_str("ref<");
+                self.print_canon(read, canonical);
+                self.f.push('>');
+            }
+            &Canonical::Reference {
+                read: None,
+                write: Some(write),
+            } => {
+                self.f.push_str("mut<");
+                self.print_canon(write, canonical);
+                self.f.push('>');
+            }
+            Canonical::Reference {
+                read: None,
+                write: None,
+            } => {
+                unreachable!()
+            }
         }
     }
 

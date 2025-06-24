@@ -70,10 +70,23 @@ pub enum VTypeHead {
     VString,
     VError,
     VKeyword,
-    VTuple { items: Vec<Value> },
-    VList { item: Value },
-    VObj { fields: HashMap<String, Value> },
-    VFunc { pattern: Use, ret: Value },
+    VTuple {
+        items: Vec<Value>,
+    },
+    VList {
+        item: Value,
+    },
+    VObj {
+        fields: HashMap<String, Value>,
+    },
+    VFunc {
+        pattern: Use,
+        ret: Value,
+    },
+    VRef {
+        write: Option<Use>,
+        read: Option<Value>,
+    },
 }
 
 impl std::fmt::Display for VTypeHead {
@@ -88,6 +101,7 @@ impl std::fmt::Display for VTypeHead {
             VTypeHead::VList { item } => write!(f, "list"),
             VTypeHead::VObj { fields } => write!(f, "object"),
             VTypeHead::VFunc { pattern, ret } => write!(f, "function"),
+            VTypeHead::VRef { write, read } => write!(f, "ref"),
         }
     }
 }
@@ -113,6 +127,14 @@ impl VTypeHead {
             VTypeHead::VFunc { pattern, ret } => {
                 ids.push(pattern.id());
                 ids.push(ret.id());
+            }
+            VTypeHead::VRef { write, read } => {
+                if let Some(write) = write {
+                    ids.push(write.id());
+                }
+                if let Some(read) = read {
+                    ids.push(read.id());
+                }
             }
         }
         ids.into_iter()
@@ -156,6 +178,10 @@ pub enum UTypeHead {
         // In case its list access
         index: (Option<usize>, Use),
     },
+    URef {
+        write: Option<Value>,
+        read: Option<Use>,
+    },
 }
 
 impl std::fmt::Display for UTypeHead {
@@ -175,6 +201,7 @@ impl std::fmt::Display for UTypeHead {
             UTypeHead::UObj { fields } => write!(f, "object"),
             UTypeHead::UObjAccess { field } => write!(f, "object_access"),
             UTypeHead::UApplication { .. } => write!(f, "function"),
+            UTypeHead::URef { write, read } => write!(f, "ref"),
         }
     }
 }
@@ -214,6 +241,14 @@ impl UTypeHead {
                 ids.push(ret.id());
                 // ids.push(field_use.id());
                 ids.push(index_use.id());
+            }
+            UTypeHead::URef { write, read } => {
+                if let Some(write) = write {
+                    ids.push(write.id());
+                }
+                if let Some(read) = read {
+                    ids.push(read.id());
+                }
             }
         }
         ids.into_iter()
@@ -413,6 +448,14 @@ impl TypeCheckerCore {
         self.new_use(UTypeHead::UObjAccess { field }, span)
     }
 
+    pub fn reference(&mut self, write: Option<Use>, read: Option<Value>, span: Span) -> Value {
+        self.new_val(VTypeHead::VRef { write, read }, span)
+    }
+
+    pub fn reference_use(&mut self, write: Option<Value>, read: Option<Use>, span: Span) -> Use {
+        self.new_use(UTypeHead::URef { write, read }, span)
+    }
+
     #[allow(clippy::result_large_err)]
     pub fn flow(&mut self, lhs: Value, rhs: Use, diagnostics: &mut Diagnostics) {
         let mut pending_edges = vec![(lhs, rhs)];
@@ -574,6 +617,33 @@ impl TypeCheckerCore {
 
                 for (item, arg) in items.iter().zip(args) {
                     out.push((*item, *arg));
+                }
+            }
+            (
+                &VRef { write, read },
+                &URef {
+                    write: write_use,
+                    read: read_use,
+                },
+            ) => {
+                if write.is_none() && read.is_none() {
+                    diagnostics.add(rhs_span.clone(), "Reference is not readable or writable");
+                    return;
+                }
+
+                if let Some(read_use) = read_use {
+                    if let Some(read) = read {
+                        out.push((read, read_use));
+                    } else {
+                        diagnostics.add(rhs_span.clone(), "Reference is not readable");
+                    }
+                }
+                if let Some(write_use) = write_use {
+                    if let Some(write) = write {
+                        out.push((write_use, write));
+                    } else {
+                        diagnostics.add(rhs_span.clone(), "Reference is not writable");
+                    }
                 }
             }
             _ => {

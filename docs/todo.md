@@ -38,7 +38,7 @@ Like vertical stack
   * [ ] Splices
   * [ ] n-ary operators
   * [ ] Operator overloading
-  * [ ] Ref
+  * [x] Ref
   * [ ] import
   * [ ] Application
      * [x] Tuples

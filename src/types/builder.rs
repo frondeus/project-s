@@ -93,6 +93,11 @@ fn canonical_value(
             }
             env.engine.obj(f, span)
         }
+        super::canonical::Canonical::Reference { read, write } => {
+            let write = write.map(|write| canonical_use(env, canon, vars, write, span.clone()));
+            let read = read.map(|read| canonical_value(env, canon, vars, read, span.clone()));
+            env.engine.reference(write, read, span)
+        }
     }
 }
 
@@ -144,6 +149,11 @@ fn canonical_use(
                 uses.push((name.clone(), use_));
             }
             env.engine.obj_use(uses, span)
+        }
+        &super::canonical::Canonical::Reference { read, write } => {
+            let read = read.map(|read| canonical_use(env, canon, vars, read, span.clone()));
+            let write = write.map(|write| canonical_value(env, canon, vars, write, span.clone()));
+            env.engine.reference_use(write, read, span)
         }
     }
 }
@@ -210,6 +220,15 @@ pub mod canon {
     pub fn list(item: impl CanonBuilder) -> impl CanonBuilder {
         move |canon: &mut CanonicalBuilder| Canonical::List {
             item: item.build(canon),
+        }
+    }
+    pub fn reference(
+        read: Option<impl CanonBuilder>,
+        write: Option<impl CanonBuilder>,
+    ) -> impl CanonBuilder {
+        move |canon: &mut CanonicalBuilder| Canonical::Reference {
+            read: read.map(|read| read.build(canon)),
+            write: write.map(|write| write.build(canon)),
         }
     }
 

@@ -57,6 +57,12 @@ impl TypeEnv {
         env.with_mono(">", func((number(), number()), bool()), Span::default());
         env.with_poly("print", || func(list(any(None)), number()), Span::default());
 
+        // env.with_poly(
+        //     "set",
+        //     || func((reference(any(0)), any(1)), any(1)),
+        //     Span::default(),
+        // );
+
         env.with_mono(
             "obj/insert",
             func(
@@ -224,6 +230,19 @@ impl TypeEnv {
                 [first, ..] if Self::is_symbol(asts, *first, "macro") => self.todo(),
                 [first, ..] if Self::is_symbols(asts, *first, &["quote", "quasiquote"]) => {
                     self.todo()
+                }
+                [first, value] if Self::is_symbol(asts, *first, "ref") => {
+                    let value_type = self.check(asts, *value, diagnostics);
+                    let (read, write) = self.engine.var();
+                    self.engine.flow(value_type, write, diagnostics);
+                    self.engine.reference(Some(write), Some(read), span)
+                }
+                [first, ref_mut, value] if Self::is_symbol(asts, *first, "set") => {
+                    let ref_mut = self.check(asts, *ref_mut, diagnostics);
+                    let value = self.check(asts, *value, diagnostics);
+                    let bound = self.engine.reference_use(Some(value), None, span);
+                    self.engine.flow(ref_mut, bound, diagnostics);
+                    value
                 }
                 [callee, args @ ..] => {
                     let callee_type = self.check(asts, *callee, diagnostics);
