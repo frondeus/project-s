@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:357
+````
+((macro (:a :b) `(+ ,a ,b)) 1 2)
+````
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
++++ json-008
+@@ -359,7 +359,7 @@
+ ```
+ 
+ ```json
+-3.0
++<Thread panicked>
+ ```
+ 
+ Objects are not possible in macros but i can at least do this:

@@ -7,17 +7,12 @@ x
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
 +++ json-015
-@@ -396,7 +396,12 @@
+@@ -396,7 +396,7 @@
  ```
  
  ```json
 -4.2
-+Error: Undefined variable: x
-+   ╭─[ <input>:3:1 ]
-+   │
-+ 3 │ x
-+───╯
-+
++<Thread panicked>
  ```
  
  The problem is, we are evaluating arguments which is counterpoint of macros.

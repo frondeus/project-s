@@ -20,10 +20,10 @@
 +   │
 + 1 │ (obj/con (fn (:self :root :super :origin) (do
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:2:4 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 2 │   (obj/put :key 5)
++ 1 │ 
 +───╯
 +
  ```

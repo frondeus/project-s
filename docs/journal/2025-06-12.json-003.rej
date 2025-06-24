@@ -18,10 +18,10 @@
  
  ```json
 -3.0
-+Error: Undefined variable: let*
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: let-rec
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (let* :a (fn (:x) (do
++ 1 │ 
 +───╯
 +Error: Undefined variable: a
 +   ╭─[ <input>:4:13 ]

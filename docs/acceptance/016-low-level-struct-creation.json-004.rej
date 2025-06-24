@@ -16,20 +16,20 @@
 -  "another": 6.0,
 -  "key": 5.0
 -}
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:2:4 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 2 │   (obj/put :key 5)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:3:4 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 3 │   (obj/put :another 6)
++ 1 │ 
 +───╯
 +
  ```

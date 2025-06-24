@@ -26,7 +26,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
 +++ json-011
-@@ -274,14 +274,37 @@
+@@ -274,14 +274,47 @@
  ```
  
  ```json
@@ -53,18 +53,28 @@
 +   │
 + 6 │       :b (+ 1 (root :another))
 +───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:10:19 ]
-+    │
-+    │ 
-+────╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
-+    │
-+ 13 │   (if (has? super :key)
-+────╯
-+Error: Undefined variable: super
-+    ╭─[ <input>:13:13 ]
 +    │
 + 13 │   (if (has? super :key)
 +────╯

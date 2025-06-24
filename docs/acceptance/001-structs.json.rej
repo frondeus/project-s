@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json
-@@ -8,10 +8,12 @@
+@@ -8,10 +8,32 @@
  ```
  
  ```json
@@ -16,10 +16,30 @@
 -  "name": "Name",
 -  "surname": "Surname"
 -}
-+Error: Undefined variable: struct
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (struct
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

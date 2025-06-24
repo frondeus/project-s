@@ -27,51 +27,51 @@
 -    "d": 3.0
 -  }
 -}
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:2:6 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 2 │     (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:3:10 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 3 │         (obj/put :a 1)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:4:10 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 4 │         (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:4:22 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 4 │         (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:5:14 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 5 │             (obj/put :c 2)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:8:6 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 8 │     (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:9:10 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 9 │         (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:9:22 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 9 │         (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+    ╭─[ <input>:10:14 ]
-+    │
-+ 10 │             (obj/put :d 3)
-+────╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +
  ```
  

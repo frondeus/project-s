@@ -6,7 +6,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-08.md
 +++ json-002
-@@ -35,13 +35,22 @@
+@@ -35,13 +35,42 @@
  ```
  
  ```json
@@ -27,10 +27,30 @@
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
 +───╯
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:2:1 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 2 │ { :b 10 :c foo }
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
 +++ json-002
-@@ -42,11 +42,22 @@
+@@ -42,11 +42,42 @@
  ```
  
  ```json
@@ -18,20 +18,40 @@
 -  "b": 4.0,
 -  "c": 7.0
 -}
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:1 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+   ┆ 
++ 1 │ 
 +───╯
-+Error: Undefined variable: self
-+   ╭─[ <input>:4:12 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 4 │     :c (+ (self :a) (self :b))
++ 1 │ 
 +───╯
-+Error: Undefined variable: self
-+   ╭─[ <input>:4:22 ]
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
 +   │
-+ 4 │     :c (+ (self :a) (self :b))
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

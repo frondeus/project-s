@@ -10,17 +10,22 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json
-@@ -14,9 +14,12 @@
+@@ -14,9 +14,17 @@
  ```
  
  ```json
 -{
 -  "key": 42.0
 -}
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:4:1 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+   ┆ 
++ 1 │ 
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

@@ -18,7 +18,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-020
-@@ -469,16 +469,62 @@
+@@ -469,16 +469,57 @@
  ```
  
  ```json
@@ -32,61 +32,56 @@
 -    "d": 3.0
 -  }
 -}
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:2:6 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 2 │     (obj/put :a 1)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:3:6 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 3 │     (obj/put :b (+
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:4:10 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 4 │         (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:5:14 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 5 │             (obj/put :d 3)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:7:10 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 7 │         (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:8:14 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 8 │             (obj/put :a 2)
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+   ╭─[ <input>:9:14 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 9 │             (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/condef
-+   ╭─[ <input>:9:26 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 9 │             (obj/put :b (obj/condef
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/put
-+    ╭─[ <input>:10:18 ]
-+    │
-+ 10 │                 (obj/put :c (root :a))
-+────╯
-+Error: Undefined variable: root
-+    ╭─[ <input>:10:30 ]
-+    │
-+ 10 │                 (obj/put :c (root :a))
-+────╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +
  ```
  

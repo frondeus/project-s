@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-004
-@@ -134,7 +134,45 @@
+@@ -134,7 +134,51 @@
  And technically, :x doesnt need to be a thunk.
  
  ```json
@@ -41,24 +41,30 @@
 +   │
 + 8 │     :a (+ (super :a) 10.0)
 +───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:12:6 ]
-+    │
-+ 12 │ (((+ {:d 1 } x) :value) :a)
-+────╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +Error: Incompatible types
-+    ╭─[ <input>:12:2 ]
-+    │
-+ 12 │ (((+ {:d 1 } x) :value) :a)
-+    │             │            
-+    │             ╰──────────── Expected function
-+    │
-+    ├─[ :1:1 ]
-+    │
-+  1 │ 
-+    │ │ 
-+    │ ╰─ But got number
-+────╯
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ Expected function
++   │ │ 
++   │ ╰─ But got number
++───╯
 +
  ```
  

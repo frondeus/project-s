@@ -1,0 +1,19 @@
+/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:3
+````
+(
+  (macro (:x :y) `(+ ,x ,y))
+  1 2
+)
+````
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
++++ json
+@@ -8,7 +8,7 @@
+ ```
+ 
+ ```json
+-3.0
++<Thread panicked>
+ ```
+ 
+ ```

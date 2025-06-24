@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
 +++ json-018
-@@ -306,10 +306,17 @@
+@@ -306,10 +306,32 @@
  ```
  
  ```json
@@ -16,15 +16,30 @@
 -  "another": 2.0,
 -  "key": 3.0
 -}
-+Error: Undefined variable: struct
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (struct
++ 1 │ 
 +───╯
-+Error: Undefined variable: self
-+   ╭─[ <input>:3:14 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 3 │   :key (+ 1 (self :another))
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

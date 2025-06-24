@@ -11,38 +11,47 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
 +++ json-006
-@@ -109,5 +109,35 @@
+@@ -109,5 +109,44 @@
  ```
  
  ```json
 -52.0
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:7 ]
-+   │
-+   │ 
-+───╯
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:5:1 ]
-+   │
-+   ┆ 
-+───╯
-+Error: Undefined variable: super
-+   ╭─[ <input>:6:17 ]
-+   │
-+ 6 │   :a (fn () (+ (super :a) 10.0))
-+───╯
-+Error: Incompatible types
-+   ╭─[ <input>:1:2 ]
-+   │
-+ 1 │ ╭─▶ (( (+ {
-+   ┆ ┆   
-+ 7 │ ├─▶ }) :a))
-+   │ │            
-+   │ ╰──────────── Expected function
-+   │
-+   ├─[ :1:1 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
 + 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Incompatible types
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ Expected function
 +   │ │ 
 +   │ ╰─ But got number
 +───╯

@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:367
+````
+((macro :args `,args) + 1 2 3)
+````
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
++++ json-009
+@@ -368,9 +368,19 @@
+ ((macro :args `,args) + 1 2 3)
+ ```
+ 
+-```json
+-6.0
+-```
++````json
++Error: Macro is forbidden in this context
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ ((macro :args `,args) + 1 2 3)
++───╯
++Error: Expected int literal to access tuple element
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++
++````
+ 
+ ```traces debug
+ DEBUG project_s::runtime: Adding to env: Env { vars: {} }

@@ -26,10 +26,11 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json-002
-@@ -48,14 +48,32 @@
+@@ -47,16 +47,44 @@
+ (+ left right)
  ```
  
- ```json
+-```json
 -{
 -  "another": 9.0,
 -  "key": {
@@ -38,6 +39,13 @@
 -    "c": 3.0
 -  }
 -}
+-```
++````json
++Error: Expected quote or unquote
++   ╭─[ <input>:2:21 ]
++   │
++ 2 │   `(if (has? super ,key)
++───╯
 +Error: Undefined variable: obj/struct
 +    ╭─[ <input>:7:12 ]
 +    │
@@ -63,7 +71,13 @@
 +    │
 + 19 │   (add-obj :key {:c 3})
 +────╯
++Error: Expected int literal to access tuple element
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +
- ```
++````
  
  NICE
+ 

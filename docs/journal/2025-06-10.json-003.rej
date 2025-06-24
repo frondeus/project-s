@@ -14,7 +14,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-10.md
 +++ json-003
-@@ -91,12 +91,27 @@
+@@ -91,12 +91,62 @@
  I mean... maybe it is what we want?
  
  ```json
@@ -24,26 +24,61 @@
 -    "b": 10.0
 -  }
 -}
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:4 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+   │ 
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:3:8 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+   │ 
++ 1 │ 
 +───╯
-+Error: Undefined variable: root
-+   ╭─[ <input>:4:14 ]
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
 +   │
-+ 4 │     :b (+ 1 (root :another))
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:8:1 ]
-+    │
-+    ┆ 
-+────╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +
  ```
  
