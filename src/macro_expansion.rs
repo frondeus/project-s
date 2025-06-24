@@ -78,7 +78,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
 
         if let Some(first) = self.helper.maybe_get_symbol(list.list.first().copied()) {
             if let Some(macro_) = self.envs.get(first).cloned() {
-                return MacroEvaluator {
+                let result = MacroEvaluator {
                     helper: self.helper,
                     env: Default::default(),
                     diag: self.diagnostics,
@@ -86,7 +86,9 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                     is_top: true,
                     args: &list.list[1..],
                 }
-                .evaluate(list.span.clone());
+                .evaluate(list.span.clone())?;
+
+                return Some(self.visit_sexp(result).unwrap_or(result));
             }
         }
         list.visit_children(self);
