@@ -1,4 +1,4 @@
-use crate::ast::SExpId;
+use crate::{ast::SExpId, source::Span};
 
 use super::Visitor;
 
@@ -6,6 +6,7 @@ pub struct List {
     pub id: SExpId,
     pub list: Vec<SExpId>,
     pub edited: bool,
+    pub span: Span,
 }
 impl List {
     pub fn visit<'a>(self, visitor: &mut impl Visitor<'a>) -> Option<SExpId> {

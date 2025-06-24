@@ -1,4 +1,7 @@
-use crate::ast::{SExp, SExpId};
+use crate::{
+    ast::{SExp, SExpId},
+    source::WithSpan,
+};
 
 mod helper;
 mod list;
@@ -17,7 +20,8 @@ pub trait Visitor<'a>: Sized {
     fn helper(&self) -> &VisitorHelper<'a>;
 
     fn visit_sexp(&mut self, id: SExpId) -> Option<SExpId> {
-        match &self.helper().asts.get(id).item {
+        let sexp = self.helper().asts.get(id);
+        match &sexp.item {
             SExp::List(list) => {
                 let first = list.first().copied()?;
                 if self.helper().is_symbol(first, "quote") {
@@ -31,6 +35,7 @@ pub trait Visitor<'a>: Sized {
                     let quasiquote = Quasiquote {
                         id,
                         quoted: list[1],
+                        span: sexp.span.clone(),
                     };
                     return self.visit_quasiquote(quasiquote);
                 }
@@ -39,17 +44,18 @@ pub trait Visitor<'a>: Sized {
                     id,
                     list: list.clone(),
                     edited: false,
+                    span: sexp.span.clone(),
                 };
                 self.visit_list(list)
             }
-            _ => self.visit_atom(id),
+            _ => self.visit_atom(sexp.clone().map(|_sexp| id)),
         }
     }
     fn visit_list(&mut self, mut list: List) -> Option<SExpId> {
         list.visit_children(self);
         list.id()
     }
-    fn visit_atom(&mut self, id: SExpId) -> Option<SExpId> {
+    fn visit_atom(&mut self, id: WithSpan<SExpId>) -> Option<SExpId> {
         let _ = id;
         None
     }

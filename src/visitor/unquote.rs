@@ -20,7 +20,8 @@ where
         self.0.helper()
     }
     fn visit_sexp(&mut self, id: SExpId) -> Option<SExpId> {
-        match &self.helper().asts.get(id).item {
+        let sexp = self.helper().asts.get(id);
+        match &sexp.item {
             SExp::List(list) => {
                 let first = list.first().copied()?;
                 if self.helper().is_symbol(first, "unquote") {
@@ -41,6 +42,7 @@ where
                     let quasiquote = Quasiquote {
                         id,
                         quoted: list[1],
+                        span: sexp.span.clone(),
                     };
                     return self.visit_quasiquote(quasiquote);
                 }
@@ -49,10 +51,11 @@ where
                     id,
                     list: list.clone(),
                     edited: false,
+                    span: sexp.span.clone(),
                 };
                 self.visit_list(list)
             }
-            _ => self.visit_atom(id),
+            _ => self.visit_atom(sexp.clone().map(|_| id)),
         }
     }
 }

@@ -1,10 +1,11 @@
-use crate::ast::SExpId;
+use crate::{ast::SExpId, source::Span};
 
 use super::{Visitor, unquote::UnquoteVisitor};
 
 pub struct Quasiquote {
     pub id: SExpId,
     pub quoted: SExpId,
+    pub span: Span,
 }
 
 impl Quasiquote {

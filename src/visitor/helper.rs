@@ -61,6 +61,18 @@ impl VisitorHelper<'_> {
         self.is_one_of(first, one_of)
     }
 
+    pub fn maybe_get_symbol(&self, maybe_id: Option<SExpId>) -> Option<&str> {
+        let id = maybe_id?;
+        self.get_symbol(id)
+    }
+
+    pub fn get_symbol(&self, sexp_id: SExpId) -> Option<&str> {
+        match &self.asts.get(sexp_id).item {
+            SExp::Symbol(s) => Some(s),
+            _ => None,
+        }
+    }
+
     pub fn is_symbol(&self, sexp_id: SExpId, symbol: &str) -> bool {
         match &self.asts.get(sexp_id).item {
             SExp::Symbol(s) => s == symbol,

@@ -8,8 +8,8 @@ pub struct WithSpan<T> {
     pub span: Span,
 }
 
-impl<T: WithRange> WithSpan<T> {
-    pub fn map<O: WithRange>(self, f: impl FnOnce(T) -> O) -> WithSpan<O> {
+impl<T> WithSpan<T> {
+    pub fn map<O>(self, f: impl FnOnce(T) -> O) -> WithSpan<O> {
         WithSpan {
             item: f(self.item),
             span: self.span,
