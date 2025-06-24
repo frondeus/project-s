@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     ast::{ASTS, SExpId},
+    builder::string,
     diagnostics::Diagnostics,
     patterns::Pattern,
     runtime::Macro,
@@ -61,7 +62,9 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
         if self.helper.is_special_form(&list, "macro") {
             self.diagnostics
                 .add(list.span.clone(), "Macro is forbidden in this context");
-            return None;
+            return self
+                .helper
+                .then_assemble(("error", string("Macro is forbidden in this context")));
         }
         if self.helper.is_special_form(&list, "let") {
             if let &[_let, pattern, value] = &list.list[..] {
@@ -71,7 +74,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                     diagnostics: self.diagnostics,
                     macro_def: None,
                 };
-                let_visitor.visit_sexp(value);
+                let res = let_visitor.visit_sexp(value);
                 if let Some(macro_) = let_visitor.macro_def {
                     let (pattern, p_span) =
                         parse_pattern(pattern, self.helper.asts, self.diagnostics)?;
@@ -84,7 +87,12 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                     };
                     self.envs.set(&pattern, macro_);
                 }
-                return None;
+                match res {
+                    None => return None,
+                    Some(id) => {
+                        return self.helper.then_assemble(("let", pattern, id));
+                    }
+                }
             }
         }
 

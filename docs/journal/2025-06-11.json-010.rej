@@ -1,11 +1,11 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:383
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:391
 ```
 (+ (splice (1 2 3)))
 ```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-010
-@@ -385,7 +385,21 @@
+@@ -393,7 +393,21 @@
  ```
  
  ```json

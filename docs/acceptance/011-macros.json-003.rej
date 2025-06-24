@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:28
+/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:53
 ````
 (
   let :fif (macro (:name :co :the :els) `(if ,co '(,name ,the) '(,name ,els))))
@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
 +++ json-003
-@@ -34,7 +34,15 @@
+@@ -59,7 +59,15 @@
  ```
  
  ```json

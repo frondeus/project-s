@@ -38,6 +38,11 @@ pub fn symbol(name: &str) -> impl ASTBuilder {
     }
 }
 
+pub fn string(s: impl ToString) -> impl ASTBuilder {
+    let s = s.to_string();
+    move |ast: &mut AST| ast.add_node(SExp::String(s), Span::default())
+}
+
 pub fn rest(name: &str, mut rest: Vec<SExpId>) -> impl ASTBuilder {
     move |ast: &mut AST| {
         let first = name.assemble(ast);

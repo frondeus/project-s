@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
 +++ json-003
-@@ -57,11 +57,27 @@
+@@ -57,11 +57,57 @@
  ```
  
  ```json
@@ -25,10 +25,10 @@
 -  "b": 4.0,
 -  "c": 7.0
 -}
-+Error: Undefined variable: let*
-+   ╭─[ <input>:2:6 ]
++Error: Undefined variable: let-rec
++   ╭─[ :1:1 ]
 +   │
-+ 2 │     (let* :result (f result))
++ 1 │ 
 +───╯
 +Error: Undefined variable: result
 +   ╭─[ <input>:2:22 ]
@@ -40,11 +40,41 @@
 +   │
 + 3 │     result
 +───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:6:24 ]
-+    │
-+    │ 
-+────╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +
  ```
  

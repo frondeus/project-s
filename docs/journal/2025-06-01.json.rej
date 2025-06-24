@@ -28,7 +28,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-01.md
 +++ json
-@@ -32,14 +32,37 @@
+@@ -32,14 +32,87 @@
  ```
  
  ```json
@@ -40,33 +40,83 @@
 -    "c": 3.0
 -  }
 -}
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:12 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+   │ 
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:4:10 ]
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
 +   │
-+   │ 
++ 1 │ 
 +───╯
-+Error: Undefined variable: root
-+   ╭─[ <input>:6:16 ]
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
 +   │
-+ 6 │       :b (+ 1 (root :another))
++ 1 │ 
 +───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:10:13 ]
-+    │
-+    │ 
-+────╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
-+    │
-+ 13 │   (if (has? super :key)
-+────╯
-+Error: Undefined variable: super
-+    ╭─[ <input>:13:13 ]
 +    │
 + 13 │   (if (has? super :key)
 +────╯

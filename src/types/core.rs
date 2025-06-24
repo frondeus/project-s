@@ -477,6 +477,7 @@ impl TypeCheckerCore {
                     index: (index, index_use),
                 },
             ) => {
+                out.push((args, index_use));
                 let Some(index) = index else {
                     diagnostics.add(
                         lhs_span.clone(),
@@ -493,8 +494,8 @@ impl TypeCheckerCore {
                             items.len()
                         ),
                     );
+                    return;
                 }
-                out.push((args, index_use));
                 out.push((items[index], ret_use));
             }
             (

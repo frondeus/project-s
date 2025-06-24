@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:457
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:465
 ```
 (let :foo (import "foo.s"))
 
@@ -7,7 +7,7 @@ foo
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-014
-@@ -466,9 +466,10 @@
+@@ -474,9 +474,10 @@
  
  
  ```json

@@ -307,7 +307,7 @@ impl Runtime {
                 let first_id = items.first().copied();
                 let first = self.asts.maybe_get(first_id);
                 let Some(first) = first else {
-                    todo!("Empty tuple");
+                    return Value::List(vec![]);
                 };
                 let first_id = first_id.unwrap();
                 match &first.item {

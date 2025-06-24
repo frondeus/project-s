@@ -33,7 +33,7 @@ Like vertical stack
   * [ ] let-rec and let*
   * [ ] Structs
   * [ ] has?
-  * [ ] macro expansion
+  * [x] macro expansion
   * [ ] Symbols
   * [ ] Splices
   * [ ] n-ary operators
@@ -48,4 +48,8 @@ Like vertical stack
 
 * [ ] JIT
 * [ ] REPL
-* [ ] Macro expansion in a pass.
+* [x] Macro expansion in a pass.
+
+# One day
+
+* [ ] Typesafe macros like in metaocaml.

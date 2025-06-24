@@ -7,15 +7,65 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/017-destructing.md
 +++ json-003
-@@ -56,7 +56,12 @@
+@@ -56,7 +56,62 @@
  ```
  
  ```json
 -6.0
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:19 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+ 1 │ (let { :a :b :c } { :a 1 :d 4 :b 2 :e 6 :c 3})
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +
  ```

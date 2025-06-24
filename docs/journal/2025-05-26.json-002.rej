@@ -26,7 +26,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json-002
-@@ -47,16 +47,44 @@
+@@ -47,16 +47,89 @@
  (+ left right)
  ```
  
@@ -41,40 +41,85 @@
 -}
 -```
 +````json
-+Error: Expected quote or unquote
-+   ╭─[ <input>:2:21 ]
-+   │
-+ 2 │   `(if (has? super ,key)
-+───╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:7:12 ]
-+    │
-+    │ 
-+────╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:10:10 ]
-+    │
-+    │ 
-+────╯
-+Error: Undefined variable: root
-+    ╭─[ <input>:12:16 ]
-+    │
-+ 12 │       :b (+ 1 (root :another))
-+────╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:16:23 ]
-+    │
-+    │ 
-+────╯
-+Error: Undefined variable: obj/struct
-+    ╭─[ <input>:19:17 ]
-+    │
-+ 19 │   (add-obj :key {:c 3})
-+────╯
-+Error: Expected int literal to access tuple element
++Error: Undefined variable: obj/con
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: has?
++   ╭─[ <input>:2:9 ]
++   │
++ 2 │   `(if (has? super ,key)
 +───╯
 +
 +````

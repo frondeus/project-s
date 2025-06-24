@@ -8,15 +8,25 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
 +++ json-007
-@@ -151,7 +151,17 @@
+@@ -151,7 +151,27 @@
  ```
  
  ```json
 -true
-+Error: Undefined variable: obj/struct
-+   ╭─[ <input>:1:9 ]
++Error: Undefined variable: obj/con
++   ╭─[ :1:1 ]
 +   │
-+   │ 
++ 1 │ 
++───╯
++Error: Undefined variable: obj/insert
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
 +───╯
 +Error: Undefined variable: has?
 +   ╭─[ <input>:4:2 ]

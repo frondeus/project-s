@@ -7,9 +7,23 @@ We can define macros
 )
 ```
 
-```json
-3.0
-```
+````macro
+Error: Macro is forbidden in this context
+   ╭─[ <input>:2:3 ]
+   │
+ 2 │   (macro (:x :y) `(+ ,x ,y))
+───╯
+
+````
+
+````json
+Error: Macro is forbidden in this context
+   ╭─[ <input>:2:3 ]
+   │
+ 2 │   (macro (:x :y) `(+ ,x ,y))
+───╯
+
+````
 
 ```
 (
@@ -17,6 +31,17 @@ We can define macros
 )
 (var :x 4.2)
 x
+```
+
+```macro
+(do
+  (let
+    :var
+    ())
+  (let
+    :x
+    4.2)
+  x)
 ```
 
 ```json

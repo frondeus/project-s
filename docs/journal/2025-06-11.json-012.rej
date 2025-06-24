@@ -1,11 +1,11 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:410
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:418
 ```
 (+ ..(1 2 3))
 ```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-012
-@@ -412,7 +412,21 @@
+@@ -420,7 +420,21 @@
  ```
  
  ```json
