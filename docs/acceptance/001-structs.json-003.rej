@@ -6,32 +6,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-003
-@@ -35,7 +35,32 @@
+@@ -35,7 +35,12 @@
  ```
  
  ```json
 -2.0
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

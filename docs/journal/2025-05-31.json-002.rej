@@ -8,32 +8,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-31.md
 +++ json-002
-@@ -61,7 +61,32 @@
+@@ -61,7 +61,12 @@
  ```
  
  ```json
 -42.0
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

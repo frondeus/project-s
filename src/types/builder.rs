@@ -69,7 +69,13 @@ fn canonical_value(
         super::canonical::Canonical::String => env.engine.string(span),
         super::canonical::Canonical::Error => env.engine.error(span),
         super::canonical::Canonical::Keyword => env.engine.keyword(span),
-        super::canonical::Canonical::Tuple { .. } => todo!(),
+        super::canonical::Canonical::Tuple { items } => {
+            let mut values = Vec::with_capacity(items.len());
+            for item in items {
+                values.push(canonical_value(env, canon, vars, *item, span.clone()));
+            }
+            env.engine.tuple(values, span)
+        }
         super::canonical::Canonical::List { item } => {
             let item = canonical_value(env, canon, vars, *item, span.clone());
             env.engine.list(item, span)
@@ -78,6 +84,14 @@ fn canonical_value(
             let pattern_use = canonical_use(env, canon, vars, *pattern, span.clone());
             let ret_value = canonical_value(env, canon, vars, *ret, span.clone());
             env.engine.func(pattern_use, ret_value, span)
+        }
+        super::canonical::Canonical::Struct { fields } => {
+            let mut f = Vec::with_capacity(fields.len());
+            for (name, id) in fields {
+                let value = canonical_value(env, canon, vars, *id, span.clone());
+                f.push((name.clone(), value));
+            }
+            env.engine.obj(f, span)
         }
     }
 }
@@ -123,6 +137,14 @@ fn canonical_use(
             env.engine.list_use(item_use, 0, None, span)
         }
         super::canonical::Canonical::Func { .. } => todo!(),
+        super::canonical::Canonical::Struct { fields } => {
+            let mut uses = Vec::with_capacity(fields.len());
+            for (name, id) in fields {
+                let use_ = canonical_use(env, canon, vars, *id, span.clone());
+                uses.push((name.clone(), use_));
+            }
+            env.engine.obj_use(uses, span)
+        }
     }
 }
 
@@ -183,6 +205,8 @@ pub mod canon {
         Canonical::Keyword
     }
 
+    pub fn obj() -> impl CanonBuilder {}
+
     pub fn list(item: impl CanonBuilder) -> impl CanonBuilder {
         move |canon: &mut CanonicalBuilder| Canonical::List {
             item: item.build(canon),
@@ -220,4 +244,12 @@ pub mod canon {
 
     canon_tuple!(T1);
     canon_tuple!(T1, T2);
+    canon_tuple!(T1, T2, T3);
+    canon_tuple!(T1, T2, T3, T4);
+    canon_tuple!(T1, T2, T3, T4, T5);
+    canon_tuple!(T1, T2, T3, T4, T5, T6);
+    canon_tuple!(T1, T2, T3, T4, T5, T6, T7);
+    canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8);
+    canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
+    canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
 }

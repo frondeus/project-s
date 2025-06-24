@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-003
-@@ -44,10 +44,22 @@
+@@ -44,10 +44,12 @@
  ```
  
  ```json
@@ -21,16 +21,6 @@
 +   ╭─[ <input>:1:2 ]
 +   │
 + 1 │ (obj/con (fn (:self :root :super :origin) (do
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
 +───╯
 +
  ```

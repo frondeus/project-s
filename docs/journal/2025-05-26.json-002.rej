@@ -26,7 +26,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json-002
-@@ -47,16 +47,89 @@
+@@ -47,16 +47,39 @@
  (+ left right)
  ```
  
@@ -51,62 +51,12 @@
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

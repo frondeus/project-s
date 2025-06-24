@@ -37,6 +37,11 @@ pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, 
     root = MacroExpansionPass::pass(asts, root, &mut diagnostics, envs);
     root = LambdaPass::pass(asts, root, envs);
 
+    (root, diagnostics)
+}
+
+pub fn process_with_typechk(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
+    let (root, mut diagnostics) = process_ast(asts, root, envs);
     let mut type_env = types::TypeEnv::default().with_prelude();
     type_env.check(asts, root, &mut diagnostics);
     (root, diagnostics)

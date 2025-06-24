@@ -20,7 +20,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
 +++ json-004
-@@ -104,14 +104,127 @@
+@@ -104,14 +104,47 @@
  ```
  
  ```json
@@ -42,62 +42,12 @@
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 
@@ -112,42 +62,12 @@
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

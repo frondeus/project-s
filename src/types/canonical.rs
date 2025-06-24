@@ -28,6 +28,12 @@ pub enum Canonical {
         pattern: CanonId,
         ret: CanonId,
     },
+    Struct {
+        fields: Vec<(String, CanonId)>,
+    },
+    // Applicable {
+
+    // }
 }
 
 impl Canonical {
@@ -44,6 +50,11 @@ impl Canonical {
             Canonical::Tuple { items } => items.clone().into_iter(),
             Canonical::List { item } => vec![*item].into_iter(),
             Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),
+            Canonical::Struct { fields } => fields
+                .iter()
+                .map(|(_, id)| *id)
+                .collect::<Vec<_>>()
+                .into_iter(),
         }
     }
 }
@@ -223,9 +234,15 @@ impl Canonicalizer {
                 let item = self.canon_use(*items, engine);
                 self.add_canon(Canonical::List { item })
             }
-            core::UTypeHead::UObj { .. } => todo!(),
+            core::UTypeHead::UObj { fields } => {
+                let fields = fields
+                    .iter()
+                    .map(|(name, id)| (name.clone(), self.canon_use(*id, engine)))
+                    .collect();
+                self.add_canon(Canonical::Struct { fields })
+            }
             core::UTypeHead::UObjAccess { .. } => todo!(),
-            core::UTypeHead::UApplication { .. } => todo!(),
+            app @ core::UTypeHead::UApplication { .. } => todo!("{:?}", app),
         }
     }
 

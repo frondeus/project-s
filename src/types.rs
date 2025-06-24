@@ -8,6 +8,7 @@ use builder::{
     canon::{CanonBuilder, number},
     u_canonical,
 };
+use canonical::Canonical;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -56,6 +57,18 @@ impl TypeEnv {
         env.with_mono(">", func((number(), number()), bool()), Span::default());
         env.with_poly("print", || func(list(any(None)), number()), Span::default());
 
+        env.with_mono(
+            "obj/insert",
+            func(
+                (Canonical::Struct { fields: vec![] }, keyword(), any(None)),
+                (),
+            ),
+            Span::default(),
+        );
+        // TODO: that is not fully correct. We want to have type
+        // (Con<T0>) -> T0
+        //    | (T0) -> T0
+        env.with_mono("obj/construct-or", func((any(0),), any(0)), Span::default());
         env
     }
 
@@ -231,12 +244,6 @@ impl TypeEnv {
                         })
                         .map(|idx| idx as usize);
 
-                    // This will only work if the callee is a function
-                    // We need to also be able to handle:
-                    // * objects
-                    // * constructors
-                    // * macros
-                    // * (in future) arrays
                     let bound = self.engine.application_use(
                         args_types,
                         ret_bound,
@@ -461,7 +468,7 @@ impl Envs {
 #[allow(clippy::print_stderr)]
 #[cfg(test)]
 mod tests {
-    use crate::ast::ASTS;
+    use crate::{ast::ASTS, macro_expansion::MacroExpansionPass, s_std::prelude};
 
     use super::{canonical::Canonicalizer, *};
 
@@ -477,6 +484,8 @@ mod tests {
             let mut env = TypeEnv::default().with_prelude();
 
             let mut diagnostics = Diagnostics::default();
+            let prelude = prelude();
+            let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
             let infered = env.check(&asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
                 return diagnostics.pretty_print();
@@ -495,6 +504,9 @@ mod tests {
             let mut env = TypeEnv::default().with_prelude();
 
             let mut diagnostics = Diagnostics::default();
+            let prelude = prelude();
+
+            let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
             let root = env.check(&asts, root, &mut diagnostics);
 
             if args.contains(&"canon") {

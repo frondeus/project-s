@@ -13,7 +13,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-014
-@@ -303,11 +303,32 @@
+@@ -303,11 +303,17 @@
  ```
  
  ```json
@@ -27,22 +27,7 @@
 +   │
 + 1 │ 
 +───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

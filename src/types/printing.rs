@@ -48,6 +48,18 @@ impl Formatter<'_> {
                 self.f.push_str(" -> ");
                 self.print_canon(*ret, canonical);
             }
+            Canonical::Struct { fields } => {
+                self.f.push('{');
+                for (i, (name, id)) in fields.iter().enumerate() {
+                    if i > 0 {
+                        self.f.push_str(", ");
+                    }
+                    self.f.push_str(name);
+                    self.f.push_str(": ");
+                    self.print_canon(*id, canonical);
+                }
+                self.f.push('}');
+            }
         }
     }
 

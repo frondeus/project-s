@@ -6,7 +6,7 @@ foo
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-08.md
 +++ json
-@@ -23,10 +23,32 @@
+@@ -23,10 +23,12 @@
  ```
  
  ```json
@@ -15,26 +15,6 @@ foo
 -  "b": 4.0
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/insert
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: obj/construct-or
 +   ╭─[ :1:1 ]
 +   │
 + 1 │ 

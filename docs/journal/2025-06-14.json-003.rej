@@ -1,11 +1,11 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-14.md:46
+/Users/frondeus/Code/project-s/docs/journal/2025-06-14.md:59
 ```
 (+ "Foo" "Bar")
 ```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-14.md
 +++ json-003
-@@ -48,7 +48,33 @@
+@@ -61,7 +61,33 @@
  ```
  
  ```json

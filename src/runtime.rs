@@ -315,9 +315,6 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "macro" => {
-                        self.macro_def(&items[1..]).unwrap_or_else(Value::Error)
-                    }
                     SExp::Symbol(tag) if tag == "fn" => {
                         self.function_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
@@ -373,10 +370,6 @@ impl Runtime {
                                 self.constructor_call(constructor, None)
                             }
                             Value::Function(function) => self.closure_call(function, &items[1..]),
-                            Value::Macro(macro_) => self
-                                .macro_call(macro_, &items[1..])
-                                .map(|id| self.eval(id))
-                                .unwrap_or_else(Value::Error),
                             _ => Value::Error(format!("Invalid caller: {:?}", first)),
                         }
                     }
@@ -420,7 +413,7 @@ mod tests {
         tracing::trace!("Before process");
         let prelude = prelude();
         let envs = [prelude];
-        let (root_id, diag) = crate::process_ast(&mut asts, root_id, &envs);
+        let (root_id, diag) = crate::process_with_typechk(&mut asts, root_id, &envs);
 
         if diag.has_errors() {
             return Err(diag);
@@ -542,7 +535,7 @@ mod tests {
                 return diag.pretty_print();
             }
 
-            asts.fmt(root_id).to_string()
+            format!("{:#}", asts.fmt(root_id))
         })
     }
 }

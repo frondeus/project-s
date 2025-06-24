@@ -12,7 +12,7 @@ pub fn let_star(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
 
 pub fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
     let value = ("obj/construct-or", value);
-    let value = ("thunk", ("self", "root", "super", "origin"), value);
+    let value = ("thunk", (), value);
     ("obj/put", format!(":{key}"), value)
 }
 
