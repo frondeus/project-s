@@ -5,7 +5,7 @@ use std::{collections::BTreeMap, rc::Rc};
 
 use builder::{
     TypeBuilder,
-    canon::{CanonBuilder, number},
+    canon::{CanonBuilder, keyword, number},
     u_canonical,
 };
 use canonical::Canonical;
@@ -270,8 +270,10 @@ impl TypeEnv {
                     let (ret_type, ret_bound) = self.engine.var();
 
                     let index_use = u_canonical((number(),), span.clone()).build(self, diagnostics);
+                    let field_use =
+                        u_canonical((keyword(),), span.clone()).build(self, diagnostics);
 
-                    let first_arg = args
+                    let first_arg_index = args
                         .first()
                         .and_then(|arg| match asts.get(*arg).item {
                             SExp::Number(idx) => Some(idx),
@@ -279,10 +281,17 @@ impl TypeEnv {
                         })
                         .map(|idx| idx as usize);
 
+                    let first_arg_keyword =
+                        args.first().and_then(|arg| match &asts.get(*arg).item {
+                            SExp::Keyword(s) => Some(s.clone()),
+                            _ => None,
+                        });
+
                     let bound = self.engine.application_use(
                         args_types,
                         ret_bound,
-                        (first_arg, index_use),
+                        (first_arg_keyword, field_use),
+                        (first_arg_index, index_use),
                         span.clone(),
                     );
                     self.engine.flow(callee_type, bound, diagnostics);

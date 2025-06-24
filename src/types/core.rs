@@ -79,7 +79,7 @@ pub enum VTypeHead {
     VList {
         item: Value,
     },
-    VObj {
+    VStruct {
         fields: BTreeMap<String, Value>,
     },
     VFunc {
@@ -102,7 +102,7 @@ impl std::fmt::Display for VTypeHead {
             VTypeHead::VKeyword => write!(f, "keyword"),
             VTypeHead::VTuple { items } => write!(f, "tuple"),
             VTypeHead::VList { item } => write!(f, "list"),
-            VTypeHead::VObj { fields } => write!(f, "object"),
+            VTypeHead::VStruct { fields } => write!(f, "struct"),
             VTypeHead::VFunc { pattern, ret } => write!(f, "function"),
             VTypeHead::VRef { write, read } => write!(f, "ref"),
         }
@@ -124,7 +124,7 @@ impl VTypeHead {
             VTypeHead::VList { item } => {
                 ids.push(item.id());
             }
-            VTypeHead::VObj { fields } => {
+            VTypeHead::VStruct { fields } => {
                 ids.extend(fields.values().copied().map(WithID::id));
             }
             VTypeHead::VFunc { pattern, ret } => {
@@ -167,17 +167,17 @@ pub enum UTypeHead {
         min_len: usize,
         max_len: Option<usize>,
     },
-    UObj {
+    UStruct {
         fields: HashMap<String, Use>,
     },
-    UObjAccess {
+    UStructAccess {
         field: (String, Use),
     },
     UApplication {
         args: Value,
         ret: Use,
         // In case its object access
-        // field: (String, Use),
+        field: (Option<String>, Use),
         // In case its list access
         index: (Option<usize>, Use),
     },
@@ -201,8 +201,8 @@ impl std::fmt::Display for UTypeHead {
                 min_len,
                 max_len,
             } => write!(f, "list"),
-            UTypeHead::UObj { fields } => write!(f, "object"),
-            UTypeHead::UObjAccess { field } => write!(f, "object_access"),
+            UTypeHead::UStruct { fields } => write!(f, "object"),
+            UTypeHead::UStructAccess { field } => write!(f, "object_access"),
             UTypeHead::UApplication { .. } => write!(f, "function"),
             UTypeHead::URef { write, read } => write!(f, "ref"),
         }
@@ -226,10 +226,10 @@ impl UTypeHead {
             } => {
                 ids.push(items.id());
             }
-            UTypeHead::UObj { fields } => {
+            UTypeHead::UStruct { fields } => {
                 ids.extend(fields.values().copied().map(WithID::id));
             }
-            UTypeHead::UObjAccess {
+            UTypeHead::UStructAccess {
                 field: (_, field_use),
             } => {
                 ids.push(field_use.id());
@@ -237,12 +237,12 @@ impl UTypeHead {
             UTypeHead::UApplication {
                 args,
                 ret,
-                // field: (_, field_use),
+                field: (_, field_use),
                 index: (_, index_use),
             } => {
                 ids.push(args.id());
                 ids.push(ret.id());
-                // ids.push(field_use.id());
+                ids.push(field_use.id());
                 ids.push(index_use.id());
             }
             UTypeHead::URef { write, read } => {
@@ -391,11 +391,20 @@ impl TypeCheckerCore {
         &mut self,
         args: Vec<Value>,
         ret: Use,
+        field: (Option<String>, Use),
         index: (Option<usize>, Use),
         span: Span,
     ) -> Use {
         let args = self.tuple(args, span.clone());
-        self.new_use(UTypeHead::UApplication { args, ret, index }, span)
+        self.new_use(
+            UTypeHead::UApplication {
+                args,
+                ret,
+                field,
+                index,
+            },
+            span,
+        )
     }
 
     pub fn list(&mut self, item: Value, span: Span) -> Value {
@@ -432,7 +441,7 @@ impl TypeCheckerCore {
 
     pub fn obj(&mut self, fields: Vec<(String, Value)>, span: Span) -> Value {
         self.new_val(
-            VTypeHead::VObj {
+            VTypeHead::VStruct {
                 fields: fields.into_iter().collect(),
             },
             span,
@@ -441,14 +450,14 @@ impl TypeCheckerCore {
 
     pub fn obj_use(&mut self, fields: Vec<(String, Use)>, span: Span) -> Use {
         self.new_use(
-            UTypeHead::UObj {
+            UTypeHead::UStruct {
                 fields: fields.into_iter().collect(),
             },
             span,
         )
     }
     pub fn obj_field_access_use(&mut self, field: (String, Use), span: Span) -> Use {
-        self.new_use(UTypeHead::UObjAccess { field }, span)
+        self.new_use(UTypeHead::UStructAccess { field }, span)
     }
 
     pub fn reference(&mut self, write: Option<Use>, read: Option<Value>, span: Span) -> Value {
@@ -510,6 +519,7 @@ impl TypeCheckerCore {
                     ret: ret_use,
                     // field: (ref field_name, field_use),
                     index: (index, index_use),
+                    ..
                 },
             ) => {
                 out.push((item, ret_use));
@@ -521,6 +531,7 @@ impl TypeCheckerCore {
                     args,
                     ret: ret_use,
                     index: (index, index_use),
+                    ..
                 },
             ) => {
                 out.push((args, index_use));
@@ -554,8 +565,31 @@ impl TypeCheckerCore {
                 out.push((ret, ret_use));
             }
             (
-                VObj { fields },
-                &UObjAccess {
+                VStruct { fields },
+                &UApplication {
+                    args,
+                    ret,
+                    field: (ref field, field_use),
+                    ..
+                },
+            ) => {
+                let Some(field) = field.as_ref() else {
+                    diagnostics.add(rhs_span.clone(), "Expected field name");
+                    return;
+                };
+                match fields.get(field) {
+                    None => {
+                        diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
+                    }
+                    Some(field_ty) => {
+                        out.push((args, field_use));
+                        out.push((*field_ty, ret));
+                    }
+                }
+            }
+            (
+                VStruct { fields },
+                &UStructAccess {
                     field: (ref field, field_use),
                 },
             ) => match fields.get(field) {

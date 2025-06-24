@@ -204,7 +204,7 @@ impl Canonicalizer {
                 let item = self.canon_value(*item, engine);
                 self.add_canon(Canonical::List { item })
             }
-            core::VTypeHead::VObj { fields } => {
+            core::VTypeHead::VStruct { fields } => {
                 let fields = fields
                     .iter()
                     .map(|(name, value)| (name.clone(), self.canon_value(*value, engine)))
@@ -258,14 +258,14 @@ impl Canonicalizer {
                 let item = self.canon_use(*items, engine);
                 self.add_canon(Canonical::List { item })
             }
-            core::UTypeHead::UObj { fields } => {
+            core::UTypeHead::UStruct { fields } => {
                 let fields = fields
                     .iter()
                     .map(|(name, id)| (name.clone(), self.canon_use(*id, engine)))
                     .collect();
                 self.add_canon(Canonical::Struct { fields })
             }
-            core::UTypeHead::UObjAccess { .. } => todo!(),
+            core::UTypeHead::UStructAccess { .. } => todo!(),
             app @ core::UTypeHead::UApplication { .. } => todo!("{:?}", app),
             core::UTypeHead::URef { read, write } => {
                 let read = read.map(|read| self.canon_use(read, engine));
