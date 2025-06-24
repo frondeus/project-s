@@ -26,7 +26,13 @@ impl<'a> MacroExpansionPass<'a> {
             envs: &mut pass.envs,
             diagnostics,
         };
-        visitor.visit_sexp(root).unwrap_or(root)
+        let expanded = visitor.visit_sexp(root).unwrap_or(root);
+
+        MacroSanitizer {
+            helper: &mut pass.helper,
+        }
+        .visit_sexp(expanded)
+        .unwrap_or(expanded)
     }
 }
 
@@ -232,6 +238,28 @@ impl<'a> Visitor<'a> for MacroEvaluator<'a, '_> {
         self.diag.add(id.span, "Expected quote or unquote");
 
         None
+    }
+}
+
+struct MacroSanitizer<'a, 'b> {
+    helper: &'b mut VisitorHelper<'a>,
+}
+
+impl<'a> Visitor<'a> for MacroSanitizer<'a, '_> {
+    fn helper_mut(&mut self) -> &mut VisitorHelper<'a> {
+        self.helper
+    }
+
+    fn helper(&self) -> &VisitorHelper<'a> {
+        self.helper
+    }
+
+    fn visit_list(&mut self, mut list: crate::visitor::List) -> Option<SExpId> {
+        if self.helper.is_special_form(&list, "macro") {
+            return self.helper.then_assemble(());
+        }
+        list.visit_children(self);
+        list.id()
     }
 }
 
