@@ -212,13 +212,24 @@ pub struct SExpFmtList<'a> {
 
 impl std::fmt::Display for SExpFmtList<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let width = f.width().unwrap_or(0);
         write!(f, "(")?;
         for (i, item) in self.list.iter().enumerate() {
             if i > 0 {
-                write!(f, " ")?;
+                if f.alternate() {
+                    writeln!(f)?;
+                    write!(f, "{}", " ".repeat(width))?;
+                } else {
+                    write!(f, " ")?;
+                }
             }
             let item = self.asts.get(*item).fmt(self.asts);
-            write!(f, "{}", item)?;
+            if f.alternate() {
+                // let width = width + 2;
+                write!(f, "{:#width$}", item, width = width)?;
+            } else {
+                write!(f, "{}", item)?;
+            }
         }
         write!(f, ")")
     }
@@ -257,6 +268,9 @@ impl std::fmt::Debug for SExpFmt<'_> {
 }
 impl std::fmt::Display for SExpFmt<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let width = f.width().unwrap_or(0);
+        // write!(f, "{}", " ".repeat(width))?;
+
         match self.expr {
             SExp::Number(n) => write!(f, "{}", n),
             SExp::String(s) => write!(f, "\"{}\"", s),
@@ -265,15 +279,26 @@ impl std::fmt::Display for SExpFmt<'_> {
             SExp::Bool(b) => write!(f, "{}", b),
             SExp::Error => write!(f, "<Error>"),
             SExp::List(items) => {
-                write!(f, "(")?;
-                for (i, item) in items.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, " ")?;
-                    }
-                    let item = self.asts.get(*item).fmt(self.asts);
-                    write!(f, "{}", item)?;
+                if f.alternate() {
+                    write!(
+                        f,
+                        "{:#width$}",
+                        &SExpFmtList {
+                            asts: self.asts,
+                            list: items
+                        },
+                        width = width + 2
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{}",
+                        &SExpFmtList {
+                            asts: self.asts,
+                            list: items
+                        }
+                    )
                 }
-                write!(f, ")")
             }
         }
     }

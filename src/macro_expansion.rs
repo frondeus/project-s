@@ -353,7 +353,7 @@ mod tests {
             if diagnostics.has_errors() {
                 return diagnostics.pretty_print();
             }
-            output.to_string()
+            format!("{output:#}")
         })
     }
 }
