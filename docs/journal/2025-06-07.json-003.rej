@@ -1,0 +1,68 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-07.md:58
+```
+(+ {
+  :a (+ ((self :b) :c) 10.0)
+  :b {
+    :c 10.0
+  }
+}
+
+{
+  (obj/+ :b {
+    :d (origin :a)
+  })
+})
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
++++ json-003
+@@ -71,13 +71,42 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 20.0,
+-  "b": {
+-    "c": 10.0,
+-    "d": 20.0
+-  }
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:4 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:2:11 ]
++   │
++ 2 │   :a (+ ((self :b) :c) 10.0)
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:3:6 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:8:1 ]
++    │
++    ┆ 
++────╯
++Error: Undefined variable: obj/+
++   ╭─[ <input>:9:4 ]
++   │
++ 9 │   (obj/+ :b {
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:9:13 ]
++    │
++    │ 
++────╯
++Error: Undefined variable: origin
++    ╭─[ <input>:10:9 ]
++    │
++ 10 │     :d (origin :a)
++────╯
++
+ ```
+ 
+ 

@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-07.md:11
+```
+({
+  :b (thunk (self) (self :a))
+  :a 4.0
+} :b)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
++++ json
+@@ -16,7 +16,17 @@
+ ```
+ 
+ ```json
+-4.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:2 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:2:21 ]
++   │
++ 2 │   :b (thunk (self) (self :a))
++───╯
++
+ ```
+ 
+ Let's for now introduce "Ref" RC like value that lives on a heap

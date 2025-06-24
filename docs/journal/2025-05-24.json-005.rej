@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:46
+```
+(struct 
+    :name "Name"
+    :surname "Surname"
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
++++ json-005
+@@ -53,10 +53,12 @@
+ and have it compiled to 
+ 
+ ```json
+-{
+-  "name": "Name",
+-  "surname": "Surname"
+-}
++Error: Undefined variable: struct
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (struct
++───╯
++
+ ```
+ 
+ For now we treat as if struct was a function that took SExpression.

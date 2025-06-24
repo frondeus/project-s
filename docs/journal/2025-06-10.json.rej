@@ -1,0 +1,78 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-10.md:16
+```
+(let :x {:e 1 :f (root :d)})
+
+{
+  :a (obj/construct-or {
+    :b 1
+    :c (root :d)
+  })
+  :d (obj/construct-or 2)
+  :g (obj/construct-or x)
+}
+
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-10.md
++++ json
+@@ -27,18 +27,48 @@
+ 
+ ```
+ 
+-```json 
+-{
+-  "a": {
+-    "b": 1.0,
+-    "c": 2.0
+-  },
+-  "d": 2.0,
+-  "g": {
+-    "e": 1.0,
+-    "f": 2.0
+-  }
+-}
++```json
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:9 ]
++   │
++ 1 │ (let :x {:e 1 :f (root :d)})
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:1:19 ]
++   │
++ 1 │ (let :x {:e 1 :f (root :d)})
++───╯
++Error: Undefined variable: obj/struct
++    ╭─[ <input>:3:1 ]
++    │
++    ┆ 
++────╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ <input>:4:7 ]
++   │
++ 4 │   :a (obj/construct-or {
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:4:24 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:6:9 ]
++   │
++ 6 │     :c (root :d)
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ <input>:8:7 ]
++   │
++ 8 │   :d (obj/construct-or 2)
++───╯
++Error: Undefined variable: obj/construct-or
++   ╭─[ <input>:9:7 ]
++   │
++ 9 │   :g (obj/construct-or x)
++───╯
++
+ ```
+ 
+ Okay, this works, so we could use (obj/construct-or) here, right?

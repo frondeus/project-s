@@ -1,0 +1,42 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-14.md:46
+```
+(+ "Foo" "Bar")
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-14.md
++++ json-003
+@@ -48,7 +48,33 @@
+ ```
+ 
+ ```json
+-"<Error: +: Calling with no matching signature: [String(\"Foo\"), String(\"Bar\")]>"
++Error: Incompatible types
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ Expected number
++   │
++   ├─[ <input>:1:10 ]
++   │
++ 1 │ (+ "Foo" "Bar")
++   │          ──┬──  
++   │            ╰──── But got string
++───╯
++Error: Incompatible types
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ Expected number
++   │
++   ├─[ <input>:1:4 ]
++   │
++ 1 │ (+ "Foo" "Bar")
++   │    ──┬──  
++   │      ╰──── But got string
++───╯
++
+ ```
+ 
+ It will have to be sufficient for now.

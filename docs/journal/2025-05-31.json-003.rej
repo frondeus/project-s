@@ -1,0 +1,36 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-31.md:69
+```
+((({
+  :a 42.0
+  :b {
+    :c (fn () (root :a))
+  }
+} :b) :c))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-31.md
++++ json-003
+@@ -80,7 +80,22 @@
+ ```
+ 
+ ```json
+-42.0
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:4 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:3:6 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: root
++   ╭─[ <input>:4:16 ]
++   │
++ 4 │     :c (fn () (root :a))
++───╯
++
+ ```
+ 
+ And now finally super

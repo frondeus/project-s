@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:287
+```
+(let :foo (struct :key 1 :another 2))
+(foo :another)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
++++ json-017
+@@ -290,7 +290,12 @@
+ ```
+ 
+ ```json
+-2.0
++Error: Undefined variable: struct
++   ╭─[ <input>:1:12 ]
++   │
++ 1 │ (let :foo (struct :key 1 :another 2))
++───╯
++
+ ```
+ 
+ Cool. So, `self`...

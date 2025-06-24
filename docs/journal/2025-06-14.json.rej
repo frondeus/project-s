@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-14.md:11
+```
+(- 1 "Foo")
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-14.md
++++ json
+@@ -14,7 +14,20 @@
+ 
+ 
+ ```json
+-"<Error: Expected number, got String(\"Foo\")>"
++Error: Incompatible types
++   ╭─[ :1:1 ]
++   │
++ 1 │ 
++   │ │ 
++   │ ╰─ Expected number
++   │
++   ├─[ <input>:1:6 ]
++   │
++ 1 │ (- 1 "Foo")
++   │      ──┬──  
++   │        ╰──── But got string
++───╯
++
+ ```
+ 
+ This is handled, but this:

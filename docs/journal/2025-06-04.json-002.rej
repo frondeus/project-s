@@ -1,0 +1,39 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-04.md:25
+```
+(let :x {
+  :key 42.0
+  :value (+ (super :value) 10.0)
+})
+
+(+ {:value 5} x)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
++++ json-002
+@@ -36,10 +36,22 @@
+ ```
+ 
+ ```json
+-{
+-  "key": 42.0,
+-  "value": 15.0
+-}
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:9 ]
++   │
++   │ 
++───╯
++Error: Undefined variable: super
++   ╭─[ <input>:3:14 ]
++   │
++ 3 │   :value (+ (super :value) 10.0)
++───╯
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:6:4 ]
++   │
++ 6 │ (+ {:value 5} x)
++───╯
++
+ ```
+ 
+ BINGO!

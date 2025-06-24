@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-04.md:4
+```
+{
+  :key 42.0
+  :value (+ (super :value) 10.0)
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
++++ json
+@@ -16,7 +16,17 @@
+ its bit too early to enable thunk pass everywhere, so lets do a hack
+ 
+ ```json lazy
+-"<Constructor: Constructor { constructor: LispFn }>"
++Error: Undefined variable: obj/struct
++   ╭─[ <input>:1:1 ]
++   │
++   ┆ 
++───╯
++Error: Undefined variable: super
++   ╭─[ <input>:3:14 ]
++   │
++ 3 │   :value (+ (super :value) 10.0)
++───╯
++
+ ```
+ 
+ bingo?

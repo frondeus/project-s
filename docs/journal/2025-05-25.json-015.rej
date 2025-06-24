@@ -1,0 +1,23 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-25.md:392
+````
+(let :var (macro (:name :value) `(let ,name ,value)))
+(var :x 4.2)
+x
+````
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
++++ json-015
+@@ -396,7 +396,12 @@
+ ```
+ 
+ ```json
+-4.2
++Error: Undefined variable: x
++   ╭─[ <input>:3:1 ]
++   │
++ 3 │ x
++───╯
++
+ ```
+ 
+ The problem is, we are evaluating arguments which is counterpoint of macros.

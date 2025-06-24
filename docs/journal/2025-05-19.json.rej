@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-19.md:26
+```
+(struct
+    :name "Name"
+    :surname "Surname"
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-19.md
++++ json
+@@ -33,10 +33,12 @@
+ and have it compiled to 
+ 
+ ```json
+-{
+-  "name": "Name",
+-  "surname": "Surname"
+-}
++Error: Undefined variable: struct
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (struct
++───╯
++
+ ```
+ 
+ Let's write the execution of such

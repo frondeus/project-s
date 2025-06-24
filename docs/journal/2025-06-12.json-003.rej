@@ -1,0 +1,39 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-12.md:54
+```
+(let* :a (fn (:x) (do
+    (print "a")
+    (if (> x 0)
+        (+ (a (- x 1)) 1)
+        0
+    )
+)))
+
+(a 3)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
++++ json-003
+@@ -64,7 +64,22 @@
+ ```
+ 
+ ```json
+-3.0
++Error: Undefined variable: let*
++   ╭─[ <input>:1:2 ]
++   │
++ 1 │ (let* :a (fn (:x) (do
++───╯
++Error: Undefined variable: a
++   ╭─[ <input>:4:13 ]
++   │
++ 4 │         (+ (a (- x 1)) 1)
++───╯
++Error: Undefined variable: a
++   ╭─[ <input>:9:2 ]
++   │
++ 9 │ (a 3)
++───╯
++
+ ```
+ 
+ ```traces

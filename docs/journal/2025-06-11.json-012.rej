@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:410
+```
+(+ ..(1 2 3))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
++++ json-012
+@@ -412,7 +412,21 @@
+ ```
+ 
+ ```json
+-6.0
++Error: Undefined variable: splice
++   ╭─[ <input>:1:4 ]
++   │
++ 1 │ (+ ..(1 2 3))
++───╯
++Error: Incompatible types
++   ╭─[ <input>:1:6 ]
++   │
++ 1 │ (+ ..(1 2 3))
++   │      ─┬─┬───  
++   │       ╰─────── But got number
++   │         │     
++   │         ╰───── Expected function
++───╯
++
+ ```
+ 
+ 
