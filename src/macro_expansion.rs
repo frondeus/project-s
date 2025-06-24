@@ -196,11 +196,10 @@ impl MacroEvaluator<'_, '_> {
 
                 self.visit_sexp(*body)
             }
-            Macro::Rust { body: _ } => {
-                // let mut runtime = Runtime::new(, )
-                // todo!("Native macros are not supported yet");
-                self.diag.add(span, "Native macros are not supported yet");
-                None
+            Macro::Rust { body } => {
+                let args = self.args.to_vec();
+                let result = body(self.helper.asts, args);
+                Some(result)
             }
         }
     }
