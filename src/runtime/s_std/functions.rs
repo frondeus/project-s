@@ -1,5 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
+use itertools::Itertools;
+
 use crate::{
     api::{
         CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Rest, WithConstructor,
@@ -289,6 +291,20 @@ pub fn obj_has(
     let key = key.value;
 
     Ok(Value::Bool(obj.contains_key(&key.0)))
+}
+
+pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
+    if args.len() % 2 != 0 {
+        return Err("Expected even number of arguments".into());
+    }
+    let mut inner = BTreeMap::new();
+
+    for (key, value) in args.into_iter().tuples() {
+        let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
+        inner.insert(key.to_string(), value);
+    }
+
+    Ok(Value::Object(inner))
 }
 
 pub fn obj_con(constructor: EagerRec<Function, WithoutConstructor>) -> Value {

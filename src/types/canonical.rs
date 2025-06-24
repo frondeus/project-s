@@ -204,7 +204,13 @@ impl Canonicalizer {
                 let item = self.canon_value(*item, engine);
                 self.add_canon(Canonical::List { item })
             }
-            core::VTypeHead::VObj { .. } => todo!(),
+            core::VTypeHead::VObj { fields } => {
+                let fields = fields
+                    .iter()
+                    .map(|(name, value)| (name.clone(), self.canon_value(*value, engine)))
+                    .collect();
+                self.add_canon(Canonical::Struct { fields })
+            }
             core::VTypeHead::VFunc { pattern, ret } => {
                 let pattern = self.canon_use(*pattern, engine);
                 let ret = self.canon_value(*ret, engine);

@@ -9,6 +9,7 @@ use builder::{
     u_canonical,
 };
 use canonical::Canonical;
+use itertools::Itertools;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -237,6 +238,21 @@ impl TypeEnv {
                     self.engine.flow(value_type, write, diagnostics);
                     self.engine.reference(Some(write), Some(read), span)
                 }
+                [first, args @ ..] if Self::is_symbol(asts, *first, "obj/plain") => {
+                    let mut fields = Vec::new();
+                    for (key, value) in args.iter().tuples() {
+                        let key = match Self::as_keyword(asts, *key) {
+                            Some(key) => key,
+                            None => {
+                                diagnostics.add(span.clone(), "Expected keyword");
+                                return self.engine.error(span);
+                            }
+                        };
+                        let value = self.check(asts, *value, diagnostics);
+                        fields.push((key.to_string(), value));
+                    }
+                    self.engine.obj(fields, span)
+                }
                 [first, ref_mut, value] if Self::is_symbol(asts, *first, "set") => {
                     let ref_mut = self.check(asts, *ref_mut, diagnostics);
                     let value = self.check(asts, *value, diagnostics);
@@ -390,6 +406,14 @@ impl TypeEnv {
         match &sexp.item {
             SExp::Symbol(symbol) => symbol == name,
             _ => false,
+        }
+    }
+
+    fn as_keyword(asts: &ASTS, sexp: SExpId) -> Option<&str> {
+        let sexp = asts.get(sexp);
+        match &sexp.item {
+            SExp::Keyword(s) => Some(s),
+            _ => None,
         }
     }
 

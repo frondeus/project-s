@@ -287,6 +287,15 @@ impl Runtime {
         }
     }
 
+    fn as_keyword(&self, value: &Value) -> Option<&str> {
+        let sexp = value.as_sexp()?;
+        let sexp = self.asts.get(*sexp);
+        match &sexp.item {
+            SExp::Keyword(s) => Some(s),
+            _ => None,
+        }
+    }
+
     pub fn eval(&mut self, id: SExpId) -> Value {
         let sexp = self.asts.get(id).clone();
         match sexp.item {

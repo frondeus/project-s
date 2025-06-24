@@ -1,6 +1,9 @@
 #![allow(unused_variables)]
 
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 
 use crate::{ast::ASTS, diagnostics::Diagnostics, source::Span};
 
@@ -77,7 +80,7 @@ pub enum VTypeHead {
         item: Value,
     },
     VObj {
-        fields: HashMap<String, Value>,
+        fields: BTreeMap<String, Value>,
     },
     VFunc {
         pattern: Use,
