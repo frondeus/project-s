@@ -41,7 +41,7 @@ impl Runtime {
             }
             Macro::Rust { body } => {
                 let args = args.to_vec();
-                body(self, args)
+                body(&mut self.asts, args)
             }
         };
 

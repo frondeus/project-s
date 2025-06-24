@@ -216,7 +216,7 @@ impl Runtime {
     pub fn with_macro(
         &mut self,
         name: &str,
-        body: impl Fn(&mut Runtime, Vec<SExpId>) -> SExpId + 'static,
+        body: impl Fn(&mut ASTS, Vec<SExpId>) -> SExpId + 'static,
     ) {
         self.envs.set(
             name,

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::BTreeMap, ops::Deref, rc::Rc};
 
 use crate::{
-    ast::{AST, SExp, SExpId},
+    ast::{AST, ASTS, SExp, SExpId},
     patterns::Pattern,
     source::Span,
 };
@@ -56,7 +56,7 @@ impl std::fmt::Debug for Macro {
     }
 }
 
-pub type NativeMacro = Rc<dyn Fn(&mut Runtime, Vec<SExpId>) -> SExpId>;
+pub type NativeMacro = Rc<dyn Fn(&mut ASTS, Vec<SExpId>) -> SExpId>;
 pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
 
 #[derive(Clone)]

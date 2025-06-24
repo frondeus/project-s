@@ -16,10 +16,16 @@ pub struct MacroExpansionPass<'a> {
 }
 
 impl<'a> MacroExpansionPass<'a> {
-    pub fn pass(asts: &'a mut ASTS, root: SExpId, diagnostics: &'a mut Diagnostics) -> SExpId {
+    pub fn pass(
+        asts: &'a mut ASTS,
+        root: SExpId,
+        diagnostics: &'a mut Diagnostics,
+        envs: &'a [crate::runtime::Env],
+    ) -> SExpId {
+        let envs: Envs = envs.into();
         let mut pass = Self {
             helper: VisitorHelper::new(asts),
-            envs: Envs::default(),
+            envs,
         };
         let mut visitor = MacroForbidden {
             helper: &mut pass.helper,
@@ -263,6 +269,27 @@ impl<'a> Visitor<'a> for MacroSanitizer<'a, '_> {
     }
 }
 
+impl From<&crate::runtime::Env> for Env {
+    fn from(env: &crate::runtime::Env) -> Self {
+        Self {
+            // Problem: This populates only with latest env.
+            vars: env
+                .iter()
+                .filter_map(|(k, val)| match val {
+                    crate::runtime::Value::Macro(macro_) => Some((k.to_string(), macro_.clone())),
+                    _ => None,
+                })
+                .collect(),
+        }
+    }
+}
+impl From<&[crate::runtime::Env]> for Envs {
+    fn from(envs: &[crate::runtime::Env]) -> Self {
+        let envs = envs.iter().map(|e| e.into()).collect();
+        Self { envs }
+    }
+}
+
 #[derive(Default)]
 struct Env {
     vars: BTreeMap<String, Macro>,
@@ -308,6 +335,8 @@ impl Envs {
 
 #[cfg(test)]
 mod tests {
+    use crate::s_std::prelude;
+
     use super::*;
 
     #[test]
@@ -318,8 +347,9 @@ mod tests {
             let ast = asts.parse(input, "<input>").unwrap();
             let root_id = ast.root_id().unwrap();
             let mut diagnostics = Diagnostics::default();
-            // let prelude = prelude();
-            let new_root = MacroExpansionPass::pass(&mut asts, root_id, &mut diagnostics);
+            let prelude = prelude();
+            let new_root =
+                MacroExpansionPass::pass(&mut asts, root_id, &mut diagnostics, &[prelude]);
             let output = asts.fmt(new_root);
             if diagnostics.has_errors() {
                 return diagnostics.pretty_print();

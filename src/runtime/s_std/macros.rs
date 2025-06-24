@@ -1,11 +1,11 @@
 use crate::{
-    ast::{AST, SExpId},
+    ast::{AST, ASTS, SExpId},
     builder::ASTBuilder,
-    runtime::Runtime,
 };
-pub fn let_star(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+
+pub fn let_star(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
     match &args[..] {
-        [pattern, value] => Ok(("let-rec", pattern, ("thunk", (), value)).build(&mut rt.asts)),
+        [pattern, value] => Ok(("let-rec", pattern, ("thunk", (), value)).build(rt)),
         _ => Err("Expected two arguments".into()),
     }
 }
@@ -16,13 +16,13 @@ pub fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
     ("obj/put", format!(":{key}"), value)
 }
 
-pub fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+pub fn obj_struct(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
     let mut args = args.into_iter();
     let mut inner = Vec::new();
-    let mut ast = rt.asts.new_ast();
+    let mut ast = rt.new_ast();
 
     while let Some(arg_id) = args.next() {
-        let arg = rt.asts.get(arg_id);
+        let arg = rt.get(arg_id);
         if let Some(key) = arg.item.as_keyword() {
             let Some(value) = args.next() else {
                 return Err("Expected value".into());
@@ -35,12 +35,12 @@ pub fn obj_struct(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String>
 
     inner.insert(0, "obj/condef".assemble(&mut ast));
     let result = inner.assemble(&mut ast);
-    rt.asts.add_ast(ast);
+    rt.add_ast(ast);
     // tracing::debug!("obj/struct: {}", rt.asts.fmt(result));
     Ok(result)
 }
 
-pub fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+pub fn condef(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
     Ok((
         "obj/con",
         (
@@ -54,17 +54,17 @@ pub fn condef(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             },
         ),
     )
-        .build(&mut rt.asts))
+        .build(rt))
 }
-pub fn objput(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+pub fn objput(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
     let Ok([key, value]) = TryInto::<[SExpId; 2]>::try_into(args) else {
         return Err("Expected two arguments".into());
     };
 
-    Ok(("obj/insert", "self", key, value).build(&mut rt.asts))
+    Ok(("obj/insert", "self", key, value).build(rt))
 }
 
-pub fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
+pub fn obj_add(rt: &mut ASTS, args: Vec<SExpId>) -> Result<SExpId, String> {
     match &args[..] {
         [key, value] => Ok((
             "if",
@@ -72,7 +72,7 @@ pub fn obj_add(rt: &mut Runtime, args: Vec<SExpId>) -> Result<SExpId, String> {
             ("obj/put", key, ("+", ("super", key), value)),
             ("obj/put", key, value),
         )
-            .build(&mut rt.asts)),
+            .build(rt)),
         arg => Err(format!("Expected two arguments. Found: {}", arg.len())),
     }
 }

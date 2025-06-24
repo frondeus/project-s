@@ -2,14 +2,11 @@ use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
     api::IntoOverloadedFunction,
-    ast::SExpId,
+    ast::{ASTS, SExpId},
     builder::{ASTBuilder, error},
 };
 
-use super::{
-    Runtime,
-    value::{Function, Macro, Value},
-};
+use super::value::{Function, Macro, Value};
 
 #[derive(Default, Debug)]
 pub struct Env {
@@ -22,10 +19,14 @@ impl Env {
         self.vars.keys().map(|k| k.as_str())
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &Value)> {
+        self.vars.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
     pub fn with_macro(
         mut self,
         name: impl ToString,
-        body: impl Fn(&mut Runtime, Vec<SExpId>) -> SExpId + 'static,
+        body: impl Fn(&mut ASTS, Vec<SExpId>) -> SExpId + 'static,
     ) -> Self {
         self.vars.insert(
             name.to_string(),
@@ -56,15 +57,15 @@ impl Env {
     pub fn with_try_macro(
         self,
         name: &str,
-        body: impl Fn(&mut Runtime, Vec<SExpId>) -> Result<SExpId, String> + 'static,
+        body: impl Fn(&mut ASTS, Vec<SExpId>) -> Result<SExpId, String> + 'static,
     ) -> Self {
-        self.with_macro(name, move |rt, args| {
-            let result = body(rt, args);
+        self.with_macro(name, move |asts, args| {
+            let result = body(asts, args);
             match result {
                 Ok(id) => id,
                 Err(err) => {
                     tracing::error!("Error: {}", err);
-                    error().build(&mut rt.asts)
+                    error().build(asts)
                 }
             }
         })
