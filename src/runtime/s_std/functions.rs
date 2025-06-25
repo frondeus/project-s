@@ -17,8 +17,11 @@ use crate::{
 
 use super::macros::obj_put_thunk;
 
-pub fn sub(args: Rest<f64>) -> f64 {
-    args.into_iter().reduce(|a, b| a - b).unwrap_or(0.0)
+pub fn sub(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
+    args.into_iter()
+        .map(|a| a.value)
+        .reduce(|a, b| a - b)
+        .unwrap_or(0.0)
 }
 
 #[tracing::instrument(skip_all)]
