@@ -30,8 +30,9 @@ Like vertical stack
   * [x] LSP highlights
 * [/] Type checker!
   * [ ] + operator
-  * [ ] let-rec and let*
-  * [ ] Structs
+  * [x] let-rec and let*
+  * [x] Structs
+  * [ ] Objects with self/super
   * [ ] has?
   * [x] macro expansion
   * [ ] Symbols
@@ -43,8 +44,9 @@ Like vertical stack
   * [ ] Application
      * [x] Tuples
      * [x] Lists
+     * [x] Structs
      * [ ] Objects
-     * [ ] Macros
+     * [-] Macros
 
 * [ ] JIT
 * [ ] REPL

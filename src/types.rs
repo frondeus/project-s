@@ -64,12 +64,12 @@ impl TypeEnv {
         //     Span::default(),
         // );
 
+        let empty_struct = Canonical::Struct { fields: vec![] };
+        let empty_struct_ref = reference(Some(empty_struct.clone()), Some(empty_struct));
+
         env.with_mono(
             "obj/insert",
-            func(
-                (Canonical::Struct { fields: vec![] }, keyword(), any(None)),
-                (),
-            ),
+            func((empty_struct_ref, keyword(), any(None)), ()),
             Span::default(),
         );
         // TODO: that is not fully correct. We want to have type
@@ -220,7 +220,36 @@ impl TypeEnv {
 
                     let value = *value;
 
-                    self.polymorphic_check_pattern(span.clone(), pattern, value, asts, diagnostics);
+                    self.polymorphic_check_pattern(
+                        span.clone(),
+                        pattern,
+                        value,
+                        asts,
+                        false,
+                        diagnostics,
+                    );
+
+                    self.null(span)
+                }
+                [first, pattern, value] if Self::is_symbol(asts, *first, "let-rec") => {
+                    let pattern = match Pattern::parse(*pattern, asts) {
+                        Ok(pattern) => pattern,
+                        Err(e) => {
+                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
+                            return self.engine.error(span);
+                        }
+                    };
+
+                    let value = *value;
+
+                    self.polymorphic_check_pattern(
+                        span.clone(),
+                        pattern,
+                        value,
+                        asts,
+                        true,
+                        diagnostics,
+                    );
 
                     self.null(span)
                 }
@@ -329,16 +358,28 @@ impl TypeEnv {
         pattern: Pattern,
         value: SExpId,
         asts: &ASTS,
+        recursive: bool,
         diagnostics: &mut Diagnostics,
     ) {
         let bound = match pattern {
             // If its not a value, we cant generalize it so we treat is as monomorphic scheme.
             _ if !Self::is_expression_value(value, asts) => self.check_pattern(span, pattern),
             Pattern::Single(key) => {
+                let inner_key = key.clone();
                 self.envs.set(
                     &key,
                     core::Scheme::Polymorphic(Rc::new(move |this, asts, diagnostics| {
-                        this.check(asts, value, diagnostics)
+                        if !recursive {
+                            this.check(asts, value, diagnostics)
+                        } else {
+                            let (temp_type, temp_bound) = this.engine.var();
+                            this.envs
+                                .set(&inner_key, core::Scheme::Monomorphic(temp_type));
+
+                            let var_type = this.check(asts, value, diagnostics);
+                            this.engine.flow(var_type, temp_bound, diagnostics);
+                            temp_type
+                        }
                     })),
                 );
                 return;

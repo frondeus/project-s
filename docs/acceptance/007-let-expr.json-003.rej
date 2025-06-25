@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
 +++ json-003
-@@ -57,11 +57,27 @@
+@@ -57,11 +57,12 @@
  ```
  
  ```json
@@ -25,21 +25,6 @@
 -  "b": 4.0,
 -  "c": 7.0
 -}
-+Error: Undefined variable: let-rec
-+   ╭─[ :1:1 ]
-+   │
-+ 1 │ 
-+───╯
-+Error: Undefined variable: result
-+   ╭─[ <input>:2:22 ]
-+   │
-+ 2 │     (let* :result (f result))
-+───╯
-+Error: Undefined variable: result
-+   ╭─[ <input>:3:5 ]
-+   │
-+ 3 │     result
-+───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ :1:1 ]
 +   │
