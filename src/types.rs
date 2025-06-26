@@ -137,7 +137,7 @@ impl TypeEnv {
                 [] => self.engine.tuple(vec![], span),
                 [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
                     let mut builder = CanonicalBuilder::default();
-                    let _ty = self.parse_type(asts, *ty, &mut builder, diagnostics);
+                    let _ty = Self::parse_type(asts, *ty, &mut builder, diagnostics);
                     let canon = builder.finish();
                     let mut vars = HashMap::new();
                     let t_v = canonical_value(self, &canon, &mut vars, _ty, span.clone());

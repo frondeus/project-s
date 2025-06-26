@@ -653,6 +653,9 @@ impl TypeCheckerCore {
                     out.push((*item, args));
                 }
             }
+            (VList { item }, UList { items: args, .. }) => {
+                out.push((*item, *args));
+            }
             (VList { item }, UTuple { items: args }) => {
                 // TODO: Length
                 for arg in args {
