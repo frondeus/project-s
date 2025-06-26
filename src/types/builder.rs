@@ -1,9 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{diagnostics::Diagnostics, source::Span};
+use crate::{
+    diagnostics::Diagnostics,
+    source::Span,
+    types::canonical::{CanonId, CanonicalBuilder},
+};
 
 use super::{
     TypeEnv,
+    canonical::Canonical,
     core::{self},
 };
 
@@ -22,7 +27,7 @@ where
 
 pub fn v_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Value> {
     move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
-        let mut builder = crate::types::canonical::CanonicalBuilder::default();
+        let mut builder = CanonicalBuilder::default();
         let canon_root = canon.build(&mut builder);
         let canon = builder.finish();
         let mut vars = HashMap::new();
@@ -32,7 +37,7 @@ pub fn v_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuil
 
 pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Use> {
     move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
-        let mut builder = crate::types::canonical::CanonicalBuilder::default();
+        let mut builder = CanonicalBuilder::default();
         let canon_root = canon.build(&mut builder);
         let canon = builder.finish();
         let mut vars = HashMap::new();
@@ -40,20 +45,138 @@ pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuil
     }
 }
 
+fn canonical_pair_inner(
+    env: &mut TypeEnv,
+    canon: &crate::types::canonical::Canonicalized,
+    vars: &mut HashMap<usize, (core::Value, core::Use)>,
+    id: CanonId,
+    span: Span,
+) -> (core::Value, core::Use) {
+    match canon.get(id) {
+        Canonical::Skip => env.engine.var(),
+        Canonical::Todo(_) => todo!(),
+        Canonical::Any(i) => {
+            if let Some(i) = *i {
+                return *vars.entry(i).or_insert_with(|| {
+                    let (any_var, _any_bound) = env.engine.var();
+                    (any_var, _any_bound)
+                });
+            }
+            env.engine.var()
+        }
+        Canonical::Recursive(_canon_id) => todo!(),
+        Canonical::Or(_canon_ids) => todo!(),
+        Canonical::Bool => {
+            let v_bool = env.engine.bool(span.clone());
+            let u_bool = env.engine.bool_use(span);
+            (v_bool, u_bool)
+        }
+        Canonical::Number => {
+            let v_number = env.engine.number(span.clone());
+            let u_number = env.engine.number_use(span);
+            (v_number, u_number)
+        }
+        Canonical::String => {
+            let v_string = env.engine.string(span.clone());
+            let u_string = env.engine.string_use(span);
+            (v_string, u_string)
+        }
+        Canonical::Error => {
+            let v_error = env.engine.error(span.clone());
+            let u_error = env.engine.error_use(span);
+            (v_error, u_error)
+        }
+        Canonical::Keyword => {
+            let v_keyword = env.engine.keyword(span.clone());
+            let u_keyword = env.engine.keyword_use(span);
+            (v_keyword, u_keyword)
+        }
+        Canonical::Tuple { items } => {
+            let mut values = Vec::with_capacity(items.len());
+            let mut uses = Vec::with_capacity(items.len());
+
+            for item in items {
+                let (value, use_) = canonical_pair_inner(env, canon, vars, *item, span.clone());
+                values.push(value);
+                uses.push(use_);
+            }
+            (
+                env.engine.tuple(values, span.clone()),
+                env.engine.tuple_use(uses, span.clone()),
+            )
+        }
+        Canonical::List { item } => {
+            let (value, use_) = canonical_pair_inner(env, canon, vars, *item, span.clone());
+            (
+                env.engine.list(value, span.clone()),
+                env.engine.list_use(use_, 0, None, span.clone()),
+            )
+        }
+        Canonical::Func { pattern, ret } => {
+            let (pattern_value, pattern_use) =
+                canonical_pair_inner(env, canon, vars, *pattern, span.clone());
+            let (ret_value, ret_use) = canonical_pair_inner(env, canon, vars, *ret, span.clone());
+            (
+                env.engine.func(pattern_use, ret_value, span.clone()),
+                env.engine.func_use(pattern_value, ret_use, span.clone()),
+            )
+        }
+        Canonical::Struct { fields } => {
+            let mut values = Vec::with_capacity(fields.len());
+            let mut uses = Vec::with_capacity(fields.len());
+            for (name, id) in fields {
+                let (value, use_) = canonical_pair_inner(env, canon, vars, *id, span.clone());
+                values.push((name.clone(), value));
+                uses.push((name.clone(), use_));
+            }
+            (
+                env.engine.obj(values, None, span.clone()),
+                env.engine.obj_use(uses, span.clone()),
+            )
+        }
+        Canonical::Reference { read, write } => {
+            let (read_value, read_use) = read
+                .map(|read| canonical_pair_inner(env, canon, vars, read, span.clone()))
+                .map(|(v, u)| (Some(v), Some(u)))
+                .unwrap_or_default();
+            let (write_value, write_use) = write
+                .map(|write| canonical_pair_inner(env, canon, vars, write, span.clone()))
+                .map(|(v, u)| (Some(v), Some(u)))
+                .unwrap_or_default();
+            (
+                env.engine.reference(write_use, read_value, span.clone()),
+                env.engine
+                    .reference_use(write_value, read_use, span.clone()),
+            )
+        }
+    }
+}
+
+pub fn canonical_pair(
+    env: &mut TypeEnv,
+    canon: CanonicalBuilder,
+    id: CanonId,
+    span: Span,
+) -> (core::Value, core::Use) {
+    let canon = canon.finish();
+    let mut vars = HashMap::new();
+    canonical_pair_inner(env, &canon, &mut vars, id, span)
+}
+
 pub fn canonical_value(
     env: &mut TypeEnv,
     // diagnostics: &mut Diagnostics,
     canon: &crate::types::canonical::Canonicalized,
     vars: &mut HashMap<usize, (core::Value, core::Use)>,
-    id: crate::types::canonical::CanonId,
+    id: CanonId,
     span: Span,
 ) -> core::Value {
     match canon.get(id) {
-        super::canonical::Canonical::Todo(_) => {
+        Canonical::Todo(_) => {
             tracing::error!("TODO: {:?}", canon.get(id));
             env.engine.error(span)
         }
-        super::canonical::Canonical::Any(i) => {
+        Canonical::Any(i) => {
             if let Some(i) = *i {
                 return vars
                     .entry(i)
@@ -66,30 +189,31 @@ pub fn canonical_value(
             let (any_var, _any_bound) = env.engine.var();
             any_var
         }
-        super::canonical::Canonical::Recursive(_) => todo!(),
-        super::canonical::Canonical::Or(_) => todo!(),
-        super::canonical::Canonical::Bool => env.engine.bool(span),
-        super::canonical::Canonical::Number => env.engine.number(span),
-        super::canonical::Canonical::String => env.engine.string(span),
-        super::canonical::Canonical::Error => env.engine.error(span),
-        super::canonical::Canonical::Keyword => env.engine.keyword(span),
-        super::canonical::Canonical::Tuple { items } => {
+        Canonical::Skip => env.engine.var().0,
+        Canonical::Recursive(_) => todo!(),
+        Canonical::Or(_) => todo!(),
+        Canonical::Bool => env.engine.bool(span),
+        Canonical::Number => env.engine.number(span),
+        Canonical::String => env.engine.string(span),
+        Canonical::Error => env.engine.error(span),
+        Canonical::Keyword => env.engine.keyword(span),
+        Canonical::Tuple { items } => {
             let mut values = Vec::with_capacity(items.len());
             for item in items {
                 values.push(canonical_value(env, canon, vars, *item, span.clone()));
             }
             env.engine.tuple(values, span)
         }
-        super::canonical::Canonical::List { item } => {
+        Canonical::List { item } => {
             let item = canonical_value(env, canon, vars, *item, span.clone());
             env.engine.list(item, span)
         }
-        super::canonical::Canonical::Func { pattern, ret } => {
+        Canonical::Func { pattern, ret } => {
             let pattern_use = canonical_use(env, canon, vars, *pattern, span.clone());
             let ret_value = canonical_value(env, canon, vars, *ret, span.clone());
             env.engine.func(pattern_use, ret_value, span)
         }
-        super::canonical::Canonical::Struct { fields } => {
+        Canonical::Struct { fields } => {
             let mut f = Vec::with_capacity(fields.len());
             for (name, id) in fields {
                 let value = canonical_value(env, canon, vars, *id, span.clone());
@@ -97,7 +221,7 @@ pub fn canonical_value(
             }
             env.engine.obj(f, None, span)
         }
-        super::canonical::Canonical::Reference { read, write } => {
+        Canonical::Reference { read, write } => {
             let write = write.map(|write| canonical_use(env, canon, vars, write, span.clone()));
             let read = read.map(|read| canonical_value(env, canon, vars, read, span.clone()));
             env.engine.reference(write, read, span)
@@ -110,15 +234,15 @@ pub fn canonical_use(
     // diagnostics: &mut Diagnostics,
     canon: &crate::types::canonical::Canonicalized,
     vars: &mut HashMap<usize, (core::Value, core::Use)>,
-    id: crate::types::canonical::CanonId,
+    id: CanonId,
     span: Span,
 ) -> core::Use {
     match canon.get(id) {
-        super::canonical::Canonical::Todo(_) => {
+        Canonical::Todo(_) => {
             tracing::error!("TODO: {:?}", canon.get(id));
             env.engine.error_use(span)
         }
-        super::canonical::Canonical::Any(i) => {
+        Canonical::Any(i) => {
             if let Some(i) = *i {
                 return vars
                     .entry(i)
@@ -131,30 +255,31 @@ pub fn canonical_use(
             let (_any_var, any_bound) = env.engine.var();
             any_bound
         }
-        super::canonical::Canonical::Recursive(_) => todo!(),
-        super::canonical::Canonical::Or(_) => todo!(),
-        super::canonical::Canonical::Bool => env.engine.bool_use(span),
-        super::canonical::Canonical::Number => env.engine.number_use(span),
-        super::canonical::Canonical::String => env.engine.string_use(span),
-        super::canonical::Canonical::Error => env.engine.error_use(span),
-        super::canonical::Canonical::Keyword => env.engine.keyword_use(span),
-        super::canonical::Canonical::Tuple { items } => {
+        Canonical::Recursive(_) => todo!(),
+        Canonical::Or(_) => todo!(),
+        Canonical::Skip => env.engine.var().1,
+        Canonical::Bool => env.engine.bool_use(span),
+        Canonical::Number => env.engine.number_use(span),
+        Canonical::String => env.engine.string_use(span),
+        Canonical::Error => env.engine.error_use(span),
+        Canonical::Keyword => env.engine.keyword_use(span),
+        Canonical::Tuple { items } => {
             let mut uses = Vec::with_capacity(items.len());
             for item in items {
                 uses.push(canonical_use(env, canon, vars, *item, span.clone()));
             }
             env.engine.tuple_use(uses, span)
         }
-        super::canonical::Canonical::List { item } => {
+        Canonical::List { item } => {
             let item_use = canonical_use(env, canon, vars, *item, span.clone());
             env.engine.list_use(item_use, 0, None, span)
         }
-        super::canonical::Canonical::Func { pattern, ret } => {
+        Canonical::Func { pattern, ret } => {
             let pattern_v = canonical_value(env, canon, vars, *pattern, span.clone());
             let ret_u = canonical_use(env, canon, vars, *ret, span.clone());
             env.engine.func_use(pattern_v, ret_u, span)
         }
-        super::canonical::Canonical::Struct { fields } => {
+        Canonical::Struct { fields } => {
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
                 let use_ = canonical_use(env, canon, vars, *id, span.clone());
@@ -162,7 +287,7 @@ pub fn canonical_use(
             }
             env.engine.obj_use(uses, span)
         }
-        &super::canonical::Canonical::Reference { read, write } => {
+        &Canonical::Reference { read, write } => {
             let read = read.map(|read| canonical_use(env, canon, vars, read, span.clone()));
             let write = write.map(|write| canonical_value(env, canon, vars, write, span.clone()));
             env.engine.reference_use(write, read, span)

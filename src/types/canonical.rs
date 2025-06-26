@@ -10,6 +10,8 @@ pub enum Canonical {
     /// A type that is not yet implemented. Better than panic
     Todo(String),
 
+    /// "_" type
+    Skip,
     /// Any type. If there is integer it means it is generic type
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
@@ -45,15 +47,16 @@ pub enum Canonical {
 impl Canonical {
     fn ids(&self) -> impl Iterator<Item = CanonId> {
         match self {
-            Canonical::Todo(_) => vec![].into_iter(),
-            Canonical::Any(_) => vec![].into_iter(),
+            Canonical::Todo(_)
+            | Canonical::Any(_)
+            | Canonical::Bool
+            | Canonical::Number
+            | Canonical::Skip
+            | Canonical::String
+            | Canonical::Error
+            | Canonical::Keyword => vec![].into_iter(),
             Canonical::Recursive(canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
-            Canonical::Bool => vec![].into_iter(),
-            Canonical::Number => vec![].into_iter(),
-            Canonical::String => vec![].into_iter(),
-            Canonical::Error => vec![].into_iter(),
-            Canonical::Keyword => vec![].into_iter(),
             Canonical::Tuple { items } => items.clone().into_iter(),
             Canonical::List { item } => vec![*item].into_iter(),
             Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),

@@ -22,6 +22,7 @@ impl TypeEnv {
             SExp::Keyword(symbol) if symbol == "number" => canon.add(Canonical::Number),
             SExp::Keyword(symbol) if symbol == "string" => canon.add(Canonical::String),
             SExp::Keyword(symbol) if symbol == "bool" => canon.add(Canonical::Bool),
+            SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Skip),
             SExp::List(items) => match &items[..] {
                 &[first, inner] if Self::is_symbol(asts, first, "list") => {
                     let inner = Self::parse_type(asts, inner, canon, diagnostics);

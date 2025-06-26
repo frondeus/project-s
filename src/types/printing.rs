@@ -24,6 +24,7 @@ impl Formatter<'_> {
                     self.print_canon(*canon_id, canonical);
                 }
             }
+            Canonical::Skip => self.f.push('_'),
             Canonical::Bool => self.f.push_str("Bool"),
             Canonical::Number => self.f.push_str("Number"),
             Canonical::String => self.f.push_str("String"),

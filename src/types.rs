@@ -1,15 +1,12 @@
 #![allow(dead_code)]
 
 use core::WithID;
-use std::{
-    collections::{BTreeMap, HashMap},
-    rc::Rc,
-};
+use std::{collections::BTreeMap, rc::Rc};
 
 use builder::{
     TypeBuilder,
     canon::{CanonBuilder, keyword, number},
-    canonical_use, canonical_value, u_canonical,
+    canonical_pair, u_canonical,
 };
 use canonical::{Canonical, CanonicalBuilder};
 use itertools::Itertools;
@@ -138,10 +135,7 @@ impl TypeEnv {
                 [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
                     let mut builder = CanonicalBuilder::default();
                     let _ty = Self::parse_type(asts, *ty, &mut builder, diagnostics);
-                    let canon = builder.finish();
-                    let mut vars = HashMap::new();
-                    let t_v = canonical_value(self, &canon, &mut vars, _ty, span.clone());
-                    let t_u = canonical_use(self, &canon, &mut vars, _ty, span);
+                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span.clone());
                     let value = self.check(asts, *value, diagnostics);
                     self.engine.flow(value, t_u, diagnostics);
                     t_v
