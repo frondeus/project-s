@@ -40,19 +40,6 @@ impl TypeEnv {
                     let inner = Self::parse_type_inner(asts, inner, canon, diagnostics, vars);
                     canon.add(Canonical::List { item: inner })
                 }
-                [first, rest @ ..] if Self::is_symbol(asts, *first, "tuple") => {
-                    let mut items = Vec::new();
-                    for item in rest {
-                        items.push(Self::parse_type_inner(
-                            asts,
-                            *item,
-                            canon,
-                            diagnostics,
-                            vars,
-                        ));
-                    }
-                    canon.add(Canonical::Tuple { items })
-                }
                 &[first, pattern, ret] if Self::is_symbol(asts, first, "fn") => {
                     let pattern = Self::parse_type_inner(asts, pattern, canon, diagnostics, vars);
                     let ret = Self::parse_type_inner(asts, ret, canon, diagnostics, vars);
@@ -115,9 +102,31 @@ impl TypeEnv {
                         }
                     }
                 }
-                _ => {
-                    diagnostics.add(sexp.span.clone(), format!("Unknown type: {}", asts.fmt(id)));
-                    canon.add(Canonical::Error)
+                [first, rest @ ..] if Self::is_symbol(asts, *first, "tuple") => {
+                    let mut items = Vec::new();
+                    for item in rest {
+                        items.push(Self::parse_type_inner(
+                            asts,
+                            *item,
+                            canon,
+                            diagnostics,
+                            vars,
+                        ));
+                    }
+                    canon.add(Canonical::Tuple { items })
+                }
+                rest => {
+                    let mut items = Vec::new();
+                    for item in rest {
+                        items.push(Self::parse_type_inner(
+                            asts,
+                            *item,
+                            canon,
+                            diagnostics,
+                            vars,
+                        ));
+                    }
+                    canon.add(Canonical::Tuple { items })
                 }
             },
             _ => {
