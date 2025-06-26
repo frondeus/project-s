@@ -12,6 +12,7 @@ struct Formatter<'a> {
 impl Formatter<'_> {
     fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
         match canonical.get(id) {
+            Canonical::Todo(todo) => self.f.push_str(&format!("TODO: {}", todo)),
             Canonical::Any(None) => self.f.push_str("Any"),
             Canonical::Any(Some(i)) => self.f.push_str(&format!("?T{}", i)),
             Canonical::Recursive(_canon_id) => self.f.push_str("<recursive>"),

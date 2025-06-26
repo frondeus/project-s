@@ -49,6 +49,10 @@ pub fn canonical_value(
     span: Span,
 ) -> core::Value {
     match canon.get(id) {
+        super::canonical::Canonical::Todo(_) => {
+            tracing::error!("TODO: {:?}", canon.get(id));
+            env.engine.error(span)
+        }
         super::canonical::Canonical::Any(i) => {
             if let Some(i) = *i {
                 return vars
@@ -110,6 +114,10 @@ pub fn canonical_use(
     span: Span,
 ) -> core::Use {
     match canon.get(id) {
+        super::canonical::Canonical::Todo(_) => {
+            tracing::error!("TODO: {:?}", canon.get(id));
+            env.engine.error_use(span)
+        }
         super::canonical::Canonical::Any(i) => {
             if let Some(i) = *i {
                 return vars
@@ -141,7 +149,11 @@ pub fn canonical_use(
             let item_use = canonical_use(env, canon, vars, *item, span.clone());
             env.engine.list_use(item_use, 0, None, span)
         }
-        super::canonical::Canonical::Func { .. } => todo!(),
+        super::canonical::Canonical::Func { pattern, ret } => {
+            let pattern_v = canonical_value(env, canon, vars, *pattern, span.clone());
+            let ret_u = canonical_use(env, canon, vars, *ret, span.clone());
+            env.engine.func_use(pattern_v, ret_u, span)
+        }
         super::canonical::Canonical::Struct { fields } => {
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {

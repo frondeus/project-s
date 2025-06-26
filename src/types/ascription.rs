@@ -32,6 +32,12 @@ impl TypeEnv {
                     }
                     canon.add(Canonical::Tuple { items })
                 }
+                &[first, pattern, ret] if Self::is_symbol(asts, first, "fn") => {
+                    let pattern = Self::parse_type(asts, pattern, canon, diagnostics);
+                    let ret = Self::parse_type(asts, ret, canon, diagnostics);
+                    canon.add(Canonical::Func { pattern, ret })
+                }
+
                 _ => {
                     diagnostics.add(sexp.span.clone(), format!("Unknown type: {:?}", sexp.item));
                     canon.add(Canonical::Error)

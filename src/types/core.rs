@@ -165,6 +165,10 @@ pub enum UTypeHead {
     UTupleAccess {
         index: Use,
     },
+    UFunc {
+        pattern: Value,
+        ret: Use,
+    },
     /// A list where all elements have the same type.
     /// It might have a fixed number of elements but it doesnt have to.
     UList {
@@ -207,6 +211,7 @@ impl std::fmt::Display for UTypeHead {
                 min_len,
                 max_len,
             } => write!(f, "list"),
+            UTypeHead::UFunc { pattern, ret } => write!(f, "function"),
             UTypeHead::UStruct { fields } => write!(f, "object"),
             UTypeHead::UStructAccess { field } => write!(f, "object_access"),
             UTypeHead::UApplication { .. } => write!(f, "function"),
@@ -243,6 +248,10 @@ impl UTypeHead {
                 field: (_, field_use),
             } => {
                 ids.push(field_use.id());
+            }
+            UTypeHead::UFunc { pattern, ret } => {
+                ids.push(pattern.id());
+                ids.push(ret.id());
             }
             UTypeHead::UApplication {
                 args,
@@ -399,6 +408,10 @@ impl TypeCheckerCore {
 
     pub fn func(&mut self, pattern: Use, ret: Value, span: Span) -> Value {
         self.new_val(VTypeHead::VFunc { pattern, ret }, span)
+    }
+
+    pub fn func_use(&mut self, pattern: Value, ret: Use, span: Span) -> Use {
+        self.new_use(UTypeHead::UFunc { pattern, ret }, span)
     }
 
     pub fn application_use(
@@ -652,6 +665,16 @@ impl TypeCheckerCore {
                 for item in items {
                     out.push((*item, args));
                 }
+            }
+            (
+                VFunc { pattern, ret },
+                UFunc {
+                    pattern: args,
+                    ret: ret_use,
+                },
+            ) => {
+                out.push((*args, *pattern));
+                out.push((*ret, *ret_use));
             }
             (VList { item }, UList { items: args, .. }) => {
                 out.push((*item, *args));
