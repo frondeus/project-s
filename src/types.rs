@@ -148,7 +148,7 @@ impl TypeEnv {
                 }
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
                     let cond_type = self.check(asts, *condition, diagnostics);
-                    let bool_span = self.span_of(*condition, asts);
+                    let bool_span = Self::span_of(*condition, asts);
                     let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
@@ -165,7 +165,7 @@ impl TypeEnv {
                     if Self::is_symbol(asts, *first, "if") =>
                 {
                     let cond_type = self.check(asts, *condition, diagnostics);
-                    let bool_span = self.span_of(*condition, asts);
+                    let bool_span = Self::span_of(*condition, asts);
                     let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
@@ -362,7 +362,7 @@ impl TypeEnv {
         }
     }
 
-    fn span_of(&self, sexp: SExpId, asts: &ASTS) -> Span {
+    fn span_of(sexp: SExpId, asts: &ASTS) -> Span {
         let sexp = asts.get(sexp);
         sexp.span.clone()
     }
