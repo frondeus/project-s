@@ -256,6 +256,7 @@ impl Canonicalizer {
             core::UTypeHead::UNumber => self.add_canon(Canonical::Number),
             core::UTypeHead::UString => self.add_canon(Canonical::String),
             core::UTypeHead::UKeyword => self.add_canon(Canonical::Keyword),
+            core::UTypeHead::UError => self.add_canon(Canonical::Error),
             core::UTypeHead::UTuple { items } => {
                 let items = items
                     .iter()

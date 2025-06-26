@@ -40,7 +40,7 @@ pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuil
     }
 }
 
-fn canonical_value(
+pub fn canonical_value(
     env: &mut TypeEnv,
     // diagnostics: &mut Diagnostics,
     canon: &crate::types::canonical::Canonicalized,
@@ -101,7 +101,7 @@ fn canonical_value(
     }
 }
 
-fn canonical_use(
+pub fn canonical_use(
     env: &mut TypeEnv,
     // diagnostics: &mut Diagnostics,
     canon: &crate::types::canonical::Canonicalized,
@@ -128,7 +128,7 @@ fn canonical_use(
         super::canonical::Canonical::Bool => env.engine.bool_use(span),
         super::canonical::Canonical::Number => env.engine.number_use(span),
         super::canonical::Canonical::String => env.engine.string_use(span),
-        super::canonical::Canonical::Error => todo!(),
+        super::canonical::Canonical::Error => env.engine.error_use(span),
         super::canonical::Canonical::Keyword => env.engine.keyword_use(span),
         super::canonical::Canonical::Tuple { items } => {
             let mut uses = Vec::with_capacity(items.len());

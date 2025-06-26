@@ -262,17 +262,20 @@
       "value": "[+-]?[0-9]+"
     },
     "keyword": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": ":"
-        },
-        {
-          "type": "PATTERN",
-          "value": "[^\\s)}\\]]+"
-        }
-      ]
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": ":"
+          },
+          {
+            "type": "PATTERN",
+            "value": "[^\\s)}\\]]+"
+          }
+        ]
+      }
     },
     "symbol": {
       "type": "TOKEN",

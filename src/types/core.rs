@@ -154,6 +154,7 @@ pub enum UTypeHead {
     UBool,
     UNumber,
     UString,
+    UError,
     UKeyword,
     /// A tuple where each element might have a different type.
     /// Tuple has a fixed number of elements.
@@ -196,6 +197,7 @@ impl std::fmt::Display for UTypeHead {
         match self {
             UTypeHead::UBool => write!(f, "bool"),
             UTypeHead::UNumber => write!(f, "number"),
+            UTypeHead::UError => write!(f, "error"),
             UTypeHead::UString => write!(f, "string"),
             UTypeHead::UKeyword => write!(f, "keyword"),
             UTypeHead::UTuple { items } => write!(f, "tuple"),
@@ -216,7 +218,11 @@ impl UTypeHead {
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         let mut ids = Vec::new();
         match self {
-            UTypeHead::UBool | UTypeHead::UNumber | UTypeHead::UString | UTypeHead::UKeyword => (),
+            UTypeHead::UBool
+            | UTypeHead::UNumber
+            | UTypeHead::UString
+            | UTypeHead::UKeyword
+            | UTypeHead::UError => (),
             UTypeHead::UTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
             }
@@ -387,6 +393,10 @@ impl TypeCheckerCore {
         self.new_val(VTypeHead::VError, span)
     }
 
+    pub fn error_use(&mut self, span: Span) -> Use {
+        self.new_use(UTypeHead::UError, span)
+    }
+
     pub fn func(&mut self, pattern: Use, ret: Value, span: Span) -> Value {
         self.new_val(VTypeHead::VFunc { pattern, ret }, span)
     }
@@ -516,7 +526,7 @@ impl TypeCheckerCore {
         use VTypeHead::*;
 
         match (lhs, rhs) {
-            (VError, _) => (), // We assume that error type is like ! type in Rust.
+            (_, UError) | (VError, _) => (), // We assume that error type is like ! type in Rust.
             (VBool, UBool) => (),
             (VNumber, UNumber) => (),
             (VString, UString) => (),

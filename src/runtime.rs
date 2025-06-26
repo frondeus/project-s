@@ -320,6 +320,15 @@ impl Runtime {
                 };
                 let first_id = first_id.unwrap();
                 match &first.item {
+                    SExp::Symbol(tag) if tag == ":" => {
+                        // Its type ascription, lets take first value and evaluate ignoring the rest
+                        let Some(item) = items.get(2) else {
+                            return Value::Error("Expected item after type ascription".to_string());
+                        };
+                        let item = self.eval(*item);
+                        try_err!(item);
+                        item
+                    }
                     SExp::Symbol(tag) if tag == "do" => self.do_(&items[1..]),
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)

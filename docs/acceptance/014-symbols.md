@@ -39,7 +39,6 @@ This is quoted
 ```cst
 source_file - ":symbol"
  keyword - ":symbol"
-  : - ":"
 
 ```
 

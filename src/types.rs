@@ -1,14 +1,17 @@
 #![allow(dead_code)]
 
 use core::WithID;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 
 use builder::{
     TypeBuilder,
     canon::{CanonBuilder, keyword, number},
-    u_canonical,
+    canonical_use, canonical_value, u_canonical,
 };
-use canonical::Canonical;
+use canonical::{Canonical, CanonicalBuilder};
 use itertools::Itertools;
 
 use crate::{
@@ -18,6 +21,7 @@ use crate::{
     source::Span,
 };
 
+mod ascription;
 mod builder;
 mod canonical;
 mod core;
@@ -131,6 +135,17 @@ impl TypeEnv {
             },
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
                 [] => self.engine.tuple(vec![], span),
+                [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
+                    let mut builder = CanonicalBuilder::default();
+                    let _ty = self.parse_type(asts, *ty, &mut builder, diagnostics);
+                    let canon = builder.finish();
+                    let mut vars = HashMap::new();
+                    let t_v = canonical_value(self, &canon, &mut vars, _ty, span.clone());
+                    let t_u = canonical_use(self, &canon, &mut vars, _ty, span);
+                    let value = self.check(asts, *value, diagnostics);
+                    self.engine.flow(value, t_u, diagnostics);
+                    t_v
+                }
                 [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
                     let cond_type = self.check(asts, *condition, diagnostics);
                     let bool_span = self.span_of(*condition, asts);
