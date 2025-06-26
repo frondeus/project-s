@@ -57,10 +57,7 @@ fn canonical_pair_inner(
         Canonical::Todo(_) => todo!(),
         Canonical::Any(i) => {
             if let Some(i) = *i {
-                return *vars.entry(i).or_insert_with(|| {
-                    let (any_var, _any_bound) = env.engine.var();
-                    (any_var, _any_bound)
-                });
+                return *vars.entry(i).or_insert_with(|| env.engine.var());
             }
             env.engine.var()
         }
