@@ -16,7 +16,13 @@ pub enum Canonical {
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
     Any(Option<usize>),
+
+    /// An old representation of recursive types.
     Recursive(CanonId),
+
+    /// A new representation of recursive types.
+    As(usize, CanonId),
+
     Or(Vec<CanonId>),
     Bool,
     Number,
@@ -56,6 +62,7 @@ impl Canonical {
             | Canonical::Error
             | Canonical::Keyword => vec![].into_iter(),
             Canonical::Recursive(canon_id) => vec![*canon_id].into_iter(),
+            Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
             Canonical::Tuple { items } => items.clone().into_iter(),
             Canonical::List { item } => vec![*item].into_iter(),

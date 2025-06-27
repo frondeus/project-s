@@ -23,6 +23,9 @@ Nice to have
 * [ ] Enums
 * [ ] Named types
 * [ ] Match expression
+* [ ] Spread/splices in destructing
+* [ ] "infinite" tuples
+* [ ] Arrays
 
 Probably a lot of more lol.
 Like vertical stack
@@ -41,6 +44,10 @@ Like vertical stack
   * [ ] Operator overloading
   * [x] Ref
   * [ ] import
+  * [/] Ascription
+    * [ ] Or
+    * [ ] Recursive
+    * [ ] Applicable
   * [ ] Application
      * [x] Tuples
      * [x] Lists

@@ -135,7 +135,7 @@ impl TypeEnv {
                 [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
                     let mut builder = CanonicalBuilder::default();
                     let _ty = Self::parse_type(asts, *ty, &mut builder, diagnostics);
-                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span.clone());
+                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span.clone(), diagnostics);
                     let value = self.check(asts, *value, diagnostics);
                     self.engine.flow(value, t_u, diagnostics);
                     t_v

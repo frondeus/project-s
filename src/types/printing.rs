@@ -16,6 +16,12 @@ impl Formatter<'_> {
             Canonical::Any(None) => self.f.push_str("Any"),
             Canonical::Any(Some(i)) => self.f.push_str(&format!("?T{}", i)),
             Canonical::Recursive(_canon_id) => self.f.push_str("<recursive>"),
+            Canonical::As(i, canon_id) => {
+                self.f.push('(');
+                self.print_canon(*canon_id, canonical);
+                self.f.push_str(") as ");
+                self.f.push_str(&format!("T{}", i));
+            }
             Canonical::Or(canon_ids) => {
                 for (i, canon_id) in canon_ids.iter().enumerate() {
                     if i > 0 {

@@ -51,6 +51,7 @@ fn canonical_pair_inner(
     vars: &mut HashMap<usize, (core::Value, core::Use)>,
     id: CanonId,
     span: Span,
+    diagnostics: &mut Diagnostics,
 ) -> (core::Value, core::Use) {
     match canon.get(id) {
         Canonical::Skip => env.engine.var(),
@@ -62,6 +63,16 @@ fn canonical_pair_inner(
             env.engine.var()
         }
         Canonical::Recursive(_canon_id) => todo!(),
+        &Canonical::As(i, inner) => {
+            let (u_type_value, u_type) = env.engine.var();
+            let (v_type, v_type_bound) = env.engine.var();
+            vars.insert(i, (u_type_value, v_type_bound));
+            let (inner_v, inner_u) =
+                canonical_pair_inner(env, canon, vars, inner, span.clone(), diagnostics);
+            env.engine.flow(inner_v, v_type_bound, diagnostics);
+            env.engine.flow(u_type_value, inner_u, diagnostics);
+            (v_type, u_type)
+        }
         Canonical::Or(_canon_ids) => todo!(),
         Canonical::Bool => {
             let v_bool = env.engine.bool(span.clone());
@@ -93,7 +104,8 @@ fn canonical_pair_inner(
             let mut uses = Vec::with_capacity(items.len());
 
             for item in items {
-                let (value, use_) = canonical_pair_inner(env, canon, vars, *item, span.clone());
+                let (value, use_) =
+                    canonical_pair_inner(env, canon, vars, *item, span.clone(), diagnostics);
                 values.push(value);
                 uses.push(use_);
             }
@@ -103,7 +115,8 @@ fn canonical_pair_inner(
             )
         }
         Canonical::List { item } => {
-            let (value, use_) = canonical_pair_inner(env, canon, vars, *item, span.clone());
+            let (value, use_) =
+                canonical_pair_inner(env, canon, vars, *item, span.clone(), diagnostics);
             (
                 env.engine.list(value, span.clone()),
                 env.engine.list_use(use_, 0, None, span.clone()),
@@ -111,8 +124,9 @@ fn canonical_pair_inner(
         }
         Canonical::Func { pattern, ret } => {
             let (pattern_value, pattern_use) =
-                canonical_pair_inner(env, canon, vars, *pattern, span.clone());
-            let (ret_value, ret_use) = canonical_pair_inner(env, canon, vars, *ret, span.clone());
+                canonical_pair_inner(env, canon, vars, *pattern, span.clone(), diagnostics);
+            let (ret_value, ret_use) =
+                canonical_pair_inner(env, canon, vars, *ret, span.clone(), diagnostics);
             (
                 env.engine.func(pattern_use, ret_value, span.clone()),
                 env.engine.func_use(pattern_value, ret_use, span.clone()),
@@ -122,7 +136,8 @@ fn canonical_pair_inner(
             let mut values = Vec::with_capacity(fields.len());
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
-                let (value, use_) = canonical_pair_inner(env, canon, vars, *id, span.clone());
+                let (value, use_) =
+                    canonical_pair_inner(env, canon, vars, *id, span.clone(), diagnostics);
                 values.push((name.clone(), value));
                 uses.push((name.clone(), use_));
             }
@@ -133,11 +148,13 @@ fn canonical_pair_inner(
         }
         Canonical::Reference { read, write } => {
             let (read_value, read_use) = read
-                .map(|read| canonical_pair_inner(env, canon, vars, read, span.clone()))
+                .map(|read| canonical_pair_inner(env, canon, vars, read, span.clone(), diagnostics))
                 .map(|(v, u)| (Some(v), Some(u)))
                 .unwrap_or_default();
             let (write_value, write_use) = write
-                .map(|write| canonical_pair_inner(env, canon, vars, write, span.clone()))
+                .map(|write| {
+                    canonical_pair_inner(env, canon, vars, write, span.clone(), diagnostics)
+                })
                 .map(|(v, u)| (Some(v), Some(u)))
                 .unwrap_or_default();
             (
@@ -154,10 +171,11 @@ pub fn canonical_pair(
     canon: CanonicalBuilder,
     id: CanonId,
     span: Span,
+    diagnostics: &mut Diagnostics,
 ) -> (core::Value, core::Use) {
     let canon = canon.finish();
     let mut vars = HashMap::new();
-    canonical_pair_inner(env, &canon, &mut vars, id, span)
+    canonical_pair_inner(env, &canon, &mut vars, id, span, diagnostics)
 }
 
 pub fn canonical_value(
@@ -188,6 +206,7 @@ pub fn canonical_value(
         }
         Canonical::Skip => env.engine.var().0,
         Canonical::Recursive(_) => todo!(),
+        Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::Bool => env.engine.bool(span),
         Canonical::Number => env.engine.number(span),
@@ -253,6 +272,7 @@ pub fn canonical_use(
             any_bound
         }
         Canonical::Recursive(_) => todo!(),
+        Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::Skip => env.engine.var().1,
         Canonical::Bool => env.engine.bool_use(span),
