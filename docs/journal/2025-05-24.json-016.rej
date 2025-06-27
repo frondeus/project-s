@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:271
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:273
 ```
 ( 
   (struct :key 1 :another 2)
@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
 +++ json-016
-@@ -276,7 +276,12 @@
+@@ -278,7 +278,14 @@
  ```
  
  ```json
@@ -17,6 +17,8 @@
 +   ╭─[ <input>:2:3 ]
 +   │
 + 2 │   (struct :key 1 :another 2)
++   │   ─────────────┬────────────  
++   │                ╰────────────── Undefined variable: obj/con
 +───╯
 +
  ```

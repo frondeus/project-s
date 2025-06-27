@@ -4,6 +4,34 @@ use crate::{
     source::{Span, Spanned},
 };
 
+pub fn obj_record(
+    rt: &mut ASTS,
+    caller: Span,
+    args: Vec<Spanned<SExpId>>,
+) -> Result<Spanned<SExpId>, String> {
+    Ok((
+        Spanned::new("fn", caller),
+        Spanned::new(
+            (
+                Spanned::new(":self", caller),
+                Spanned::new(":super", caller),
+            ),
+            caller,
+        ),
+        Spanned::new(
+            |ast: &mut AST| {
+                let mut items = args;
+                items.insert(0, Spanned::new("obj/extend", caller).spanned(ast, caller));
+                items.insert(1, Spanned::new("super", caller).spanned(ast, caller));
+
+                items.assemble(ast)
+            },
+            caller,
+        ),
+    )
+        .build_spanned(rt, caller))
+}
+
 pub fn let_star(
     rt: &mut ASTS,
     caller: Span,

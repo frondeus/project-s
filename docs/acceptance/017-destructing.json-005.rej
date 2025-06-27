@@ -7,7 +7,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/017-destructing.md
 +++ json-005
-@@ -81,7 +81,17 @@
+@@ -81,7 +81,21 @@
  
  
  ```json
@@ -16,11 +16,15 @@
 +   ╭─[ <input>:1:23 ]
 +   │
 + 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
++   │                       ─────────┬─────────  
++   │                                ╰─────────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:28 ]
 +   │
 + 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
++   │                            ────┬───  
++   │                                ╰───── Undefined variable: obj/con
 +───╯
 +
  ```

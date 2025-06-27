@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json
-@@ -16,7 +16,12 @@
+@@ -16,7 +16,16 @@
  its bit too early to enable thunk pass everywhere, so lets do a hack
  
  ```json lazy
@@ -16,7 +16,11 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:1 ]
 +   │
-+   ┆ 
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 4 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/con
 +───╯
 +
  ```

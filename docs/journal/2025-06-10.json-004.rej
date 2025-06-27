@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-10.md
 +++ json-004
-@@ -181,13 +181,27 @@
+@@ -181,13 +181,41 @@
  ```
  
  
@@ -32,22 +32,36 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:12 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (let :base {
++   ┆ ┆   
++ 3 │ ├─▶ })
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:5:9 ]
 +    │
-+    │ 
++  5 │ ╭─▶ (let :x {
++    ┆ ┆   
++ 10 │ ├─▶ })
++    │ │        
++    │ ╰──────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:7:18 ]
 +   │
-+   │ 
++ 7 │ ╭─▶   :value (+ base {
++   ┆ ┆   
++ 9 │ ├─▶   })
++   │ │          
++   │ ╰────────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:12:4 ]
 +    │
 + 12 │ (+ {:d 1} x)
++    │    ───┬──  
++    │       ╰──── Undefined variable: obj/con
 +────╯
 +
  ```

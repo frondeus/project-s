@@ -5,7 +5,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-006
-@@ -333,7 +333,17 @@
+@@ -333,7 +333,21 @@
  ```
  
  ```json
@@ -14,11 +14,15 @@
 +   ╭─[ <input>:1:6 ]
 +   │
 + 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
++   │      ────┬────  
++   │          ╰────── Unreadable pattern: Expected keyword or list, found: Symbol("obj/con")
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:25 ]
 +   │
 + 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
++   │                         ──────┬──────  
++   │                               ╰──────── Undefined variable: obj/con
 +───╯
 +
  ```

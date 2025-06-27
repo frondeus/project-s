@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
 +++ json-005
-@@ -53,10 +53,12 @@
+@@ -53,10 +53,16 @@
  and have it compiled to 
  
  ```json
@@ -19,7 +19,11 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:1 ]
 +   │
-+   ┆ 
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 4 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
 +───╯
 +
  ```

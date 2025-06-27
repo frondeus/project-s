@@ -16,21 +16,29 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
 +++ json
-@@ -24,11 +24,12 @@
+@@ -23,13 +23,18 @@
+ (fix pkgs)
  ```
  
- ```json
+-```json
 -{
 -  "a": 3.0,
 -  "b": 4.0,
 -  "c": 7.0
 -}
+-```
++`````json
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:6:24 ]
 +    │
-+    │ 
++  6 │ ╭─▶ (let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
++    ┆ ┆   
++ 10 │ ├─▶ }))
++    │ │         
++    │ ╰───────── Undefined variable: obj/con
 +────╯
 +
- ```
++`````
  
  But do we need this fix?
+ 

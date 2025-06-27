@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:287
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:289
 ```
 (let :foo (struct :key 1 :another 2))
 (foo :another)
@@ -6,7 +6,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
 +++ json-017
-@@ -290,7 +290,12 @@
+@@ -292,7 +292,14 @@
  ```
  
  ```json
@@ -15,6 +15,8 @@
 +   ╭─[ <input>:1:11 ]
 +   │
 + 1 │ (let :foo (struct :key 1 :another 2))
++   │           ─────────────┬────────────  
++   │                        ╰────────────── Undefined variable: obj/con
 +───╯
 +
  ```

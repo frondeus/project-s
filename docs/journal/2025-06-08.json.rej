@@ -6,7 +6,7 @@ foo
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-08.md
 +++ json
-@@ -23,10 +23,12 @@
+@@ -23,10 +23,14 @@
  ```
  
  ```json
@@ -18,6 +18,8 @@ foo
 +   ╭─[ <input>:1:11 ]
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
++   │           ──────────┬──────────  
++   │                     ╰──────────── Undefined variable: obj/con
 +───╯
 +
  ```

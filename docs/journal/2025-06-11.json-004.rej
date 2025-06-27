@@ -7,7 +7,7 @@ b
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-004
-@@ -310,7 +310,12 @@
+@@ -310,7 +310,14 @@
  ```
  
  ```json
@@ -16,6 +16,8 @@ b
 +   ╭─[ <input>:1:15 ]
 +   │
 + 1 │ (let { :a b } { :a 1 :b 2 :c 3})
++   │               ────────┬────────  
++   │                       ╰────────── Undefined variable: obj/con
 +───╯
 +
  ```

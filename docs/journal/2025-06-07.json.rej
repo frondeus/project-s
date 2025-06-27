@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
 +++ json
-@@ -16,7 +16,12 @@
+@@ -16,7 +16,16 @@
  ```
  
  ```json
@@ -16,7 +16,11 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:2 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ ({
++   ┆ ┆   
++ 4 │ ├─▶ } :b)
++   │ │          
++   │ ╰────────── Undefined variable: obj/con
 +───╯
 +
  ```

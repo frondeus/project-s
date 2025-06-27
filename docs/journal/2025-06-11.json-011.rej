@@ -1,11 +1,11 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:403
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:407
 ```
 [(splice (1 2 3))]
 ```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-011
-@@ -405,11 +405,21 @@
+@@ -409,11 +409,25 @@
  ```
  
  ```json
@@ -18,6 +18,8 @@
 +   ╭─[ <input>:1:3 ]
 +   │
 + 1 │ [(splice (1 2 3))]
++   │   ───┬──  
++   │      ╰──── Undefined variable: splice
 +───╯
 +Error: Incompatible types
 +   ╭─[ <input>:1:10 ]
@@ -25,6 +27,8 @@
 + 1 │ [(splice (1 2 3))]
 +   │          ─┬─┬───  
 +   │           ╰─────── But got number
++   │             │     
++   │             ╰───── Incompatible types
 +   │             │     
 +   │             ╰───── Expected function
 +───╯

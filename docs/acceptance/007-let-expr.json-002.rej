@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
 +++ json-002
-@@ -20,10 +20,17 @@
+@@ -20,10 +20,25 @@
  ```
  
  ```json
@@ -20,12 +20,20 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:1 ]
 +   │
-+   ┆ 
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 5 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:1:1 ]
 +   │
-+   ┆ 
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 5 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/eval
 +───╯
 +
  ```

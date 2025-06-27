@@ -11,7 +11,14 @@ source_file - "symbol"
 this evaluates immediately to its variable
 
 ```json
-"<Error: Undefined variable: symbol>"
+Error: Undefined variable: symbol
+   ╭─[ <input>:1:1 ]
+   │
+ 1 │ symbol
+   │ ───┬──  
+   │    ╰──── Undefined variable: symbol
+───╯
+
 ```
 
 ```

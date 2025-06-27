@@ -26,7 +26,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
 +++ json-009
-@@ -193,14 +193,37 @@
+@@ -193,14 +193,59 @@
  ```
  
  ```json
@@ -41,32 +41,54 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:4 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (+ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │       
++   │ ╰─────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:1:4 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (+ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │       
++   │ ╰─────── Undefined variable: obj/eval
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:4:8 ]
 +   │
-+   │ 
++ 4 │ ╭─▶   :key {
++   ┆ ┆   
++ 7 │ ├─▶   }
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:10:11 ]
 +    │
-+    │ 
++ 10 │ ╭─▶ (thunk () {
++    ┆ ┆   
++ 22 │ ├─▶ }))
++    │ │        
++    │ ╰──────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/eval
 +    ╭─[ <input>:10:11 ]
 +    │
-+    │ 
++ 10 │ ╭─▶ (thunk () {
++    ┆ ┆   
++ 22 │ ├─▶ }))
++    │ │        
++    │ ╰──────── Undefined variable: obj/eval
 +────╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
 +    │
 + 13 │   (if (has? super :key)
++    │        ──┬─  
++    │          ╰─── Undefined variable: has?
 +────╯
 +
  ```

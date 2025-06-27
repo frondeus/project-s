@@ -6,7 +6,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-003
-@@ -35,7 +35,12 @@
+@@ -35,7 +35,14 @@
  ```
  
  ```json
@@ -15,6 +15,8 @@
 +   ╭─[ <input>:1:11 ]
 +   │
 + 1 │ (let :foo (struct :key 1 :another 2))
++   │           ─────────────┬────────────  
++   │                        ╰────────────── Undefined variable: obj/con
 +───╯
 +
  ```

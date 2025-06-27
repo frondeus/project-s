@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json
-@@ -13,7 +13,12 @@
+@@ -13,7 +13,14 @@
  ```
  
  ```json
@@ -17,6 +17,8 @@
 +   ╭─[ <input>:1:2 ]
 +   │
 + 1 │ (obj/con (fn (:self :root :super :origin) (do
++   │  ───┬───  
++   │     ╰───── Undefined variable: obj/con
 +───╯
 +
  ```

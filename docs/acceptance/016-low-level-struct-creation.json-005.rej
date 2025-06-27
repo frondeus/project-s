@@ -15,7 +15,7 @@ bar
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-005
-@@ -83,13 +83,17 @@
+@@ -83,13 +83,25 @@
  ```
  
  ```json
@@ -29,12 +29,20 @@ bar
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:11 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (let :foo (obj/condef
++   ┆ ┆   
++ 4 │ ├─▶ ))
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:6:11 ]
 +   │
-+   │ 
++ 6 │ ╭─▶ (let :bar (obj/condef
++   ┆ ┆   
++ 9 │ ├─▶ ))
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
 +───╯
 +
  ```

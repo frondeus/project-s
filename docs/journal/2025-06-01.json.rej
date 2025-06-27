@@ -28,7 +28,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-01.md
 +++ json
-@@ -32,14 +32,37 @@
+@@ -32,14 +32,59 @@
  ```
  
  ```json
@@ -43,32 +43,54 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:12 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (let :left {
++   ┆ ┆   
++ 8 │ ├─▶   })
++   │ │          
++   │ ╰────────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:1:12 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (let :left {
++   ┆ ┆   
++ 8 │ ├─▶   })
++   │ │          
++   │ ╰────────── Undefined variable: obj/eval
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:4:10 ]
 +   │
-+   │ 
++ 4 │ ╭─▶     :key {
++   ┆ ┆   
++ 7 │ ├─▶     }
++   │ │           
++   │ ╰─────────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:10:13 ]
 +    │
-+    │ 
++ 10 │ ╭─▶ (let :right {
++    ┆ ┆   
++ 22 │ ├─▶ })
++    │ │        
++    │ ╰──────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/eval
 +    ╭─[ <input>:10:13 ]
 +    │
-+    │ 
++ 10 │ ╭─▶ (let :right {
++    ┆ ┆   
++ 22 │ ├─▶ })
++    │ │        
++    │ ╰──────── Undefined variable: obj/eval
 +────╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
 +    │
 + 13 │   (if (has? super :key)
++    │        ──┬─  
++    │          ╰─── Undefined variable: has?
 +────╯
 +
  ```

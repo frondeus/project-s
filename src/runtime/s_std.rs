@@ -21,6 +21,7 @@ pub fn prelude() -> Env {
         .with_fn("obj/con", obj_con)
         .with_fn("obj/plain", obj_plain)
         .with_fn("obj/extend", obj_extend)
+        .with_try_macro("obj/record", obj_record)
         .with_try_macro("obj/condef", condef)
         .with_try_macro("obj/put", objput)
         .with_try_macro("obj/+", obj_add)

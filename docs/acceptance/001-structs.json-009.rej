@@ -18,7 +18,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-009
-@@ -151,17 +151,27 @@
+@@ -151,17 +151,43 @@
  ```
  
  ```json
@@ -36,22 +36,38 @@
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:1:1 ]
 +    │
-+    ┆ 
++  1 │ ╭─▶ {
++    ┆ ┆   
++ 14 │ ├─▶ }
++    │ │      
++    │ ╰────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:3:9 ]
 +   │
-+   │ 
++ 3 │ ╭─▶   :b (+ {
++   ┆ ┆   
++ 6 │ ├─▶   }
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:7:3 ]
 +    │
-+    │ 
++  7 │ ╭─▶   {
++    ┆ ┆   
++ 12 │ ├─▶     }
++    │ │           
++    │ ╰─────────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:9:8 ]
 +    │
-+    │ 
++  9 │ ╭─▶     :b {
++    ┆ ┆   
++ 12 │ ├─▶     }
++    │ │           
++    │ ╰─────────── Undefined variable: obj/con
 +────╯
 +
  ```

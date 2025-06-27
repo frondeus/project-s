@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:338
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:340
 ```
 (struct 
   :another 4
@@ -11,7 +11,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
 +++ json-020
-@@ -346,13 +346,17 @@
+@@ -348,13 +348,25 @@
  ```
  
  ```json
@@ -25,12 +25,20 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:1 ]
 +   │
-+   ┆ 
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 7 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:3:8 ]
 +   │
-+   │ 
++ 3 │ ╭─▶   :key (struct
++   ┆ ┆   
++ 6 │ ├─▶   )
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
 +───╯
 +
  ```

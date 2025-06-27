@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:53
+/Users/frondeus/Code/project-s/docs/acceptance/011-macros.md:57
 ````
 (
   let :fif (macro (:name :co :the :els) `(if ,co '(,name ,the) '(,name ,els))))
@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
 +++ json-003
-@@ -59,7 +59,15 @@
+@@ -63,7 +63,23 @@
  ```
  
  ```json
@@ -19,12 +19,20 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:3:3 ]
 +   │
-+   │ 
++ 3 │ ╭─▶   {
++   ┆ ┆   
++ 5 │ ├─▶   }
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:3:3 ]
 +   │
-+   │ 
++ 3 │ ╭─▶   {
++   ┆ ┆   
++ 5 │ ├─▶   }
++   │ │        
++   │ ╰──────── Undefined variable: obj/eval
 +───╯
 +
  ```

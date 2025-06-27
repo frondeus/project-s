@@ -8,7 +8,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-002
-@@ -24,7 +24,12 @@
+@@ -24,7 +24,14 @@
  ```
  
  ```json
@@ -17,6 +17,8 @@
 +   ╭─[ <input>:2:3 ]
 +   │
 + 2 │   (struct :key 1 :another 2)
++   │   ─────────────┬────────────  
++   │                ╰────────────── Undefined variable: obj/con
 +───╯
 +
  ```

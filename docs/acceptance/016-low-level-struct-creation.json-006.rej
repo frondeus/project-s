@@ -10,7 +10,7 @@ foo
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-006
-@@ -105,10 +105,12 @@
+@@ -105,10 +105,16 @@
  ```
  
  ```json
@@ -21,7 +21,11 @@ foo
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:11 ]
 +   │
-+   │ 
++ 1 │ ╭─▶ (let :foo (obj/condef
++   ┆ ┆   
++ 4 │ ├─▶ ))
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
 +───╯
 +
  ```
