@@ -15,9 +15,9 @@ foo
 -  "b": 4.0
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :foo { :b 4 :a (root :b )})
 +───╯
 +
  ```

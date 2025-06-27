@@ -1,4 +1,7 @@
-use crate::{ast::SExpId, source::Span};
+use crate::{
+    ast::SExpId,
+    source::{Span, WithSpan},
+};
 
 use super::Visitor;
 
@@ -8,6 +11,13 @@ pub struct List {
     pub edited: bool,
     pub span: Span,
 }
+
+impl WithSpan for List {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
 impl List {
     pub fn visit<'a>(self, visitor: &mut impl Visitor<'a>) -> Option<SExpId> {
         visitor.visit_list(self)

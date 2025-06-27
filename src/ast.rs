@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use tree_sitter::Parser as TSParser;
 
-use crate::source::{Span, WithSpan};
+use crate::source::{Source, SourceId, Span, Spanned};
 
 #[derive(Debug, Default)]
 pub struct ASTS {
@@ -23,12 +23,12 @@ impl ASTS {
         self.asts.get(&id.generation()).unwrap()
     }
 
-    pub fn get(&self, id: SExpId) -> &WithSpan<SExp> {
+    pub fn get(&self, id: SExpId) -> &Spanned<SExp> {
         let ast = self.get_ast(id);
         ast.get(id)
     }
 
-    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&WithSpan<SExp>> {
+    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&Spanned<SExp>> {
         Some(self.get(id?))
     }
 
@@ -52,8 +52,8 @@ impl ASTS {
         SExpFmtList { list, asts: self }
     }
 
-    pub fn parse(&mut self, input: &str, filename: &str) -> Result<&AST, ParseError> {
-        let parser = SExpParser::new(self, Arc::from(filename), Arc::from(input))?;
+    pub fn parse(&mut self, source_id: SourceId, source: &Source) -> Result<&AST, ParseError> {
+        let parser = SExpParser::new(self, source_id, source)?;
         let ast = parser.parse()?;
         let root = ast.root_id().unwrap();
         self.add_ast(ast);
@@ -64,7 +64,7 @@ impl ASTS {
 #[derive(Debug)]
 pub struct AST {
     generation: usize,
-    nodes: Vec<WithSpan<SExp>>,
+    nodes: Vec<Spanned<SExp>>,
 }
 
 impl AST {
@@ -85,7 +85,7 @@ impl AST {
     }
 
     pub fn add_node(&mut self, node: SExp, span: Span) -> SExpId {
-        let node = WithSpan { item: node, span };
+        let node = Spanned::new(node, span);
         let id = self.nodes.len();
         self.nodes.push(node);
         self.new_id(id)
@@ -96,25 +96,25 @@ impl AST {
     }
 
     pub fn set(&mut self, id: SExpId, node: SExp, span: Span) {
-        let node = WithSpan { item: node, span };
+        let node = Spanned::new(node, span);
         assert_eq!(id.generation, self.generation);
         self.nodes[id.id] = node;
     }
 
-    pub fn get(&self, id: SExpId) -> &WithSpan<SExp> {
+    pub fn get(&self, id: SExpId) -> &Spanned<SExp> {
         assert_eq!(id.generation, self.generation);
         &self.nodes[id.id]
     }
 
-    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&WithSpan<SExp>> {
+    pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&Spanned<SExp>> {
         id.map(|id| self.get(id))
     }
 
-    pub fn nodes(&self) -> &[WithSpan<SExp>] {
+    pub fn nodes(&self) -> &[Spanned<SExp>] {
         &self.nodes
     }
 
-    pub fn root(&self) -> Option<&WithSpan<SExp>> {
+    pub fn root(&self) -> Option<&Spanned<SExp>> {
         self.nodes.first()
     }
 
@@ -151,12 +151,9 @@ pub enum SExp {
     Error,
 }
 
-impl WithSpan<SExp> {
+impl Spanned<SExp> {
     pub fn fmt<'a>(&'a self, asts: &'a ASTS) -> SExpFmt<'a> {
-        SExpFmt {
-            asts,
-            expr: &self.item,
-        }
+        SExpFmt { asts, expr: self }
     }
 }
 
@@ -315,12 +312,12 @@ pub enum ParseError {
 pub struct SExpParser {
     parser: TSParser,
     ast: AST,
-    filename: Arc<str>,
+    source_id: SourceId,
     source: Arc<str>,
 }
 
 impl SExpParser {
-    pub fn new(asts: &mut ASTS, filename: Arc<str>, source: Arc<str>) -> Result<Self, ParseError> {
+    pub fn new(asts: &mut ASTS, source_id: SourceId, source: &Source) -> Result<Self, ParseError> {
         let mut parser = TSParser::new();
         parser
             .set_language(&tree_sitter_s::LANGUAGE.into())
@@ -329,8 +326,8 @@ impl SExpParser {
         Ok(SExpParser {
             parser,
             ast: asts.new_ast(),
-            filename,
-            source,
+            source_id,
+            source: source.source.clone(),
         })
     }
 
@@ -338,8 +335,7 @@ impl SExpParser {
     fn node_to_sexp(&mut self, node: tree_sitter::Node) -> Result<SExpId, ParseError> {
         let span = Span {
             range: node.range(),
-            source: self.source.clone(),
-            filename: self.filename.clone(),
+            source_id: self.source_id,
         };
         match node.kind() {
             "float" | "integer" => {
@@ -399,7 +395,7 @@ impl SExpParser {
                 let mut children = Vec::new();
                 children.push(
                     self.ast
-                        .add_node(SExp::Symbol("obj/struct".to_string()), span.clone()),
+                        .add_node(SExp::Symbol("obj/struct".to_string()), span),
                 );
                 while let Some(n) = child {
                     if !n.is_extra() {
@@ -414,10 +410,7 @@ impl SExpParser {
                 let array = self.ast.reserve();
                 let mut items = Vec::new();
                 let mut child = node.named_child(0);
-                items.push(
-                    self.ast
-                        .add_node(SExp::Symbol("list".to_string()), span.clone()),
-                );
+                items.push(self.ast.add_node(SExp::Symbol("list".to_string()), span));
                 while let Some(n) = child {
                     if !n.is_extra() {
                         items.push(self.node_to_sexp(n)?);
@@ -447,10 +440,7 @@ impl SExpParser {
     ) -> Result<SExpId, ParseError> {
         let parent = self.ast.reserve();
         let mut items = Vec::new();
-        items.push(
-            self.ast
-                .add_node(SExp::Symbol(symbol.to_string()), span.clone()),
-        );
+        items.push(self.ast.add_node(SExp::Symbol(symbol.to_string()), span));
 
         let inner = node
             .child_by_field_name("inner")
@@ -496,12 +486,9 @@ impl SExpParser {
         }
         let span = Span {
             range: root.range(),
-            source: self.source.clone(),
-            filename: self.filename.clone(),
+            source_id: self.source_id,
         };
-        let do_symbol = self
-            .ast
-            .add_node(SExp::Symbol("do".to_string()), span.clone());
+        let do_symbol = self.ast.add_node(SExp::Symbol("do".to_string()), span);
         ids.insert(0, do_symbol);
         self.ast.set(do_list, SExp::List(ids), span);
         Ok(self.ast)
@@ -510,6 +497,8 @@ impl SExpParser {
 
 #[cfg(test)]
 mod tests {
+    use crate::source::Sources;
+
     use super::*;
 
     #[test]
@@ -559,7 +548,10 @@ mod tests {
     fn ast() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "ast", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input, "<input>").expect("Failed to parse");
+            let (sources, source_id) = Sources::single("<input>", input);
+            let ast = asts
+                .parse(source_id, sources.get(source_id))
+                .expect("Failed to parse");
             let root_id = ast.root_id().unwrap();
             let result = asts.get(root_id);
             let result = result.fmt(&asts);

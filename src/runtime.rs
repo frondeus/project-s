@@ -68,11 +68,11 @@ impl Runtime {
         with: &impl Fn(&mut Self, &str, Value),
     ) -> Result<Value, String> {
         match pattern {
-            Pattern::Single(key) => {
+            Pattern::Single(key, _) => {
                 with(self, &key, value.clone());
                 Ok(value)
             }
-            Pattern::List(patterns) => match value.eager_rec(self, true) {
+            Pattern::List(patterns, _) => match value.eager_rec(self, true) {
                 Value::List(items) => {
                     let mut result = vec![];
                     for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
@@ -83,7 +83,7 @@ impl Runtime {
                 }
                 value => Err(format!("Destructing. Expected list, found: {:?}", value)),
             },
-            Pattern::Object(patterns) => match value.eager_rec(self, true) {
+            Pattern::Object(patterns, _) => match value.eager_rec(self, true) {
                 Value::Object(mut map) => {
                     let mut result = BTreeMap::new();
                     for (key, pattern) in patterns {
@@ -123,13 +123,13 @@ impl Runtime {
 
     fn _let_rec_pre_destruct(&mut self, pattern: Pattern) {
         match pattern {
-            Pattern::Single(key) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
-            Pattern::List(patterns) => {
+            Pattern::Single(key, _) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
+            Pattern::List(patterns, _) => {
                 for pattern in patterns {
                     self._let_rec_pre_destruct(pattern);
                 }
             }
-            Pattern::Object(hash_map) => {
+            Pattern::Object(hash_map, _) => {
                 for (_key, pattern) in hash_map {
                     self._let_rec_pre_destruct(pattern);
                 }
@@ -280,7 +280,7 @@ impl Runtime {
     fn as_symbol_or_keyword(&self, value: &Value) -> Option<&str> {
         let sexp = value.as_sexp()?;
         let sexp = self.asts.get(*sexp);
-        match &sexp.item {
+        match &**sexp {
             SExp::Symbol(s) => Some(s),
             SExp::Keyword(s) => Some(s),
             _ => None,
@@ -290,7 +290,7 @@ impl Runtime {
     fn as_keyword(&self, value: &Value) -> Option<&str> {
         let sexp = value.as_sexp()?;
         let sexp = self.asts.get(*sexp);
-        match &sexp.item {
+        match &**sexp {
             SExp::Keyword(s) => Some(s),
             _ => None,
         }
@@ -298,7 +298,7 @@ impl Runtime {
 
     pub fn eval(&mut self, id: SExpId) -> Value {
         let sexp = self.asts.get(id).clone();
-        match sexp.item {
+        match sexp.inner() {
             SExp::Error => Value::Error("AST Error".to_string()),
             SExp::Number(n) => Value::Number(n),
             SExp::String(s) => Value::String(s.clone()),
@@ -319,7 +319,7 @@ impl Runtime {
                     return Value::List(vec![]);
                 };
                 let first_id = first_id.unwrap();
-                match &first.item {
+                match &**first {
                     SExp::Symbol(tag) if tag == ":" => {
                         // Its type ascription, lets take first value and evaluate ignoring the rest
                         let Some(item) = items.get(2) else {
@@ -420,21 +420,30 @@ mod tests {
     use test_runner::CowStr;
     use tracing_subscriber::{Layer, layer::SubscriberExt};
 
-    use crate::{diagnostics::Diagnostics, modules::MemoryModules};
+    use crate::{
+        diagnostics::Diagnostics,
+        modules::MemoryModules,
+        source::{SourceId, Sources},
+    };
 
     use super::{s_std::prelude, *};
 
-    fn eval_to_value(input: &str, modules: MemoryModules) -> Result<(Runtime, Value), Diagnostics> {
+    fn eval_to_value(
+        source_id: SourceId,
+        mut modules: MemoryModules,
+    ) -> Result<(Runtime, Value), (Diagnostics, MemoryModules)> {
         let mut asts = ASTS::new();
-        let ast = asts.parse(input, "<input>").unwrap();
+        let source = modules.sources.get(source_id);
+        let ast = asts.parse(source_id, source).unwrap();
         let root_id = ast.root_id().unwrap();
         tracing::trace!("Before process");
         let prelude = prelude();
         let envs = [prelude];
-        let (root_id, diag) = crate::process_with_typechk(&mut asts, root_id, &envs);
+        let (root_id, diag) =
+            crate::process_with_typechk(&mut modules.sources, &mut asts, root_id, &envs);
 
         if diag.has_errors() {
-            return Err(diag);
+            return Err((diag, modules));
         }
 
         let [prelude] = envs;
@@ -447,11 +456,11 @@ mod tests {
         Ok((runtime, value))
     }
 
-    fn eval_to_json(input: &str, modules: MemoryModules, eager: bool) -> String {
-        let (mut runtime, value) = match eval_to_value(input, modules) {
+    fn eval_to_json(source_id: SourceId, modules: MemoryModules, eager: bool) -> String {
+        let (mut runtime, value) = match eval_to_value(source_id, modules) {
             Ok((runtime, value)) => (runtime, value),
-            Err(diag) => {
-                return diag.pretty_print();
+            Err((diag, modules)) => {
+                return diag.pretty_print(&modules.sources);
             }
         };
         tracing::trace!("Value: {value:?}");
@@ -459,14 +468,21 @@ mod tests {
         serde_json::to_string_pretty(&value).unwrap()
     }
 
-    fn deps_to_modules(deps: &HashMap<CowStr<'_>, &str>) -> MemoryModules {
+    fn deps_to_modules(input: &str, deps: &HashMap<CowStr<'_>, &str>) -> (MemoryModules, SourceId) {
+        let mut sources: Sources = Default::default();
+        let input_id = sources.add("<input>", input);
         let modules = deps
             .iter()
             .filter(|(name, _value)| name.ends_with(".s"))
-            .map(|(name, value)| (PathBuf::from(name.to_string()), value.to_string()))
+            .map(|(name, value)| {
+                (
+                    PathBuf::from(name.to_string()),
+                    sources.add(name.to_string().as_str(), value),
+                )
+            })
             .collect::<HashMap<_, _>>();
         // tracing::info!("Modules: {:#?}", modules);
-        MemoryModules { modules }
+        (MemoryModules { modules, sources }, input_id)
     }
 
     #[test]
@@ -474,8 +490,8 @@ mod tests {
         test_runner::test_snapshots("docs/", "json", |input, deps, args| {
             let lazy = args.contains("lazy");
             tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
-                let deps = deps_to_modules(deps);
-                eval_to_json(input, deps, !lazy)
+                let (deps, source_id) = deps_to_modules(input, deps);
+                eval_to_json(source_id, deps, !lazy)
             })
         })
     }
@@ -499,7 +515,7 @@ mod tests {
 
     #[test]
     fn traces() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "traces", |input, _deps, args| {
+        test_runner::test_snapshots("docs/", "traces", |input, deps, args| {
             let mut reader = tempfile::NamedTempFile::new().unwrap();
 
             let writer = reader.reopen().unwrap();
@@ -527,10 +543,10 @@ mod tests {
                     .with(file_layer.with_filter(level));
 
                 tracing::subscriber::with_default(subscriber, move || {
-                    let modules = MemoryModules::default();
+                    let (deps, source_id) = deps_to_modules(input, deps);
                     // let (mut runtime, value) = eval_to_value(input, modules);
                     // runtime.to_json(value, true);
-                    eval_to_json(input, modules, true)
+                    eval_to_json(source_id, deps, true)
                 });
             }
 
@@ -545,12 +561,13 @@ mod tests {
         test_runner::test_snapshots("docs/", "processed", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
-            let ast = asts.parse(input, "<input>").unwrap();
+            let (sources, source_id) = Sources::single("<input>", input);
+            let ast = asts.parse(source_id, sources.get(source_id)).unwrap();
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
             let (root_id, diag) = crate::process_ast(&mut asts, root_id, &[prelude]);
             if diag.has_errors() {
-                return diag.pretty_print();
+                return diag.pretty_print(&sources);
             }
 
             format!("{:#}", asts.fmt(root_id))

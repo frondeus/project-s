@@ -38,14 +38,14 @@ impl Runtime {
             .get(1)
             .ok_or_else(|| "Expected captured".to_string())?;
         let captured = self.asts.get(*captured);
-        let Some(captured) = captured.item.as_list() else {
+        let Some(captured) = captured.as_list() else {
             return Err("Expected list".to_string());
         };
         let captured = captured
             .to_vec()
             .into_iter()
             .map(|s| {
-                let name = self.asts.get(s).item.as_symbol().unwrap().to_string();
+                let name = self.asts.get(s).as_symbol().unwrap().to_string();
                 let val = self.eval(s);
                 (name, val)
             })
@@ -89,7 +89,7 @@ impl Runtime {
             if let Some(list) = self.as_special_form(*arg, "splice") {
                 if let Some(first) = list.get(1) {
                     let first = self.asts.get(*first);
-                    if let SExp::List(l) = &first.item {
+                    if let SExp::List(l) = &**first {
                         return l.clone();
                     }
                 }
@@ -111,10 +111,10 @@ impl Runtime {
 
     fn as_special_form(&self, list_id: SExpId, name: &str) -> Option<&[SExpId]> {
         let list = self.asts.get(list_id);
-        let list = list.item.as_list()?;
+        let list = list.as_list()?;
         let first = list.first()?;
         let first = self.asts.get(*first);
-        let first = first.item.as_symbol()?;
+        let first = first.as_symbol()?;
         if first == name { Some(list) } else { None }
     }
 }

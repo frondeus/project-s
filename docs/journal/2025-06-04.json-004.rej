@@ -16,37 +16,41 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-004
-@@ -134,7 +134,36 @@
+@@ -134,7 +134,40 @@
  And technically, :x doesnt need to be a thunk.
  
  ```json
 -15.0
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :base {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :base {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :base {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :base {
 +───╯
 +Error: Incompatible types
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :base {
 +   │ │ 
 +   │ ╰─ Expected function
++   │
++   ├─[ <builtin>:1:1 ]
++   │
++ 1 │ 
 +   │ │ 
 +   │ ╰─ But got number
 +───╯

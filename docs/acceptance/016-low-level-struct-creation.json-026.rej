@@ -18,14 +18,14 @@
 -  "b": 2.0
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (obj/struct
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (obj/struct
 +───╯
 +
  ```

@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
-    diagnostics::Diagnostics,
+    diagnostics::{Diagnostics, SExpDiag},
     source::Span,
 };
 
@@ -31,7 +31,7 @@ impl TypeEnv {
         vars: &mut HashMap<String, CanonId>,
     ) -> CanonId {
         let sexp = asts.get(id);
-        match &sexp.item {
+        match &**sexp {
             SExp::Keyword(symbol) if symbol == "number" => canon.add(Canonical::Number),
             SExp::Keyword(symbol) if symbol == "string" => canon.add(Canonical::String),
             SExp::Keyword(symbol) if symbol == "bool" => canon.add(Canonical::Bool),
@@ -50,8 +50,11 @@ impl TypeEnv {
                     let mut fields = Vec::new();
                     for (key, value) in fields_exprs.iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, *key) else {
-                            let span = Self::span_of(*key, asts);
-                            diagnostics.add(span, format!("Expected keyword, got {:?}", key));
+                            diagnostics.add_sexp(
+                                asts,
+                                *key,
+                                format!("Expected keyword, got {:?}", key),
+                            );
                             continue;
                         };
                         let value = Self::parse_type_inner(asts, *value, canon, diagnostics, vars);
@@ -86,19 +89,17 @@ impl TypeEnv {
                 }
                 &[first, inner] if Self::is_symbol(asts, first, "quote") => {
                     let inner = asts.get(inner);
-                    match &inner.item {
-                        SExp::Symbol(symbol) => {
+                    match inner.as_symbol() {
+                        Some(symbol) => {
                             let id = vars.len();
                             let id = vars
-                                .entry(symbol.clone())
+                                .entry(symbol.to_string())
                                 .or_insert_with(|| canon.add(Canonical::Any(Some(id))));
                             *id
                         }
                         _ => {
-                            diagnostics.add(
-                                inner.span.clone(),
-                                format!("Expected symbol, got {:?}", inner.item),
-                            );
+                            diagnostics
+                                .add(inner, format!("Expected symbol, got {}", inner.fmt(asts)));
                             canon.add(Canonical::Error)
                         }
                     }
@@ -161,7 +162,7 @@ impl TypeEnv {
                 }
             },
             _ => {
-                diagnostics.add(sexp.span.clone(), format!("Unknown type: {}", asts.fmt(id)));
+                diagnostics.add(sexp, format!("Unknown type: {}", asts.fmt(id)));
                 canon.add(Canonical::Error)
             }
         }
@@ -175,41 +176,29 @@ impl TypeEnv {
     ) -> Option<CanonId> {
         let var = asts.get(id);
 
-        let SExp::List(items) = &var.item else {
-            diagnostics.add(
-                var.span.clone(),
-                format!("Expected quoted symbol, got {}", asts.fmt(id)),
-            );
+        let Some(items) = var.as_list() else {
+            diagnostics.add(var, format!("Expected quoted symbol, got {}", asts.fmt(id)));
             return None;
         };
 
-        let &[first, inner] = &items[..] else {
-            diagnostics.add(
-                var.span.clone(),
-                format!("Expected quoted symbol, got {}", asts.fmt(id)),
-            );
+        let &[first, inner] = items else {
+            diagnostics.add(var, format!("Expected quoted symbol, got {}", asts.fmt(id)));
             return None;
         };
 
         if !Self::is_symbol(asts, first, "quote") {
-            diagnostics.add(
-                var.span.clone(),
-                format!("Expected quoted symbol, got {}", asts.fmt(id)),
-            );
+            diagnostics.add(var, format!("Expected quoted symbol, got {}", asts.fmt(id)));
             return None;
         }
 
         let inner = asts.get(inner);
 
-        let SExp::Symbol(symbol) = &inner.item else {
-            diagnostics.add(
-                inner.span.clone(),
-                format!("Expected symbol, got {}", inner.fmt(asts)),
-            );
+        let Some(symbol) = inner.as_symbol() else {
+            diagnostics.add(inner, format!("Expected symbol, got {}", inner.fmt(asts)));
             return None;
         };
 
-        with(inner.span.clone(), symbol, diagnostics)
+        with(inner.span, symbol, diagnostics)
         // let id = vars.len();
         // let id = vars
         //     .entry(symbol.clone())

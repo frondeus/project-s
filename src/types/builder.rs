@@ -54,48 +54,48 @@ fn canonical_pair_inner(
     diagnostics: &mut Diagnostics,
 ) -> (core::Value, core::Use) {
     match canon.get(id) {
-        Canonical::Skip => env.engine.var(),
+        Canonical::Skip => env.engine.var(span),
         Canonical::Todo(_) => todo!(),
         Canonical::Any(i) => {
             if let Some(i) = *i {
-                return *vars.entry(i).or_insert_with(|| env.engine.var());
+                return *vars.entry(i).or_insert_with(|| env.engine.var(span));
             }
-            env.engine.var()
+            env.engine.var(span)
         }
         Canonical::Recursive(_canon_id) => todo!(),
         &Canonical::As(i, inner) => {
-            let (u_type_value, u_type) = env.engine.var();
-            let (v_type, v_type_bound) = env.engine.var();
+            let (u_type_value, u_type) = env.engine.var(span);
+            let (v_type, v_type_bound) = env.engine.var(span);
             vars.insert(i, (u_type_value, v_type_bound));
             let (inner_v, inner_u) =
-                canonical_pair_inner(env, canon, vars, inner, span.clone(), diagnostics);
+                canonical_pair_inner(env, canon, vars, inner, span, diagnostics);
             env.engine.flow(inner_v, v_type_bound, diagnostics);
             env.engine.flow(u_type_value, inner_u, diagnostics);
             (v_type, u_type)
         }
         Canonical::Or(_canon_ids) => todo!(),
         Canonical::Bool => {
-            let v_bool = env.engine.bool(span.clone());
+            let v_bool = env.engine.bool(span);
             let u_bool = env.engine.bool_use(span);
             (v_bool, u_bool)
         }
         Canonical::Number => {
-            let v_number = env.engine.number(span.clone());
+            let v_number = env.engine.number(span);
             let u_number = env.engine.number_use(span);
             (v_number, u_number)
         }
         Canonical::String => {
-            let v_string = env.engine.string(span.clone());
+            let v_string = env.engine.string(span);
             let u_string = env.engine.string_use(span);
             (v_string, u_string)
         }
         Canonical::Error => {
-            let v_error = env.engine.error(span.clone());
+            let v_error = env.engine.error(span);
             let u_error = env.engine.error_use(span);
             (v_error, u_error)
         }
         Canonical::Keyword => {
-            let v_keyword = env.engine.keyword(span.clone());
+            let v_keyword = env.engine.keyword(span);
             let u_keyword = env.engine.keyword_use(span);
             (v_keyword, u_keyword)
         }
@@ -105,62 +105,57 @@ fn canonical_pair_inner(
 
             for item in items {
                 let (value, use_) =
-                    canonical_pair_inner(env, canon, vars, *item, span.clone(), diagnostics);
+                    canonical_pair_inner(env, canon, vars, *item, span, diagnostics);
                 values.push(value);
                 uses.push(use_);
             }
             (
-                env.engine.tuple(values, span.clone()),
-                env.engine.tuple_use(uses, span.clone()),
+                env.engine.tuple(values, span),
+                env.engine.tuple_use(uses, span),
             )
         }
         Canonical::List { item } => {
-            let (value, use_) =
-                canonical_pair_inner(env, canon, vars, *item, span.clone(), diagnostics);
+            let (value, use_) = canonical_pair_inner(env, canon, vars, *item, span, diagnostics);
             (
-                env.engine.list(value, span.clone()),
-                env.engine.list_use(use_, 0, None, span.clone()),
+                env.engine.list(value, span),
+                env.engine.list_use(use_, 0, None, span),
             )
         }
         Canonical::Func { pattern, ret } => {
             let (pattern_value, pattern_use) =
-                canonical_pair_inner(env, canon, vars, *pattern, span.clone(), diagnostics);
+                canonical_pair_inner(env, canon, vars, *pattern, span, diagnostics);
             let (ret_value, ret_use) =
-                canonical_pair_inner(env, canon, vars, *ret, span.clone(), diagnostics);
+                canonical_pair_inner(env, canon, vars, *ret, span, diagnostics);
             (
-                env.engine.func(pattern_use, ret_value, span.clone()),
-                env.engine.func_use(pattern_value, ret_use, span.clone()),
+                env.engine.func(pattern_use, ret_value, span),
+                env.engine.func_use(pattern_value, ret_use, span),
             )
         }
         Canonical::Struct { fields } => {
             let mut values = Vec::with_capacity(fields.len());
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
-                let (value, use_) =
-                    canonical_pair_inner(env, canon, vars, *id, span.clone(), diagnostics);
+                let (value, use_) = canonical_pair_inner(env, canon, vars, *id, span, diagnostics);
                 values.push((name.clone(), value));
                 uses.push((name.clone(), use_));
             }
             (
-                env.engine.obj(values, None, span.clone()),
-                env.engine.obj_use(uses, span.clone()),
+                env.engine.obj(values, None, span),
+                env.engine.obj_use(uses, span),
             )
         }
         Canonical::Reference { read, write } => {
             let (read_value, read_use) = read
-                .map(|read| canonical_pair_inner(env, canon, vars, read, span.clone(), diagnostics))
+                .map(|read| canonical_pair_inner(env, canon, vars, read, span, diagnostics))
                 .map(|(v, u)| (Some(v), Some(u)))
                 .unwrap_or_default();
             let (write_value, write_use) = write
-                .map(|write| {
-                    canonical_pair_inner(env, canon, vars, write, span.clone(), diagnostics)
-                })
+                .map(|write| canonical_pair_inner(env, canon, vars, write, span, diagnostics))
                 .map(|(v, u)| (Some(v), Some(u)))
                 .unwrap_or_default();
             (
-                env.engine.reference(write_use, read_value, span.clone()),
-                env.engine
-                    .reference_use(write_value, read_use, span.clone()),
+                env.engine.reference(write_use, read_value, span),
+                env.engine.reference_use(write_value, read_use, span),
             )
         }
     }
@@ -196,15 +191,15 @@ pub fn canonical_value(
                 return vars
                     .entry(i)
                     .or_insert_with(|| {
-                        let (any_var, _any_bound) = env.engine.var();
+                        let (any_var, _any_bound) = env.engine.var(span);
                         (any_var, _any_bound)
                     })
                     .0;
             }
-            let (any_var, _any_bound) = env.engine.var();
+            let (any_var, _any_bound) = env.engine.var(span);
             any_var
         }
-        Canonical::Skip => env.engine.var().0,
+        Canonical::Skip => env.engine.var(span).0,
         Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
@@ -216,30 +211,30 @@ pub fn canonical_value(
         Canonical::Tuple { items } => {
             let mut values = Vec::with_capacity(items.len());
             for item in items {
-                values.push(canonical_value(env, canon, vars, *item, span.clone()));
+                values.push(canonical_value(env, canon, vars, *item, span));
             }
             env.engine.tuple(values, span)
         }
         Canonical::List { item } => {
-            let item = canonical_value(env, canon, vars, *item, span.clone());
+            let item = canonical_value(env, canon, vars, *item, span);
             env.engine.list(item, span)
         }
         Canonical::Func { pattern, ret } => {
-            let pattern_use = canonical_use(env, canon, vars, *pattern, span.clone());
-            let ret_value = canonical_value(env, canon, vars, *ret, span.clone());
+            let pattern_use = canonical_use(env, canon, vars, *pattern, span);
+            let ret_value = canonical_value(env, canon, vars, *ret, span);
             env.engine.func(pattern_use, ret_value, span)
         }
         Canonical::Struct { fields } => {
             let mut f = Vec::with_capacity(fields.len());
             for (name, id) in fields {
-                let value = canonical_value(env, canon, vars, *id, span.clone());
+                let value = canonical_value(env, canon, vars, *id, span);
                 f.push((name.clone(), value));
             }
             env.engine.obj(f, None, span)
         }
         Canonical::Reference { read, write } => {
-            let write = write.map(|write| canonical_use(env, canon, vars, write, span.clone()));
-            let read = read.map(|read| canonical_value(env, canon, vars, read, span.clone()));
+            let write = write.map(|write| canonical_use(env, canon, vars, write, span));
+            let read = read.map(|read| canonical_value(env, canon, vars, read, span));
             env.engine.reference(write, read, span)
         }
     }
@@ -263,18 +258,18 @@ pub fn canonical_use(
                 return vars
                     .entry(i)
                     .or_insert_with(|| {
-                        let (any_var, _any_bound) = env.engine.var();
+                        let (any_var, _any_bound) = env.engine.var(span);
                         (any_var, _any_bound)
                     })
                     .1;
             }
-            let (_any_var, any_bound) = env.engine.var();
+            let (_any_var, any_bound) = env.engine.var(span);
             any_bound
         }
         Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
-        Canonical::Skip => env.engine.var().1,
+        Canonical::Skip => env.engine.var(span).1,
         Canonical::Bool => env.engine.bool_use(span),
         Canonical::Number => env.engine.number_use(span),
         Canonical::String => env.engine.string_use(span),
@@ -283,30 +278,30 @@ pub fn canonical_use(
         Canonical::Tuple { items } => {
             let mut uses = Vec::with_capacity(items.len());
             for item in items {
-                uses.push(canonical_use(env, canon, vars, *item, span.clone()));
+                uses.push(canonical_use(env, canon, vars, *item, span));
             }
             env.engine.tuple_use(uses, span)
         }
         Canonical::List { item } => {
-            let item_use = canonical_use(env, canon, vars, *item, span.clone());
+            let item_use = canonical_use(env, canon, vars, *item, span);
             env.engine.list_use(item_use, 0, None, span)
         }
         Canonical::Func { pattern, ret } => {
-            let pattern_v = canonical_value(env, canon, vars, *pattern, span.clone());
-            let ret_u = canonical_use(env, canon, vars, *ret, span.clone());
+            let pattern_v = canonical_value(env, canon, vars, *pattern, span);
+            let ret_u = canonical_use(env, canon, vars, *ret, span);
             env.engine.func_use(pattern_v, ret_u, span)
         }
         Canonical::Struct { fields } => {
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
-                let use_ = canonical_use(env, canon, vars, *id, span.clone());
+                let use_ = canonical_use(env, canon, vars, *id, span);
                 uses.push((name.clone(), use_));
             }
             env.engine.obj_use(uses, span)
         }
         &Canonical::Reference { read, write } => {
-            let read = read.map(|read| canonical_use(env, canon, vars, read, span.clone()));
-            let write = write.map(|write| canonical_value(env, canon, vars, write, span.clone()));
+            let read = read.map(|read| canonical_use(env, canon, vars, read, span));
+            let write = write.map(|write| canonical_value(env, canon, vars, write, span));
             env.engine.reference_use(write, read, span)
         }
     }

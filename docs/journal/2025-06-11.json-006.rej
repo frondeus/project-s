@@ -11,14 +11,14 @@
  ```json
 -3.0
 +Error: Unreadable pattern: Expected keyword or list, found: Symbol("obj/con")
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
 +───╯
 +
  ```

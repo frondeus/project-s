@@ -46,7 +46,7 @@ Like vertical stack
   * [ ] import
   * [/] Ascription
     * [ ] Or
-    * [ ] Recursive
+    * [x] Recursive
     * [ ] Applicable
   * [ ] Application
      * [x] Tuples

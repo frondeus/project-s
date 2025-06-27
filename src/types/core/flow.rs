@@ -17,8 +17,8 @@ impl TypeCheckerCore {
                             rhs_head,
                             lhs,
                             rhs,
-                            lhs_span,
-                            rhs_span,
+                            *lhs_span,
+                            *rhs_span,
                             &mut pending_edges,
                             diagnostics,
                         );
@@ -35,8 +35,8 @@ impl TypeCheckerCore {
         rhs: &UTypeHead,
         lhs_id: ID,
         rhs_id: ID,
-        lhs_span: &Span,
-        rhs_span: &Span,
+        lhs_span: Span,
+        rhs_span: Span,
         out: &mut Vec<(Value, Use)>,
         diagnostics: &mut Diagnostics,
     ) {
@@ -56,10 +56,7 @@ impl TypeCheckerCore {
                     } else if let Some(proto) = proto {
                         out.push((*proto, Use(rhs_id)));
                     } else {
-                        diagnostics.add(
-                            lhs_span.clone(),
-                            format!("Object has no field: {}", field_name),
-                        );
+                        diagnostics.add(lhs_span, format!("Object has no field: {}", field_name));
                     }
                 }
             }
@@ -87,15 +84,12 @@ impl TypeCheckerCore {
             ) => {
                 out.push((args, index_use));
                 let Some(index) = index else {
-                    diagnostics.add(
-                        lhs_span.clone(),
-                        "Expected int literal to access tuple element",
-                    );
+                    diagnostics.add(lhs_span, "Expected int literal to access tuple element");
                     return;
                 };
                 if index >= items.len() {
                     diagnostics.add(
-                        lhs_span.clone(),
+                        lhs_span,
                         format!(
                             "Tuple index out of bounds: {} expected {}",
                             index,
@@ -125,7 +119,7 @@ impl TypeCheckerCore {
                 },
             ) => {
                 let Some(field) = field.as_ref() else {
-                    diagnostics.add(rhs_span.clone(), "Expected field name");
+                    diagnostics.add(rhs_span, "Expected field name");
                     return;
                 };
 
@@ -135,7 +129,7 @@ impl TypeCheckerCore {
                 } else if let Some(proto) = proto {
                     out.push((*proto, Use(rhs_id)));
                 } else {
-                    diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
+                    diagnostics.add(rhs_span, format!("Undefined field: {}", field));
                 }
             }
             (
@@ -145,7 +139,7 @@ impl TypeCheckerCore {
                 },
             ) => match fields.get(field) {
                 None => {
-                    diagnostics.add(rhs_span.clone(), format!("Undefined field: {}", field));
+                    diagnostics.add(rhs_span, format!("Undefined field: {}", field));
                 }
                 Some(field_ty) => {
                     out.push((*field_ty, field_use));
@@ -161,7 +155,7 @@ impl TypeCheckerCore {
             ) => {
                 if items.len() < min_len {
                     diagnostics.add(
-                        lhs_span.clone(),
+                        lhs_span,
                         format!(
                             "Wrong number of arguments: {} expected {}",
                             items.len(),
@@ -172,7 +166,7 @@ impl TypeCheckerCore {
                 if let Some(max_len) = max_len {
                     if items.len() > max_len {
                         diagnostics.add(
-                            lhs_span.clone(),
+                            lhs_span,
                             format!(
                                 "Wrong number of arguments: {} expected {}",
                                 items.len(),
@@ -207,7 +201,7 @@ impl TypeCheckerCore {
             (VTuple { items }, UTuple { items: args }) => {
                 if items.len() != args.len() {
                     diagnostics.add(
-                        lhs_span.clone(),
+                        lhs_span,
                         format!(
                             "Wrong number of arguments: {} expected {}",
                             items.len(),
@@ -228,7 +222,7 @@ impl TypeCheckerCore {
                 },
             ) => {
                 if write.is_none() && read.is_none() {
-                    diagnostics.add(rhs_span.clone(), "Reference is not readable or writable");
+                    diagnostics.add(rhs_span, "Reference is not readable or writable");
                     return;
                 }
 
@@ -236,22 +230,22 @@ impl TypeCheckerCore {
                     if let Some(read) = read {
                         out.push((read, read_use));
                     } else {
-                        diagnostics.add(rhs_span.clone(), "Reference is not readable");
+                        diagnostics.add(rhs_span, "Reference is not readable");
                     }
                 }
                 if let Some(write_use) = write_use {
                     if let Some(write) = write {
                         out.push((write_use, write));
                     } else {
-                        diagnostics.add(rhs_span.clone(), "Reference is not writable");
+                        diagnostics.add(rhs_span, "Reference is not writable");
                     }
                 }
             }
             _ => {
                 diagnostics
-                    .add(rhs_span.clone(), "Incompatible types")
-                    .add_extra(format!("Expected {rhs}"), Some(rhs_span.clone()))
-                    .add_extra(format!("But got {lhs}"), Some(lhs_span.clone()));
+                    .add(rhs_span, "Incompatible types")
+                    .add_extra(format!("Expected {rhs}"), Some(rhs_span))
+                    .add_extra(format!("But got {lhs}"), Some(lhs_span));
             }
         }
     }

@@ -33,44 +33,44 @@
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: has?
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :left {
 +───╯
 +
  ```

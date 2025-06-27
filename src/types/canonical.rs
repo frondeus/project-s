@@ -157,7 +157,7 @@ impl Canonicalizer {
     fn canon_value(&mut self, value: core::Value, engine: &core::TypeCheckerCore) -> CanonId {
         self.recursive_with(value, |this, value| match engine.get(value) {
             TypeNode::Value(value, _) => this.canon_value_head(value, engine),
-            TypeNode::Var => this.canon_value_var(value, engine),
+            TypeNode::Var(_) => this.canon_value_var(value, engine),
             _ => unreachable!(),
         })
     }
@@ -187,7 +187,7 @@ impl Canonicalizer {
                 TypeNode::Value(value, _) => {
                     ids.push(self.canon_value_head(value, engine));
                 }
-                TypeNode::Var => {
+                TypeNode::Var(_) => {
                     // Only if it is a var without predecessors.
                     if engine.predecessors(pred_id).count() == 0 {
                         ids.push(self.add_canon(Canonical::Any(None)));
@@ -255,7 +255,7 @@ impl Canonicalizer {
     fn canon_use(&mut self, use_: core::Use, engine: &core::TypeCheckerCore) -> CanonId {
         self.recursive_with(use_, |this, use_| match engine.get(use_) {
             TypeNode::Use(use_, _) => this.canon_use_head(use_, engine),
-            TypeNode::Var => this.canon_use_var(use_, engine),
+            TypeNode::Var(_) => this.canon_use_var(use_, engine),
             _ => unreachable!(),
         })
     }

@@ -27,14 +27,14 @@ bar
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :foo (obj/condef
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :foo (obj/condef
 +───╯
 +
  ```

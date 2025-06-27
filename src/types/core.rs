@@ -5,7 +5,11 @@ use std::{
     rc::Rc,
 };
 
-use crate::{ast::ASTS, diagnostics::Diagnostics, source::Span};
+use crate::{
+    ast::ASTS,
+    diagnostics::Diagnostics,
+    source::{Span, WithSpan},
+};
 
 mod flow;
 
@@ -281,7 +285,7 @@ impl UTypeHead {
 
 #[derive(Clone)]
 pub enum TypeNode {
-    Var,
+    Var(Span),
     Value(VTypeHead, Span),
     Use(UTypeHead, Span),
 }
@@ -289,7 +293,7 @@ pub enum TypeNode {
 impl std::fmt::Debug for TypeNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Var => write!(f, "Var"),
+            Self::Var(_) => write!(f, "Var"),
             Self::Value(arg0, _) => f.debug_tuple("Value").field(arg0).finish(),
             Self::Use(arg0, _) => f.debug_tuple("Use").field(arg0).finish(),
         }
@@ -303,7 +307,7 @@ pub(crate) struct TypeCheckerCore {
 }
 
 impl TypeCheckerCore {
-    fn new_val(&mut self, val_type: VTypeHead, span: Span) -> Value {
+    fn new_val(&mut self, val_type: VTypeHead, span: impl WithSpan) -> Value {
         // if let Some(i) = self
         //     .types
         //     .iter()
@@ -315,11 +319,11 @@ impl TypeCheckerCore {
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
-        self.types.push(TypeNode::Value(val_type, span));
+        self.types.push(TypeNode::Value(val_type, span.span()));
         Value(i)
     }
 
-    fn new_use(&mut self, constraint: UTypeHead, span: Span) -> Use {
+    fn new_use(&mut self, constraint: UTypeHead, span: impl WithSpan) -> Use {
         // if let Some(i) = self
         //     .types
         //     .iter()
@@ -331,7 +335,7 @@ impl TypeCheckerCore {
 
         let i = self.r.add_node();
         assert!(i == self.types.len());
-        self.types.push(TypeNode::Use(constraint, span));
+        self.types.push(TypeNode::Use(constraint, span.span()));
         Use(i)
     }
 
@@ -361,58 +365,58 @@ impl TypeCheckerCore {
 }
 
 impl TypeCheckerCore {
-    pub fn var(&mut self) -> (Value, Use) {
+    pub fn var(&mut self, span: impl WithSpan) -> (Value, Use) {
         let i = self.r.add_node();
         assert!(i == self.types.len());
-        self.types.push(TypeNode::Var);
+        self.types.push(TypeNode::Var(span.span()));
         (Value(i), Use(i))
     }
 
-    pub fn bool(&mut self, span: Span) -> Value {
+    pub fn bool(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VBool, span)
     }
 
-    pub fn bool_use(&mut self, span: Span) -> Use {
+    pub fn bool_use(&mut self, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UBool, span)
     }
 
-    pub fn keyword(&mut self, span: Span) -> Value {
+    pub fn keyword(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VKeyword, span)
     }
 
-    pub fn keyword_use(&mut self, span: Span) -> Use {
+    pub fn keyword_use(&mut self, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UKeyword, span)
     }
 
-    pub fn string(&mut self, span: Span) -> Value {
+    pub fn string(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VString, span)
     }
 
-    pub fn string_use(&mut self, span: Span) -> Use {
+    pub fn string_use(&mut self, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UString, span)
     }
 
-    pub fn number(&mut self, span: Span) -> Value {
+    pub fn number(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VNumber, span)
     }
 
-    pub fn number_use(&mut self, span: Span) -> Use {
+    pub fn number_use(&mut self, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UNumber, span)
     }
 
-    pub fn error(&mut self, span: Span) -> Value {
+    pub fn error(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VError, span)
     }
 
-    pub fn error_use(&mut self, span: Span) -> Use {
+    pub fn error_use(&mut self, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UError, span)
     }
 
-    pub fn func(&mut self, pattern: Use, ret: Value, span: Span) -> Value {
+    pub fn func(&mut self, pattern: Use, ret: Value, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VFunc { pattern, ret }, span)
     }
 
-    pub fn func_use(&mut self, pattern: Value, ret: Use, span: Span) -> Use {
+    pub fn func_use(&mut self, pattern: Value, ret: Use, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UFunc { pattern, ret }, span)
     }
 
@@ -422,9 +426,10 @@ impl TypeCheckerCore {
         ret: Use,
         field: (Option<String>, Use),
         index: (Option<usize>, Use),
-        span: Span,
+        args_span: impl WithSpan,
+        span: impl WithSpan,
     ) -> Use {
-        let args = self.tuple(args, span.clone());
+        let args = self.tuple(args, args_span);
         self.new_use(
             UTypeHead::UApplication {
                 args,
@@ -436,18 +441,18 @@ impl TypeCheckerCore {
         )
     }
 
-    pub fn list(&mut self, item: Value, span: Span) -> Value {
+    pub fn list(&mut self, item: Value, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VList { item }, span)
     }
 
-    pub fn tuple(&mut self, items: Vec<Value>, span: Span) -> Value {
+    pub fn tuple(&mut self, items: Vec<Value>, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VTuple { items }, span)
     }
 
-    pub fn tuple_use(&mut self, items: Vec<Use>, span: Span) -> Use {
+    pub fn tuple_use(&mut self, items: Vec<Use>, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UTuple { items }, span)
     }
-    pub fn tuple_access_use(&mut self, index: Use, span: Span) -> Use {
+    pub fn tuple_access_use(&mut self, index: Use, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UTupleAccess { index }, span)
     }
 
@@ -456,7 +461,7 @@ impl TypeCheckerCore {
         items: Use,
         min_len: usize,
         max_len: Option<usize>,
-        span: Span,
+        span: impl WithSpan,
     ) -> Use {
         self.new_use(
             UTypeHead::UList {
@@ -468,7 +473,12 @@ impl TypeCheckerCore {
         )
     }
 
-    pub fn obj(&mut self, fields: Vec<(String, Value)>, proto: Option<Value>, span: Span) -> Value {
+    pub fn obj(
+        &mut self,
+        fields: Vec<(String, Value)>,
+        proto: Option<Value>,
+        span: impl WithSpan,
+    ) -> Value {
         self.new_val(
             VTypeHead::VStruct {
                 fields: fields.into_iter().collect(),
@@ -478,7 +488,7 @@ impl TypeCheckerCore {
         )
     }
 
-    pub fn obj_use(&mut self, fields: Vec<(String, Use)>, span: Span) -> Use {
+    pub fn obj_use(&mut self, fields: Vec<(String, Use)>, span: impl WithSpan) -> Use {
         self.new_use(
             UTypeHead::UStruct {
                 fields: fields.into_iter().collect(),
@@ -486,15 +496,25 @@ impl TypeCheckerCore {
             span,
         )
     }
-    pub fn obj_field_access_use(&mut self, field: (String, Use), span: Span) -> Use {
+    pub fn obj_field_access_use(&mut self, field: (String, Use), span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UStructAccess { field }, span)
     }
 
-    pub fn reference(&mut self, write: Option<Use>, read: Option<Value>, span: Span) -> Value {
+    pub fn reference(
+        &mut self,
+        write: Option<Use>,
+        read: Option<Value>,
+        span: impl WithSpan,
+    ) -> Value {
         self.new_val(VTypeHead::VRef { write, read }, span)
     }
 
-    pub fn reference_use(&mut self, write: Option<Value>, read: Option<Use>, span: Span) -> Use {
+    pub fn reference_use(
+        &mut self,
+        write: Option<Value>,
+        read: Option<Use>,
+        span: impl WithSpan,
+    ) -> Use {
         self.new_use(UTypeHead::URef { write, read }, span)
     }
 }

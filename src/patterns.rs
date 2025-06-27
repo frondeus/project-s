@@ -1,44 +1,51 @@
 use std::collections::HashMap;
 
-use crate::ast::{ASTS, SExp, SExpId};
+use crate::{
+    ast::{ASTS, SExp, SExpId},
+    source::Span,
+};
 
 #[derive(Debug, Clone)]
 pub enum Pattern {
-    Single(String),
-    List(Vec<Pattern>),
-    Object(HashMap<String, Pattern>),
+    Single(String, Span),
+    List(Vec<Pattern>, Span),
+    Object(HashMap<String, Pattern>, Span),
 }
 
 impl Pattern {
     fn is_special_case(asts: &ASTS, ident: SExpId, name: &str) -> bool {
         let ident = asts.get(ident);
-        let Some(ident) = ident.item.as_symbol() else {
+        let Some(ident) = ident.as_symbol() else {
             return false;
         };
         ident == name
     }
 
     pub fn parse(ident: SExpId, asts: &ASTS) -> Result<Self, String> {
-        match asts.get(ident).item.clone() {
-            SExp::Keyword(k) => Ok(Pattern::Single(k)),
-            SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![])),
+        let sexp = asts.get(ident).clone();
+        let span = sexp.span;
+        match sexp.inner() {
+            SExp::Keyword(k) => Ok(Pattern::Single(k, span)),
+            SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![], span)),
             SExp::List(items) => {
                 let first = items[0];
                 if Self::is_special_case(asts, first, "obj/struct") {
                     let mut patterns = HashMap::new();
                     let mut items = items.into_iter().skip(1).peekable();
                     while let Some(item) = items.next() {
-                        let Some(key) = asts.get(item).item.as_keyword() else {
+                        let key = asts.get(item);
+                        let key_span = key.span;
+                        let Some(key) = key.as_keyword() else {
                             return Err(format!("Expected keyword, found: {:?}", asts.fmt(item)));
                         };
 
                         if let Some(next) = items.peek() {
                             let next = asts.get(*next);
-                            match &next.item {
+                            match &**next {
                                 SExp::Symbol(renamed) => {
                                     patterns.insert(
                                         key.to_owned(),
-                                        Pattern::Single(renamed.to_owned()),
+                                        Pattern::Single(renamed.to_owned(), next.span),
                                     );
                                     items.next();
                                     continue;
@@ -51,10 +58,10 @@ impl Pattern {
                                 }
                             }
                         }
-                        patterns.insert(key.to_owned(), Pattern::Single(key.to_owned()));
+                        patterns.insert(key.to_owned(), Pattern::Single(key.to_owned(), key_span));
                     }
 
-                    return Ok(Pattern::Object(patterns));
+                    return Ok(Pattern::Object(patterns, span));
                 }
 
                 let mut patterns = vec![];
@@ -62,7 +69,7 @@ impl Pattern {
                     let pattern = Self::parse(item, asts)?;
                     patterns.push(pattern);
                 }
-                Ok(Pattern::List(patterns))
+                Ok(Pattern::List(patterns, span))
             }
             ident => Err(format!("Expected keyword or list, found: {:?}", ident)),
         }

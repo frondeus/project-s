@@ -13,14 +13,14 @@
  ```json
 -4.0
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
 +───╯
 +
  ```

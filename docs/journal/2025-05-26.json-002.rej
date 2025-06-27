@@ -42,29 +42,29 @@
 -```
 +````json
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :add-obj (macro (:key :value)
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :add-obj (macro (:key :value)
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :add-obj (macro (:key :value)
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :add-obj (macro (:key :value)
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (let :add-obj (macro (:key :value)
 +───╯
 +Error: Undefined variable: has?
 +   ╭─[ <input>:2:9 ]

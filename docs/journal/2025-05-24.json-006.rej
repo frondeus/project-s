@@ -17,9 +17,9 @@
 -  "surname": "Surname"
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (struct
 +───╯
 +
  ```

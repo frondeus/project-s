@@ -13,9 +13,9 @@ use itertools::Itertools;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
-    diagnostics::Diagnostics,
+    diagnostics::{Diagnostics, SExpDiag},
     patterns::Pattern,
-    source::Span,
+    source::{Sources, Span, WithSpan},
 };
 
 mod ascription;
@@ -32,38 +32,20 @@ pub struct TypeEnv {
 }
 
 impl TypeEnv {
-    pub fn with_prelude(self) -> Self {
+    pub fn with_prelude(self, sources: &mut Sources) -> Self {
         let mut env = self;
         use builder::canon::*;
 
-        // env.envs.set(
-        //     "list",
-        //     core::Scheme::Polymorphic(Rc::new(move |env, _asts, diagnostics| {
-        //         env.envs.push();
-        //         let prelude_span = Span::default();
-        //         let pattern_bound =
-        //             rest_pattern(prelude_span.clone(), any_use()).build(env, diagnostics);
-        //         let pattern_value = env.envs.get("args").unwrap();
-        //         let pattern_value = pattern_value.as_mono().unwrap();
-        //         env.envs.pop();
+        let builtin = sources.add("<builtin>", "");
+        let builtin = Span::new_empty(builtin);
 
-        //         env.engine
-        //             .func(pattern_bound, pattern_value, prelude_span.clone())
-        //     })),
-        // );
-        env.with_poly("list", || func(list(any(0)), list(any(0))), Span::default());
-        env.with_poly("tuple", || func(any(0), any(0)), Span::default());
+        env.with_poly("list", || func(list(any(0)), list(any(0))), builtin);
+        env.with_poly("tuple", || func(any(0), any(0)), builtin);
 
-        env.with_mono("+", func(list(number()), number()), Span::default());
-        env.with_mono("-", func(list(number()), number()), Span::default());
-        env.with_mono(">", func((number(), number()), bool()), Span::default());
-        env.with_poly("print", || func(list(any(None)), number()), Span::default());
-
-        // env.with_poly(
-        //     "set",
-        //     || func((reference(any(0)), any(1)), any(1)),
-        //     Span::default(),
-        // );
+        env.with_mono("+", func(list(number()), number()), builtin);
+        env.with_mono("-", func(list(number()), number()), builtin);
+        env.with_mono(">", func((number(), number()), bool()), builtin);
+        env.with_poly("print", || func(list(any(None)), number()), builtin);
 
         let empty_struct = Canonical::Struct { fields: vec![] };
         let empty_struct_ref = reference(Some(empty_struct.clone()), Some(empty_struct));
@@ -71,12 +53,12 @@ impl TypeEnv {
         env.with_mono(
             "obj/insert",
             func((empty_struct_ref, keyword(), any(None)), ()),
-            Span::default(),
+            builtin,
         );
         // TODO: that is not fully correct. We want to have type
         // (Con<T0>) -> T0
         //    | (T0) -> T0
-        env.with_mono("obj/construct-or", func((any(0),), any(0)), Span::default());
+        env.with_mono("obj/construct-or", func((any(0),), any(0)), builtin);
         env
     }
 
@@ -89,7 +71,7 @@ impl TypeEnv {
         self.envs.set(
             name,
             core::Scheme::Polymorphic(Rc::new(move |env, _asts, diagnostics| {
-                v_canonical(value(), span.clone()).build(env, diagnostics)
+                v_canonical(value(), span).build(env, diagnostics)
             })),
         );
     }
@@ -103,16 +85,16 @@ impl TypeEnv {
         self.engine.tuple(vec![], span)
     }
 
-    fn todo(&mut self) -> core::Value {
-        let (ret_type, _) = self.engine.var();
+    fn todo(&mut self, span: impl WithSpan) -> core::Value {
+        let (ret_type, _) = self.engine.var(span);
         ret_type
     }
 
     #[allow(clippy::result_large_err)]
     pub fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
         let sexp = asts.get(id);
-        let span = sexp.span.clone();
-        match &sexp.item {
+        let span = sexp.span;
+        match &**sexp {
             SExp::Number(_) => self.engine.number(span),
             SExp::String(_) => self.engine.string(span),
             SExp::Bool(_) => self.engine.bool(span),
@@ -126,8 +108,8 @@ impl TypeEnv {
                     }
                 },
                 None => {
-                    diagnostics.add(span.clone(), format!("Undefined variable: {}", symbol));
-                    self.engine.error(span)
+                    diagnostics.add_sexp(asts, id, format!("Undefined variable: {}", symbol));
+                    self.engine.error(sexp)
                 }
             },
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
@@ -135,7 +117,7 @@ impl TypeEnv {
                 [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
                     let mut builder = CanonicalBuilder::default();
                     let _ty = Self::parse_type(asts, *ty, &mut builder, diagnostics);
-                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span.clone(), diagnostics);
+                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span, diagnostics);
                     let value = self.check(asts, *value, diagnostics);
                     self.engine.flow(value, t_u, diagnostics);
                     t_v
@@ -147,9 +129,9 @@ impl TypeEnv {
                     self.engine.flow(cond_type, bound, diagnostics);
 
                     let then_type = self.check(asts, *then_branch, diagnostics);
-                    let else_type = self.null(span.clone());
+                    let else_type = self.null(span);
 
-                    let (merged, merged_bound) = self.engine.var();
+                    let (merged, merged_bound) = self.engine.var(Self::span_of(*then_branch, asts));
                     self.engine.flow(then_type, merged_bound, diagnostics);
                     self.engine.flow(else_type, merged_bound, diagnostics);
 
@@ -166,23 +148,27 @@ impl TypeEnv {
                     let then_type = self.check(asts, *then_branch, diagnostics);
                     let else_type = self.check(asts, *else_branch, diagnostics);
 
-                    let (merged, merged_bound) = self.engine.var();
+                    let (merged, merged_bound) = self.engine.var(Self::span_of(*then_branch, asts));
                     self.engine.flow(then_type, merged_bound, diagnostics);
                     self.engine.flow(else_type, merged_bound, diagnostics);
 
                     merged
                 }
-                [first, pattern, body] if Self::is_symbol(asts, *first, "fn") => {
-                    let pattern = match Pattern::parse(*pattern, asts) {
+                [first, pattern_id, body] if Self::is_symbol(asts, *first, "fn") => {
+                    let pattern = match Pattern::parse(*pattern_id, asts) {
                         Ok(pattern) => pattern,
                         Err(e) => {
-                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
-                            return self.engine.error(span);
+                            diagnostics.add_sexp(
+                                asts,
+                                *pattern_id,
+                                format!("Unreadable pattern: {}", e),
+                            );
+                            return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
                     };
 
                     self.envs.push();
-                    let pattern_bound = self.check_pattern(span.clone(), pattern);
+                    let pattern_bound = self.check_pattern(pattern);
                     // let pattern_must_be_list = self.engine.list_use
 
                     let body_type = self.check(asts, *body, diagnostics);
@@ -190,18 +176,22 @@ impl TypeEnv {
 
                     self.engine.func(pattern_bound, body_type, span)
                 }
-                [first, pattern, _captured, body] if Self::is_symbol(asts, *first, "cl") => {
+                [first, pattern_id, _captured, body] if Self::is_symbol(asts, *first, "cl") => {
                     //For now lets ignore captured...
-                    let pattern = match Pattern::parse(*pattern, asts) {
+                    let pattern = match Pattern::parse(*pattern_id, asts) {
                         Ok(pattern) => pattern,
                         Err(e) => {
-                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
-                            return self.engine.error(span);
+                            diagnostics.add_sexp(
+                                asts,
+                                *pattern_id,
+                                format!("Unreadable pattern: {}", e),
+                            );
+                            return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
                     };
 
                     self.envs.push();
-                    let pattern_bound = self.check_pattern(span.clone(), pattern);
+                    let pattern_bound = self.check_pattern(pattern);
                     // let pattern_must_be_list = self.engine.list_use
 
                     let body_type = self.check(asts, *body, diagnostics);
@@ -218,61 +208,55 @@ impl TypeEnv {
                     self.envs.pop();
                     last_type
                 }
-                [first, pattern, value] if Self::is_symbol(asts, *first, "let") => {
-                    let pattern = match Pattern::parse(*pattern, asts) {
+                [first, pattern_id, value] if Self::is_symbol(asts, *first, "let") => {
+                    let pattern = match Pattern::parse(*pattern_id, asts) {
                         Ok(pattern) => pattern,
                         Err(e) => {
-                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
-                            return self.engine.error(span);
+                            diagnostics.add_sexp(
+                                asts,
+                                *pattern_id,
+                                format!("Unreadable pattern: {}", e),
+                            );
+                            return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
                     };
 
                     let value = *value;
 
-                    self.polymorphic_check_pattern(
-                        span.clone(),
-                        pattern,
-                        value,
-                        asts,
-                        false,
-                        diagnostics,
-                    );
+                    self.polymorphic_check_pattern(pattern, value, asts, false, diagnostics);
 
-                    self.null(span)
+                    self.null(Self::span_of(*first, asts))
                 }
-                [first, pattern, value] if Self::is_symbol(asts, *first, "let-rec") => {
-                    let pattern = match Pattern::parse(*pattern, asts) {
+                [first, pattern_id, value] if Self::is_symbol(asts, *first, "let-rec") => {
+                    let pattern = match Pattern::parse(*pattern_id, asts) {
                         Ok(pattern) => pattern,
                         Err(e) => {
-                            diagnostics.add(span.clone(), format!("Unreadable pattern: {}", e));
-                            return self.engine.error(span);
+                            diagnostics.add_sexp(
+                                asts,
+                                *pattern_id,
+                                format!("Unreadable pattern: {}", e),
+                            );
+                            return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
                     };
 
                     let value = *value;
 
-                    self.polymorphic_check_pattern(
-                        span.clone(),
-                        pattern,
-                        value,
-                        asts,
-                        true,
-                        diagnostics,
-                    );
+                    self.polymorphic_check_pattern(pattern, value, asts, true, diagnostics);
 
-                    self.null(span)
+                    self.null(Self::span_of(*first, asts))
                 }
                 [first, _err] if Self::is_symbol(asts, *first, "error") => self.engine.error(span),
                 [first, _captured, rest] if Self::is_symbol(asts, *first, "thunk") => {
                     self.check(asts, *rest, diagnostics)
                 }
-                [first, ..] if Self::is_symbol(asts, *first, "macro") => self.todo(),
+                [first, ..] if Self::is_symbol(asts, *first, "macro") => self.todo(span),
                 [first, ..] if Self::is_symbols(asts, *first, &["quote", "quasiquote"]) => {
-                    self.todo()
+                    self.todo(span)
                 }
                 [first, value] if Self::is_symbol(asts, *first, "ref") => {
                     let value_type = self.check(asts, *value, diagnostics);
-                    let (read, write) = self.engine.var();
+                    let (read, write) = self.engine.var(span);
                     self.engine.flow(value_type, write, diagnostics);
                     self.engine.reference(Some(write), Some(read), span)
                 }
@@ -282,8 +266,8 @@ impl TypeEnv {
                         let key = match Self::as_keyword(asts, *key) {
                             Some(key) => key,
                             None => {
-                                diagnostics.add(span.clone(), "Expected keyword");
-                                return self.engine.error(span);
+                                diagnostics.add_sexp(asts, *key, "Expected keyword");
+                                return self.engine.error(Self::span_of(*key, asts));
                             }
                         };
                         let value = self.check(asts, *value, diagnostics);
@@ -298,8 +282,8 @@ impl TypeEnv {
                         let key = match Self::as_keyword(asts, *key) {
                             Some(key) => key,
                             None => {
-                                diagnostics.add(span.clone(), "Expected keyword");
-                                return self.engine.error(span);
+                                diagnostics.add_sexp(asts, *key, "Expected keyword");
+                                return self.engine.error(Self::span_of(*key, asts));
                             }
                         };
                         let value = self.check(asts, *value, diagnostics);
@@ -307,10 +291,14 @@ impl TypeEnv {
                     }
                     self.engine.obj(fields, Some(proto), span)
                 }
-                [first, ref_mut, value] if Self::is_symbol(asts, *first, "set") => {
+                [first, ref_mut, value_id] if Self::is_symbol(asts, *first, "set") => {
                     let ref_mut = self.check(asts, *ref_mut, diagnostics);
-                    let value = self.check(asts, *value, diagnostics);
-                    let bound = self.engine.reference_use(Some(value), None, span);
+                    let value = self.check(asts, *value_id, diagnostics);
+                    let bound = self.engine.reference_use(
+                        Some(value),
+                        None,
+                        Self::span_of(*value_id, asts),
+                    );
                     self.engine.flow(ref_mut, bound, diagnostics);
                     value
                 }
@@ -321,32 +309,31 @@ impl TypeEnv {
                         .map(|arg| self.check(asts, *arg, diagnostics))
                         .collect::<Vec<_>>();
 
-                    let (ret_type, ret_bound) = self.engine.var();
+                    let (ret_type, ret_bound) = self.engine.var(span);
 
-                    let index_use = u_canonical((number(),), span.clone()).build(self, diagnostics);
-                    let field_use =
-                        u_canonical((keyword(),), span.clone()).build(self, diagnostics);
+                    let index_use = u_canonical((number(),), span).build(self, diagnostics);
+                    let field_use = u_canonical((keyword(),), span).build(self, diagnostics);
 
                     let first_arg_index = args
                         .first()
-                        .and_then(|arg| match asts.get(*arg).item {
+                        .and_then(|arg| match &**asts.get(*arg) {
                             SExp::Number(idx) => Some(idx),
                             _ => None,
                         })
-                        .map(|idx| idx as usize);
+                        .map(|idx| *idx as usize);
 
-                    let first_arg_keyword =
-                        args.first().and_then(|arg| match &asts.get(*arg).item {
-                            SExp::Keyword(s) => Some(s.clone()),
-                            _ => None,
-                        });
+                    let first_arg_keyword = args.first().and_then(|arg| match &**asts.get(*arg) {
+                        SExp::Keyword(s) => Some(s.clone()),
+                        _ => None,
+                    });
 
                     let bound = self.engine.application_use(
                         args_types,
                         ret_bound,
                         (first_arg_keyword, field_use),
                         (first_arg_index, index_use),
-                        span.clone(),
+                        span,
+                        span,
                     );
                     self.engine.flow(callee_type, bound, diagnostics);
                     ret_type
@@ -358,12 +345,11 @@ impl TypeEnv {
 
     fn span_of(sexp: SExpId, asts: &ASTS) -> Span {
         let sexp = asts.get(sexp);
-        sexp.span.clone()
+        sexp.span
     }
 
     fn polymorphic_check_pattern(
         &mut self,
-        span: Span,
         pattern: Pattern,
         value: SExpId,
         asts: &ASTS,
@@ -372,8 +358,8 @@ impl TypeEnv {
     ) {
         let bound = match pattern {
             // If its not a value, we cant generalize it so we treat is as monomorphic scheme.
-            _ if !Self::is_expression_value(value, asts) => self.check_pattern(span, pattern),
-            Pattern::Single(key) => {
+            _ if !Self::is_expression_value(value, asts) => self.check_pattern(pattern),
+            Pattern::Single(key, span) => {
                 let inner_key = key.clone();
                 self.envs.set(
                     &key,
@@ -381,7 +367,7 @@ impl TypeEnv {
                         if !recursive {
                             this.check(asts, value, diagnostics)
                         } else {
-                            let (temp_type, temp_bound) = this.engine.var();
+                            let (temp_type, temp_bound) = this.engine.var(span);
                             this.envs
                                 .set(&inner_key, core::Scheme::Monomorphic(temp_type));
 
@@ -393,19 +379,19 @@ impl TypeEnv {
                 );
                 return;
             }
-            Pattern::List(patterns) => {
+            Pattern::List(patterns, span) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
-                    let bound = self.check_pattern(span.clone(), pattern);
+                    let bound = self.check_pattern(pattern);
                     bounds.push(bound);
                 }
 
                 self.engine.tuple_use(bounds, span)
             }
-            Pattern::Object(patterns) => {
+            Pattern::Object(patterns, span) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
-                    let bound = self.check_pattern(span.clone(), pattern);
+                    let bound = self.check_pattern(pattern);
                     bounds.push((key, bound));
                 }
 
@@ -416,26 +402,26 @@ impl TypeEnv {
         self.engine.flow(value, bound, diagnostics);
     }
 
-    fn check_pattern(&mut self, span: Span, pattern: Pattern) -> core::Use {
+    fn check_pattern(&mut self, pattern: Pattern) -> core::Use {
         match pattern {
-            Pattern::Single(key) => {
-                let (value, bound) = self.engine.var();
+            Pattern::Single(key, span) => {
+                let (value, bound) = self.engine.var(span);
                 self.envs.set(&key, core::Scheme::Monomorphic(value));
                 bound
             }
-            Pattern::List(patterns) => {
+            Pattern::List(patterns, span) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
-                    let bound = self.check_pattern(span.clone(), pattern);
+                    let bound = self.check_pattern(pattern);
                     bounds.push(bound);
                 }
 
                 self.engine.tuple_use(bounds, span)
             }
-            Pattern::Object(patterns) => {
+            Pattern::Object(patterns, span) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
-                    let bound = self.check_pattern(span.clone(), pattern);
+                    let bound = self.check_pattern(pattern);
                     bounds.push((key, bound));
                 }
 
@@ -450,7 +436,7 @@ impl TypeEnv {
     /// For now, we say that the expression is a value if it does not contain any function
     /// calls.
     fn is_expression_value(sexp: SExpId, asts: &ASTS) -> bool {
-        match &asts.get(sexp).item {
+        match &**asts.get(sexp) {
             SExp::Number(_)
             | SExp::String(_)
             | SExp::Bool(_)
@@ -470,7 +456,7 @@ impl TypeEnv {
 
     fn is_symbols(asts: &ASTS, sexp: SExpId, names: &[&str]) -> bool {
         let sexp = asts.get(sexp);
-        match &sexp.item {
+        match &**sexp {
             SExp::Symbol(symbol) => names.contains(&symbol.as_str()),
             _ => false,
         }
@@ -478,7 +464,7 @@ impl TypeEnv {
 
     fn is_symbol(asts: &ASTS, sexp: SExpId, name: &str) -> bool {
         let sexp = asts.get(sexp);
-        match &sexp.item {
+        match &**sexp {
             SExp::Symbol(symbol) => symbol == name,
             _ => false,
         }
@@ -486,7 +472,7 @@ impl TypeEnv {
 
     fn as_keyword(asts: &ASTS, sexp: SExpId) -> Option<&str> {
         let sexp = asts.get(sexp);
-        match &sexp.item {
+        match &**sexp {
             SExp::Keyword(s) => Some(s),
             _ => None,
         }
@@ -505,7 +491,7 @@ impl TypeEnv {
 
         for (id, node) in self.engine.iter() {
             match node {
-                core::TypeNode::Var => (),
+                core::TypeNode::Var(_) => (),
                 core::TypeNode::Value(vtype_head, _) => {
                     for to in vtype_head.ids() {
                         writeln!(buffer, "N{} -> N{} [color=blue, style=dotted];", id, to).unwrap();
@@ -586,7 +572,7 @@ impl Envs {
 #[allow(clippy::print_stderr)]
 #[cfg(test)]
 mod tests {
-    use crate::{ast::ASTS, macro_expansion::MacroExpansionPass, s_std::prelude};
+    use crate::{ast::ASTS, macro_expansion::MacroExpansionPass, s_std::prelude, source::Sources};
 
     use super::{canonical::Canonicalizer, *};
 
@@ -595,18 +581,21 @@ mod tests {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input, "<input>").expect("Failed to parse");
+            let (mut sources, source_id) = Sources::single("<input>", input);
+            let ast = asts
+                .parse(source_id, sources.get(source_id))
+                .expect("Failed to parse");
 
             let root = ast.root_id().unwrap();
 
-            let mut env = TypeEnv::default().with_prelude();
+            let mut env = TypeEnv::default().with_prelude(&mut sources);
 
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
             let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
             let infered = env.check(&asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
-                return diagnostics.pretty_print();
+                return diagnostics.pretty_print(&sources);
             }
 
             env.to_string(infered)
@@ -617,9 +606,12 @@ mod tests {
     fn type_dot() -> test_runner::Result {
         test_runner::test_snapshots("docs/", "graphviz", |input, _deps, args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input, "<input>").expect("Failed to parse");
+            let (mut sources, source_id) = Sources::single("<input>", input);
+            let ast = asts
+                .parse(source_id, sources.get(source_id))
+                .expect("Failed to parse");
             let root = ast.root_id().unwrap();
-            let mut env = TypeEnv::default().with_prelude();
+            let mut env = TypeEnv::default().with_prelude(&mut sources);
 
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();

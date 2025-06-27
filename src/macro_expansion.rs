@@ -4,10 +4,10 @@ use std::collections::BTreeMap;
 use crate::{
     ast::{ASTS, SExpId},
     builder::string,
-    diagnostics::Diagnostics,
+    diagnostics::{Diagnostics, SExpDiag},
     patterns::Pattern,
     runtime::Macro,
-    source::{Span, WithSpan},
+    source::{Span, Spanned},
     visitor::{Visitor, VisitorHelper},
 };
 
@@ -61,13 +61,13 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
     fn visit_list(&mut self, mut list: crate::visitor::List) -> Option<SExpId> {
         if self.helper.is_special_form(&list, "macro") {
             self.diagnostics
-                .add(list.span.clone(), "Macro is forbidden in this context");
+                .add(&list, "Macro is forbidden in this context");
             return self
                 .helper
                 .then_assemble(("error", string("Macro is forbidden in this context")));
         }
         if self.helper.is_special_form(&list, "let") {
-            if let &[_let, pattern, value] = &list.list[..] {
+            if let &[_let, pat_id, value] = &list.list[..] {
                 let mut let_visitor = LetVisitor {
                     helper: self.helper,
                     envs: self.envs,
@@ -76,13 +76,15 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                 };
                 let res = let_visitor.visit_sexp(value);
                 if let Some(macro_) = let_visitor.macro_def {
-                    let (pattern, p_span) =
-                        parse_pattern(pattern, self.helper.asts, self.diagnostics)?;
-                    let pattern = if let Pattern::Single(p) = pattern {
+                    let pattern = parse_pattern(pat_id, self.helper.asts, self.diagnostics)?;
+                    let pattern = if let Pattern::Single(p, _span) = pattern {
                         p
                     } else {
-                        self.diagnostics
-                            .add(p_span, "Macros can be used only with simplest pattern");
+                        self.diagnostics.add_sexp(
+                            self.helper.asts,
+                            pat_id,
+                            "Macros can be used only with simplest pattern",
+                        );
                         return None;
                     };
                     self.envs.set(&pattern, macro_);
@@ -90,7 +92,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                 match res {
                     None => return None,
                     Some(id) => {
-                        return self.helper.then_assemble(("let", pattern, id));
+                        return self.helper.then_assemble(("let", pat_id, id));
                     }
                 }
             }
@@ -106,7 +108,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                     is_top: true,
                     args: &list.list[1..],
                 }
-                .evaluate(list.span.clone())?;
+                .evaluate(list.span)?;
 
                 return Some(self.visit_sexp(result).unwrap_or(result));
             }
@@ -123,12 +125,11 @@ struct LetVisitor<'a, 'b> {
     macro_def: Option<Macro>,
 }
 
-fn parse_pattern(pattern: SExpId, ast: &ASTS, diag: &mut Diagnostics) -> Option<(Pattern, Span)> {
-    let span = ast.get(pattern).span.clone();
+fn parse_pattern(pattern: SExpId, ast: &ASTS, diag: &mut Diagnostics) -> Option<Pattern> {
     match Pattern::parse(pattern, ast) {
-        Ok(p) => Some((p, span)),
+        Ok(p) => Some(p),
         Err(e) => {
-            diag.add(span, e);
+            diag.add_sexp(ast, pattern, e);
             None
         }
     }
@@ -146,7 +147,7 @@ impl<'a> Visitor<'a> for LetVisitor<'a, '_> {
     fn visit_list(&mut self, list: crate::visitor::List) -> Option<SExpId> {
         if self.helper.is_special_form(&list, "macro") {
             if let &[_macro, pattern, body] = &list.list[..] {
-                let (pattern, _) = parse_pattern(pattern, self.helper.asts, self.diagnostics)?;
+                let pattern = parse_pattern(pattern, self.helper.asts, self.diagnostics)?;
 
                 self.macro_def = Some(Macro::Lisp { body, pattern });
             }
@@ -177,14 +178,14 @@ impl MacroEvaluator<'_, '_> {
         diag: &mut Diagnostics,
         span: Span,
     ) -> Option<Vec<String>> {
-        let Pattern::List(list) = pattern else {
+        let Pattern::List(list, span) = pattern else {
             diag.add(span, "Macro is using non-list pattern matching");
             return None;
         };
         let mut args = vec![];
 
         for el in list {
-            let Pattern::Single(el) = el else {
+            let Pattern::Single(el, _span) = el else {
                 diag.add(span, "Macro is using nested pattern matching");
                 return None;
             };
@@ -197,7 +198,7 @@ impl MacroEvaluator<'_, '_> {
     pub fn evaluate(mut self, span: Span) -> Option<SExpId> {
         match &self.macro_ {
             Macro::Lisp { pattern, body } => {
-                let signature = Self::pattern_to_list(pattern, self.diag, span.clone())?;
+                let signature = Self::pattern_to_list(pattern, self.diag, span)?;
                 for (sig, &arg) in signature.into_iter().zip(self.args) {
                     self.env.insert(sig, arg);
                 }
@@ -237,18 +238,18 @@ impl<'a> Visitor<'a> for MacroEvaluator<'a, '_> {
     }
 
     fn visit_list(&mut self, list: crate::visitor::List) -> Option<SExpId> {
-        self.diag.add(list.span, "Expected quote or unquote");
+        self.diag.add(list, "Expected quote or unquote");
         None
     }
 
-    fn visit_atom(&mut self, id: WithSpan<SExpId>) -> Option<SExpId> {
-        let item = self.helper.get_symbol(id.item);
+    fn visit_atom(&mut self, id: Spanned<SExpId>) -> Option<SExpId> {
+        let item = self.helper.get_symbol(id.inner());
 
         if let Some(item) = item.and_then(|item| self.env.get(item)) {
             return Some(*item);
         }
 
-        self.diag.add(id.span, "Expected quote or unquote");
+        self.diag.add(id, "Expected quote or unquote");
 
         None
     }
@@ -342,7 +343,7 @@ impl Envs {
 
 #[cfg(test)]
 mod tests {
-    use crate::s_std::prelude;
+    use crate::{s_std::prelude, source::Sources};
 
     use super::*;
 
@@ -351,7 +352,8 @@ mod tests {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", "macro", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let ast = asts.parse(input, "<input>").unwrap();
+            let (sources, source_id) = Sources::single("<input>", input);
+            let ast = asts.parse(source_id, sources.get(source_id)).unwrap();
             let root_id = ast.root_id().unwrap();
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
@@ -359,7 +361,7 @@ mod tests {
                 MacroExpansionPass::pass(&mut asts, root_id, &mut diagnostics, &[prelude]);
             let output = asts.fmt(new_root);
             if diagnostics.has_errors() {
-                return diagnostics.pretty_print();
+                return diagnostics.pretty_print(&sources);
             }
             format!("{output:#}")
         })

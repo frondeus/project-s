@@ -29,6 +29,8 @@ pub mod api;
 pub mod runtime;
 pub use runtime::s_std;
 
+use crate::source::Sources;
+
 pub mod lsp;
 
 pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
@@ -40,9 +42,14 @@ pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, 
     (root, diagnostics)
 }
 
-pub fn process_with_typechk(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
+pub fn process_with_typechk(
+    sources: &mut Sources,
+    asts: &mut ASTS,
+    root: SExpId,
+    envs: &[Env],
+) -> (SExpId, Diagnostics) {
     let (root, mut diagnostics) = process_ast(asts, root, envs);
-    let mut type_env = types::TypeEnv::default().with_prelude();
+    let mut type_env = types::TypeEnv::default().with_prelude(sources);
     type_env.check(asts, root, &mut diagnostics);
     (root, diagnostics)
 }

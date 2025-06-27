@@ -16,7 +16,7 @@ impl Runtime {
             .first()
             .ok_or_else(|| "Expected captured".to_string())?;
         let captured = self.asts.get(*captured);
-        let Some(captured) = captured.item.as_list() else {
+        let Some(captured) = captured.as_list() else {
             return Err("Expected list".to_string());
         };
         let captured = captured
@@ -25,13 +25,9 @@ impl Runtime {
             // .map(|s| self.asts.get(s).as_symbol().unwrap().to_string())
             .map(|s| {
                 let name = self.asts.get(s);
-                let name = name
-                    .item
-                    .as_symbol()
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| {
-                        panic!("Expected symbol, got {:?}", name);
-                    });
+                let name = name.as_symbol().map(|s| s.to_string()).unwrap_or_else(|| {
+                    panic!("Expected symbol, got {:?}", name);
+                });
                 tracing::trace!("name: {name}");
                 let val = self.eval(s);
                 tracing::trace!("val: {val:?}");

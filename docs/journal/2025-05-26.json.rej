@@ -18,14 +18,14 @@
 -  "key": 42.0
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ :1:1 ]
++   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ 
++ 1 │ (
 +───╯
 +
  ```

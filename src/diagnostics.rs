@@ -1,9 +1,15 @@
-use std::{io::BufWriter, sync::Arc};
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    io::BufWriter,
+    sync::Arc,
+};
 
 use ariadne::{Color, Label, Report};
-use itertools::Itertools;
 
-use crate::source::Span;
+use crate::{
+    ast::{ASTS, SExpId},
+    source::{SourceId, Sources, Span, WithSpan},
+};
 
 pub struct Diag {
     pub span: Span,
@@ -32,10 +38,47 @@ pub struct Diagnostics {
     pub diags: Vec<Diag>,
 }
 
+pub struct SourcesCache<'a> {
+    sources: &'a Sources,
+    cache: HashMap<SourceId, ariadne::Source<Arc<str>>>,
+}
+
+impl<'a> SourcesCache<'a> {
+    pub fn new(sources: &'a Sources) -> Self {
+        Self {
+            sources,
+            cache: HashMap::new(),
+        }
+    }
+}
+
+impl ariadne::Cache<SourceId> for SourcesCache<'_> {
+    type Storage = Arc<str>;
+
+    fn fetch(
+        &mut self,
+        id: &SourceId,
+    ) -> Result<&ariadne::Source<Self::Storage>, impl std::fmt::Debug> {
+        match self.cache.entry(*id) {
+            Entry::Occupied(entry) => Ok::<_, ()>(entry.into_mut()),
+            Entry::Vacant(entry) => {
+                let source = self.sources.get(*id);
+                let source = ariadne::Source::from(source.source.clone());
+                Ok(entry.insert(source))
+            }
+        }
+    }
+
+    fn display<'a>(&self, id: &'a SourceId) -> Option<impl std::fmt::Display + 'a> {
+        let source = self.sources.get(*id);
+        Some(source.filename.clone())
+    }
+}
+
 impl Diagnostics {
-    pub fn add(&mut self, span: Span, message: impl ToString) -> &mut Diag {
+    pub fn add(&mut self, span: impl WithSpan, message: impl ToString) -> &mut Diag {
         self.diags.push(Diag {
-            span,
+            span: span.span(),
             message: message.to_string(),
             extras: Vec::new(),
         });
@@ -46,26 +89,29 @@ impl Diagnostics {
         !self.diags.is_empty()
     }
 
-    pub fn print(self) -> String {
+    pub fn print(self, sources: &Sources) -> String {
         let mut out = String::new();
         for diag in self.diags {
-            out.push_str(&format!("{}: {}\n", diag.span.filename, diag.message));
+            let source = sources.get(diag.span.source_id);
+            out.push_str(&format!("{}: {}\n", source.filename, diag.message));
         }
         out
     }
 
-    pub fn pretty_print(&self) -> String {
-        let mut cache = ariadne::sources(
-            self.diags
-                .iter()
-                .flat_map(|d| {
-                    std::iter::once(d.span.clone())
-                        .chain(d.extras.iter().filter_map(|e| e.span.clone()))
-                })
-                .map(|span| (span.filename.clone(), span.source.clone()))
-                .unique()
-                .collect::<Vec<_>>(),
-        );
+    pub fn pretty_print(&self, sources: &Sources) -> String {
+        let mut cache = SourcesCache::new(sources);
+        // let mut cache = ariadne::sources(
+        //     sources.iter_with_id().map(|(_id, s)| (s.filename.clone(), s.source.clone())).collect::<Vec<_>>(),
+        // self.diags
+        //     .iter()
+        //     .flat_map(|d| {
+        //         std::iter::once(d.span.clone())
+        //             .chain(d.extras.iter().filter_map(|e| e.span.clone()))
+        //     })
+        //     .map(|span| (span.filename.clone(), span.source.clone()))
+        //     .unique()
+        //     .collect::<Vec<_>>(),
+        // );
         let mut out = Vec::new();
         let mut output_buf = BufWriter::new(&mut out);
 
@@ -79,12 +125,23 @@ impl Diagnostics {
     }
 }
 
+pub trait SExpDiag {
+    fn add_sexp(&mut self, asts: &ASTS, sexp: SExpId, message: impl ToString) -> &mut Diag;
+}
+
+impl SExpDiag for Diagnostics {
+    fn add_sexp(&mut self, asts: &ASTS, sexp: SExpId, message: impl ToString) -> &mut Diag {
+        let sexp = asts.get(sexp);
+        self.add(sexp, message)
+    }
+}
+
 impl ariadne::Span for Span {
-    type SourceId = Arc<str>;
+    type SourceId = SourceId;
 
     #[allow(clippy::misnamed_getters)]
     fn source(&self) -> &Self::SourceId {
-        &self.filename
+        &self.source_id
     }
 
     fn start(&self) -> usize {
@@ -98,14 +155,14 @@ impl ariadne::Span for Span {
 
 impl Diag {
     pub fn to_report(&self) -> Report<'_, Span> {
-        let mut builder = Report::build(ariadne::ReportKind::Error, self.span.clone())
+        let mut builder = Report::build(ariadne::ReportKind::Error, self.span)
             .with_message(&self.message)
-            .with_label(Label::new(self.span.clone()).with_color(Color::Red));
+            .with_label(Label::new(self.span).with_color(Color::Red));
 
         for extra in self.extras.iter() {
             if let Some(span) = &extra.span {
                 builder = builder.with_label(
-                    Label::new(span.clone())
+                    Label::new(*span)
                         .with_message(&extra.message)
                         .with_color(Color::Blue),
                 );
