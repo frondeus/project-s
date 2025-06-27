@@ -22,38 +22,38 @@
  ```json
 -15.0
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:12 ]
 +   │
-+ 1 │ (let :base {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++    ╭─[ <input>:5:9 ]
++    │
++    │ 
++────╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:7:18 ]
 +   │
-+ 1 │ (let :base {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :base {
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :base {
-+───╯
++    ╭─[ <input>:12:6 ]
++    │
++ 12 │ (((+ {:d 1 } x) :value) :a)
++────╯
 +Error: Incompatible types
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :base {
-+   │ │ 
-+   │ ╰─ Expected function
-+   │
-+   ├─[ <builtin>:1:1 ]
-+   │
-+ 1 │ 
-+   │ │ 
-+   │ ╰─ But got number
-+───╯
++    ╭─[ <input>:12:2 ]
++    │
++ 12 │ (((+ {:d 1 } x) :value) :a)
++    │             │            
++    │             ╰──────────── Expected function
++    │
++    ├─[ <builtin>:1:1 ]
++    │
++  1 │ 
++    │ │ 
++    │ ╰─ But got number
++────╯
 +
  ```
  

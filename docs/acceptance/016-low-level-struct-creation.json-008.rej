@@ -25,14 +25,14 @@
 -}
 +```json
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:2:5 ]
 +   │
-+ 1 │ (+
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:6:5 ]
 +   │
-+ 1 │ (+
++   │ 
 +───╯
 +
  ```

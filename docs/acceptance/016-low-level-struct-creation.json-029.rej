@@ -19,7 +19,7 @@
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:1:1 ]
 +   │
-+ 1 │ (obj/struct
++   ┆ 
 +───╯
 +
  ```

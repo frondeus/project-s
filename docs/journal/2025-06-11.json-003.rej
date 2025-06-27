@@ -13,7 +13,7 @@
  ```json
 -6.0
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:19 ]
 +   │
 + 1 │ (let { :a :b :c } { :a 1 :d 4 :b 2 :e 6 :c 3})
 +───╯

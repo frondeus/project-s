@@ -27,8 +27,8 @@ impl Runtime {
             SExp::Error => Value::Error("Quasiquote: AST Error".to_string()),
             SExp::List(_) => {
                 let mut new_ast = self.asts.new_ast();
-                self.traverse_unquote(&mut new_ast, id);
-                let root = new_ast.root_id().unwrap();
+                let root = self.traverse_unquote(&mut new_ast, id);
+                new_ast.set_root(root);
                 self.asts.add_ast(new_ast);
                 Value::SExp(root)
             }
@@ -48,10 +48,10 @@ impl Runtime {
                     let Some(next) = items.get(1) else {
                         todo!("Somehow return an error");
                     };
+                    let next_span = self.asts.get(*next).span;
                     let evaled = self.eval(*next);
-                    evaled.to_sexp(new_ast)
+                    evaled.to_sexp(new_ast, next_span)
                 } else {
-                    let parent = new_ast.reserve();
                     let mut result = Vec::new();
                     for item in &items {
                         result.push(self.traverse_unquote(new_ast, item));
@@ -60,8 +60,7 @@ impl Runtime {
                     //     return *id;
                     // }
                     let new_list = SExp::List(result);
-                    new_ast.set(parent, new_list, span);
-                    parent
+                    new_ast.add_node(new_list, span)
                 }
             }
             _ => *id,

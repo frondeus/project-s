@@ -1,13 +1,13 @@
 use crate::{
     ast::SExpId,
-    source::{Span, WithSpan},
+    source::{Span, Spanned, WithSpan},
 };
 
 use super::Visitor;
 
 pub struct List {
-    pub id: SExpId,
-    pub list: Vec<SExpId>,
+    pub id: Spanned<SExpId>,
+    pub list: Vec<Spanned<SExpId>>,
     pub edited: bool,
     pub span: Span,
 }
@@ -19,11 +19,11 @@ impl WithSpan for List {
 }
 
 impl List {
-    pub fn visit<'a>(self, visitor: &mut impl Visitor<'a>) -> Option<SExpId> {
+    pub fn visit<'a>(self, visitor: &mut impl Visitor<'a>) -> Option<Spanned<SExpId>> {
         visitor.visit_list(self)
     }
 
-    pub fn id(self) -> Option<SExpId> {
+    pub fn id(self) -> Option<Spanned<SExpId>> {
         if self.edited { Some(self.id) } else { None }
     }
 
@@ -35,7 +35,9 @@ impl List {
             }
         }
         if self.edited {
-            self.id = visitor.helper_mut().assemble(self.list.as_slice());
+            self.id = visitor
+                .helper_mut()
+                .assemble(self.list.as_slice(), self.span);
         }
     }
 }

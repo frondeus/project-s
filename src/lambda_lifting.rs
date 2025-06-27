@@ -5,7 +5,7 @@ use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     builder::ASTBuilder,
     patterns::Pattern,
-    source::Span,
+    source::{Span, Spanned},
 };
 
 const SPECIAL_FORMS: &[&str] = &[
@@ -171,14 +171,24 @@ impl<'a> LambdaPass<'a> {
             self.process_struct(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
         } else if self.is_symbol(first_id, "thunk") {
             let free_vars = sexp_ids[1];
-            let free_vars = self.asts.get(free_vars).as_list().unwrap().to_vec();
+            let free_vars = self
+                .asts
+                .get(free_vars)
+                .as_list()
+                .unwrap()
+                .iter()
+                .map(|fv| self.spanned(*fv))
+                .collect();
             let body = sexp_ids[2];
-            self.process_thunk(first_id, free_vars, body)
+            let first_id = self.spanned(first_id);
+            let body = self.spanned(body);
+            self.process_thunk(first_id, free_vars, span, body)
         } else if self.is_symbol(first_id, "fn") {
+            let first_id = self.spanned(first_id);
             let pattern_id = sexp_ids[1];
-            let body = sexp_ids[2];
+            let body = self.spanned(sexp_ids[2]);
             let pattern = Pattern::parse(pattern_id, self.asts).ok()?;
-            self.process_fn(first_id, pattern_id, pattern, body)
+            self.process_fn(first_id, self.spanned(pattern_id), pattern, body, span)
         } else {
             self.visit_mut_list(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
         }
@@ -186,15 +196,16 @@ impl<'a> LambdaPass<'a> {
 
     fn process_thunk(
         &mut self,
-        first_id: SExpId,
-        free_vars: Vec<SExpId>,
-        mut body: SExpId,
+        first_id: Spanned<SExpId>,
+        free_vars: Vec<Spanned<SExpId>>,
+        span: Span,
+        mut body: Spanned<SExpId>,
     ) -> Option<SExpId> {
         self.envs.push(EnvKind::Function);
 
         let mut edited = false;
-        if let Some(new_body) = self.pass_inner(body) {
-            body = new_body;
+        if let Some(new_body) = self.pass_inner(body.inner()) {
+            body = Spanned::new(new_body, body.span);
             edited = true;
         }
         let maybe_new_body = self.process_fn_decl(body);
@@ -203,16 +214,21 @@ impl<'a> LambdaPass<'a> {
         if let Some((new_body, new_free_vars)) = maybe_new_body {
             let mut free_vars = free_vars
                 .into_iter()
-                .map(|id| self.asts.get(id).as_symbol().unwrap().to_string())
+                .map(|id| self.asts.get(id.inner()).as_symbol().unwrap().to_string())
                 .collect::<BTreeSet<String>>();
 
             free_vars.extend(new_free_vars);
+            let free_vars = free_vars
+                .into_iter()
+                .map(|v| Spanned::new(v, span))
+                .collect::<Vec<Spanned<String>>>();
 
-            let thunk = ("thunk", free_vars, new_body).assemble(self.new_ast());
+            let thunk =
+                (first_id, Spanned::new(free_vars, span), new_body).dep(self.new_ast(), span);
 
             Some(thunk)
         } else if edited {
-            Some((first_id, &free_vars[..], body).assemble(self.new_ast()))
+            Some((first_id, Spanned::new(free_vars, span), body).dep(self.new_ast(), span))
         } else {
             None
         }
@@ -238,39 +254,52 @@ impl<'a> LambdaPass<'a> {
 
     fn process_fn(
         &mut self,
-        first_id: SExpId,
-        pattern_id: SExpId,
+        first_id: Spanned<SExpId>,
+        pattern_id: Spanned<SExpId>,
         pattern: Pattern,
-        mut body: SExpId,
+        mut body: Spanned<SExpId>,
+        span: Span,
     ) -> Option<SExpId> {
         self.envs.push(EnvKind::Function);
 
         self.process_pattern(pattern);
 
         let mut edited = false;
-        if let Some(new_body) = self.pass_inner(body) {
-            body = new_body;
+        if let Some(new_body) = self.pass_inner(body.inner()) {
+            body = Spanned::new(new_body, body.span);
             edited = true;
         }
         let maybe_new_body = self.process_fn_decl(body);
         self.envs.pop();
 
         if let Some((new_body, free_vars)) = maybe_new_body {
-            let closure = ("cl", pattern_id, free_vars, new_body).assemble(self.new_ast());
+            // let first_id_span = self.asts.get(first_id).span;
+            let cl = Spanned::new("cl", first_id.span);
+            let free_vars = free_vars
+                .into_iter()
+                .map(|v| Spanned::new(v, span))
+                .collect::<Vec<Spanned<String>>>();
+            let closure =
+                (cl, pattern_id, Spanned::new(free_vars, span), new_body).dep(self.new_ast(), span);
 
             Some(closure)
         } else if edited {
-            Some((first_id, pattern_id, body).assemble(self.new_ast()))
+            Some((first_id, pattern_id, body).dep(self.new_ast(), span))
         } else {
             None
         }
     }
 
-    fn process_fn_decl(&mut self, body: SExpId) -> Option<(SExpId, BTreeSet<String>)> {
+    fn process_fn_decl(
+        &mut self,
+        body: Spanned<SExpId>,
+    ) -> Option<(Spanned<SExpId>, BTreeSet<String>)> {
         // println!("processing fn decl: {}", self.asts.fmt(body));
         let mut free_vars = BTreeSet::<String>::new();
 
-        let new_body = self.process_fn_decl_body(body, &mut free_vars);
+        let new_body = self
+            .process_fn_decl_body(body.inner(), &mut free_vars)
+            .map(|id| Spanned::new(id, body.span));
 
         if free_vars.is_empty() {
             None
@@ -399,6 +428,10 @@ impl<'a> LambdaPass<'a> {
             .get(sexp_id)
             .as_symbol()
             .is_some_and(|s| symbols.contains(&s))
+    }
+
+    fn spanned(&self, sexp_id: SExpId) -> Spanned<SExpId> {
+        Spanned::new(sexp_id, self.asts.get(sexp_id).span)
     }
 }
 

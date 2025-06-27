@@ -14,9 +14,9 @@
  ```json
 -2.0
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:2:3 ]
 +   │
-+ 1 │ (
++ 2 │   (struct :key 1 :another 2)
 +───╯
 +
  ```

@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::BTreeMap, ops::Deref, rc::Rc};
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     patterns::Pattern,
-    source::Span,
+    source::{Span, Spanned},
 };
 
 use super::Runtime;
@@ -39,8 +39,13 @@ impl Deref for Ref {
 
 #[derive(Clone)]
 pub enum Macro {
-    Lisp { pattern: Pattern, body: SExpId },
-    Rust { body: NativeMacro },
+    Lisp {
+        pattern: Pattern,
+        body: Spanned<SExpId>,
+    },
+    Rust {
+        body: NativeMacro,
+    },
 }
 
 impl std::fmt::Debug for Macro {
@@ -56,7 +61,7 @@ impl std::fmt::Debug for Macro {
     }
 }
 
-pub type NativeMacro = Rc<dyn Fn(&mut ASTS, Vec<SExpId>) -> SExpId>;
+pub type NativeMacro = Rc<dyn Fn(&mut ASTS, Span, Vec<Spanned<SExpId>>) -> Spanned<SExpId>>;
 pub type NativeFn = Rc<dyn Fn(&mut Runtime, Vec<Value>) -> Value>;
 
 #[derive(Clone)]
@@ -265,20 +270,20 @@ impl Value {
         self
     }
 
-    pub fn to_sexp(&self, target: &mut AST) -> SExpId {
+    pub fn to_sexp(&self, target: &mut AST, span: Span) -> SExpId {
         match self {
             Value::SExp(sexp_id) => *sexp_id,
-            Value::Number(n) => target.add_node(SExp::Number(*n), Span::default()),
-            Value::String(s) => target.add_node(SExp::String(s.clone()), Span::default()),
-            Value::Bool(b) => target.add_node(SExp::Bool(*b), Span::default()),
+            Value::Number(n) => target.add_node(SExp::Number(*n), span),
+            Value::String(s) => target.add_node(SExp::String(s.clone()), span),
+            Value::Bool(b) => target.add_node(SExp::Bool(*b), span),
             Value::Error(err) => {
                 tracing::error!("Error: {err}");
-                target.add_node(SExp::Error, Span::default())
+                target.add_node(SExp::Error, span)
             }
             Value::List(list) => {
                 if list.iter().all(|v| matches!(v, Value::SExp(_))) {
                     let list = list.iter().filter_map(|v| v.as_sexp()).copied().collect();
-                    target.add_node(SExp::List(list), Span::default())
+                    target.add_node(SExp::List(list), span)
                 } else {
                     todo!("Could not convert List to SExp: {:?}", list)
                 }

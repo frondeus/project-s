@@ -572,7 +572,12 @@ impl Envs {
 #[allow(clippy::print_stderr)]
 #[cfg(test)]
 mod tests {
-    use crate::{ast::ASTS, macro_expansion::MacroExpansionPass, s_std::prelude, source::Sources};
+    use crate::{
+        ast::ASTS,
+        macro_expansion::MacroExpansionPass,
+        s_std::prelude,
+        source::{Sources, Spanned},
+    };
 
     use super::{canonical::Canonicalizer, *};
 
@@ -592,8 +597,9 @@ mod tests {
 
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
+            let root = Spanned::new(root, ast.root().unwrap().span);
             let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
-            let infered = env.check(&asts, root, &mut diagnostics);
+            let infered = env.check(&asts, root.inner(), &mut diagnostics);
             if diagnostics.has_errors() {
                 return diagnostics.pretty_print(&sources);
             }
@@ -616,8 +622,9 @@ mod tests {
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
 
+            let root = Spanned::new(root, ast.root().unwrap().span);
             let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
-            let root = env.check(&asts, root, &mut diagnostics);
+            let root = env.check(&asts, root.inner(), &mut diagnostics);
 
             if args.contains(&"canon") {
                 let (canon_id, canonical) =

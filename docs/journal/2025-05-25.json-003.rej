@@ -26,25 +26,25 @@
 -  "key": 10.0
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:4 ]
 +   │
-+ 1 │ (+ {
++   │ 
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:4 ]
 +   │
-+ 1 │ (+ {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:4:8 ]
 +   │
-+ 1 │ (+ {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (+ {
-+───╯
++    ╭─[ <input>:10:1 ]
++    │
++    ┆ 
++────╯
 +
  ```
  

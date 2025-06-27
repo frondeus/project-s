@@ -29,14 +29,16 @@ pub mod api;
 pub mod runtime;
 pub use runtime::s_std;
 
-use crate::source::Sources;
+use crate::source::{Sources, Spanned};
 
 pub mod lsp;
 
-pub fn process_ast(asts: &mut ASTS, mut root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
+pub fn process_ast(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
     let mut diagnostics = Diagnostics::default();
     // root = ThunkPass::pass(asts, root);
+    let mut root = Spanned::new(root, asts.get(root).span);
     root = MacroExpansionPass::pass(asts, root, &mut diagnostics, envs);
+    let mut root = root.inner();
     root = LambdaPass::pass(asts, root, envs);
 
     (root, diagnostics)

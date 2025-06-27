@@ -33,25 +33,25 @@
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++    ╭─[ <input>:1:1 ]
++    │
++    ┆ 
++────╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:4:9 ]
 +   │
-+ 1 │ (obj/condef
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (obj/condef
-+───╯
++    ╭─[ <input>:7:9 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (obj/condef
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (obj/condef
-+───╯
++    ╭─[ <input>:9:25 ]
++    │
++    │ 
++────╯
 +
  ```
  

@@ -1,7 +1,7 @@
 use crate::{
     ast::{AST, ASTS, SExp, SExpId},
     builder::ASTBuilder,
-    source::Spanned,
+    source::{Span, Spanned},
 };
 
 use super::List;
@@ -27,19 +27,28 @@ impl VisitorHelper<'_> {
         self.asts.get_ast_by_generation(self.new_ast_id)
     }
 
-    pub fn get_sexp(&self, id: SExpId) -> &Spanned<SExp> {
-        self.asts.get(id)
+    pub fn get_sexp(&self, id: impl SpannedSExpId) -> &Spanned<SExp> {
+        self.asts.get(id.into(self.asts).inner())
     }
 
-    pub fn assemble(&mut self, builder: impl ASTBuilder) -> SExpId {
-        builder.assemble(self.new_ast())
+    pub fn spanned(&self, id: SExpId) -> Spanned<SExpId> {
+        let span = self.asts.get(id).span;
+        Spanned::new(id, span)
     }
 
-    pub fn then_assemble(&mut self, builder: impl ASTBuilder) -> Option<SExpId> {
-        Some(self.assemble(builder))
+    pub fn assemble(&mut self, builder: impl ASTBuilder, span: Span) -> Spanned<SExpId> {
+        Spanned::new(builder.dep(self.new_ast(), span), span)
     }
 
-    pub fn as_symbol(&self, id: SExpId, name: &str) -> Option<()> {
+    pub fn then_assemble(
+        &mut self,
+        builder: impl ASTBuilder,
+        span: Span,
+    ) -> Option<Spanned<SExpId>> {
+        Some(self.assemble(builder, span))
+    }
+
+    pub fn as_symbol(&self, id: impl SpannedSExpId, name: &str) -> Option<()> {
         if self.is_symbol(id, name) {
             Some(())
         } else {
@@ -54,30 +63,46 @@ impl VisitorHelper<'_> {
         self.is_symbol(first, name)
     }
 
-    pub fn is_one_of_special_forms(&self, ids: &[SExpId], one_of: &[&str]) -> bool {
+    pub fn is_one_of_special_forms(&self, ids: &[Spanned<SExpId>], one_of: &[&str]) -> bool {
         let Some(first) = ids.first().copied() else {
             return false;
         };
         self.is_one_of(first, one_of)
     }
 
-    pub fn maybe_get_symbol(&self, maybe_id: Option<SExpId>) -> Option<&str> {
+    pub fn maybe_get_symbol(&self, maybe_id: Option<impl SpannedSExpId>) -> Option<&str> {
         let id = maybe_id?;
         self.get_symbol(id)
     }
 
-    pub fn get_symbol(&self, sexp_id: SExpId) -> Option<&str> {
-        self.asts.get(sexp_id).as_symbol()
+    pub fn get_symbol(&self, sexp_id: impl SpannedSExpId) -> Option<&str> {
+        self.get_sexp(sexp_id).as_symbol()
     }
 
-    pub fn is_symbol(&self, sexp_id: SExpId, symbol: &str) -> bool {
-        self.asts.get(sexp_id).as_symbol() == Some(symbol)
+    pub fn is_symbol(&self, sexp_id: impl SpannedSExpId, symbol: &str) -> bool {
+        self.get_sexp(sexp_id).as_symbol() == Some(symbol)
     }
 
-    pub fn is_one_of(&self, sexp_id: SExpId, symbols: &[&str]) -> bool {
-        self.asts
-            .get(sexp_id)
+    pub fn is_one_of(&self, sexp_id: impl SpannedSExpId, symbols: &[&str]) -> bool {
+        self.get_sexp(sexp_id)
             .as_symbol()
             .is_some_and(|s| symbols.contains(&s))
+    }
+}
+
+pub trait SpannedSExpId {
+    fn into(self, asts: &ASTS) -> Spanned<SExpId>;
+}
+
+impl SpannedSExpId for SExpId {
+    fn into(self, asts: &ASTS) -> Spanned<SExpId> {
+        let span = asts.get(self).span;
+        Spanned::new(self, span)
+    }
+}
+
+impl SpannedSExpId for Spanned<SExpId> {
+    fn into(self, _asts: &ASTS) -> Spanned<SExpId> {
+        self
     }
 }

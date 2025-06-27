@@ -27,35 +27,35 @@
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:2:5 ]
 +   │
-+ 1 │ (+
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:3:21 ]
 +   │
-+ 1 │ (+
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (+
-+───╯
++    ╭─[ <input>:7:5 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: has?
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (+
-+───╯
++    ╭─[ <input>:8:9 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (+
-+───╯
++    ╭─[ <input>:8:19 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (+
-+───╯
++    ╭─[ <input>:8:19 ]
++    │
++    │ 
++────╯
 +
  ```
  

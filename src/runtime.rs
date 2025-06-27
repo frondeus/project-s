@@ -9,6 +9,7 @@ use crate::{
     ast::{ASTS, SExp, SExpId},
     modules::ModuleProvider,
     patterns::Pattern,
+    source::{Span, Spanned},
     // types::{Type, TypeEnv},
 };
 
@@ -216,7 +217,7 @@ impl Runtime {
     pub fn with_macro(
         &mut self,
         name: &str,
-        body: impl Fn(&mut ASTS, Vec<SExpId>) -> SExpId + 'static,
+        body: impl Fn(&mut ASTS, Span, Vec<Spanned<SExpId>>) -> Spanned<SExpId> + 'static,
     ) {
         self.envs.set(
             name,

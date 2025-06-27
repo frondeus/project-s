@@ -18,14 +18,14 @@
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:11 ]
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:2:1 ]
 +   │
-+ 1 │ (let :foo { :b 4 :a (root :b )})
++ 2 │ { :b 10 :c foo }
 +───╯
 +
  ```

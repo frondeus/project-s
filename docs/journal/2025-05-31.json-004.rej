@@ -11,27 +11,29 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-31.md
 +++ json-004
-@@ -96,7 +96,30 @@
+@@ -96,7 +96,32 @@
  ```
  
  ```json
 -52.0
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:7 ]
 +   │
-+ 1 │ (( (+ {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:5:11 ]
 +   │
-+ 1 │ (( (+ {
++   │ 
 +───╯
 +Error: Incompatible types
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:2 ]
 +   │
-+ 1 │ (( (+ {
-+   │ │ 
-+   │ ╰─ Expected function
++ 1 │ ╭─▶ (( (+ {
++   ┆ ┆   
++ 7 │ ├─▶ })) :a))
++   │ │             
++   │ ╰───────────── Expected function
 +   │
 +   ├─[ <builtin>:1:1 ]
 +   │

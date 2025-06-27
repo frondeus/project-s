@@ -13,6 +13,7 @@ use crate::{
         Function, Runtime, Value,
         value::{Constructor, Ref},
     },
+    source::Spanned,
 };
 
 use super::macros::obj_put_thunk;
@@ -218,7 +219,8 @@ pub fn insert_to_struct(
 pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
     match to_eval {
         Value::SExp(id) => {
-            let ast = &**rt.asts.get(id);
+            let ast = rt.asts.get(id);
+            let span = ast.span;
             let Some(list) = ast.as_list() else {
                 return Err("Expected list".into());
             };
@@ -236,9 +238,10 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
                     return Err("Expected value".into());
                 };
 
-                let expr = obj_put_thunk(key.to_string(), value).build(&mut rt.asts);
+                let value = Spanned::new(value, span);
+                let expr = obj_put_thunk(key.to_string(), value, span).build(&mut rt.asts, span);
 
-                let expr = expr.build(&mut rt.asts);
+                let expr = expr.build(&mut rt.asts, span);
                 last = Some(rt.eval(expr));
             }
             Ok(last.unwrap_or_else(|| Value::Error("Expected at least one argument".into())))

@@ -11,27 +11,29 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/012-functions.md
 +++ json-006
-@@ -109,5 +109,28 @@
+@@ -109,5 +109,30 @@
  ```
  
  ```json
 -52.0
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:7 ]
 +   │
-+ 1 │ (( (+ {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:5:1 ]
 +   │
-+ 1 │ (( (+ {
++   ┆ 
 +───╯
 +Error: Incompatible types
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:2 ]
 +   │
-+ 1 │ (( (+ {
-+   │ │ 
-+   │ ╰─ Expected function
++ 1 │ ╭─▶ (( (+ {
++   ┆ ┆   
++ 7 │ ├─▶ }) :a))
++   │ │            
++   │ ╰──────────── Expected function
 +   │
 +   ├─[ <builtin>:1:1 ]
 +   │

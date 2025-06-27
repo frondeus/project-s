@@ -42,30 +42,30 @@
 -  }
 -}
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:12 ]
 +   │
-+ 1 │ (let :left {
++   │ 
 +───╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:12 ]
 +   │
-+ 1 │ (let :left {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:4:10 ]
 +   │
-+ 1 │ (let :left {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :left {
-+───╯
++    ╭─[ <input>:10:23 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: obj/eval
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :left {
-+───╯
++    ╭─[ <input>:10:23 ]
++    │
++    │ 
++────╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
 +    │

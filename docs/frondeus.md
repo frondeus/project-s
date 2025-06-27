@@ -36,40 +36,40 @@
 
 ```json
 Error: Undefined variable: obj/con
-   ╭─[ :1:1 ]
-   │
- 1 │ 
-───╯
+    ╭─[ <input>:1:13 ]
+    │
+    │ 
+────╯
 Error: Undefined variable: obj/con
-   ╭─[ :1:1 ]
-   │
- 1 │ 
-───╯
+    ╭─[ <input>:4:15 ]
+    │
+    │ 
+────╯
 Error: Undefined variable: obj/new
    ╭─[ <input>:8:26 ]
    │
  8 │             (set origin (obj/new (+ origin {
 ───╯
 Error: Undefined variable: obj/con
-   ╭─[ :1:1 ]
-   │
- 1 │ 
-───╯
+    ╭─[ <input>:8:44 ]
+    │
+    │ 
+────╯
 Error: Undefined variable: obj/new
     ╭─[ <input>:21:15 ]
     │
  21 │ (let :result (obj/new (+ {
 ────╯
 Error: Undefined variable: obj/con
-   ╭─[ :1:1 ]
-   │
- 1 │ 
-───╯
+    ╭─[ <input>:21:26 ]
+    │
+    │ 
+────╯
 Error: Undefined variable: obj/con
-   ╭─[ :1:1 ]
-   │
- 1 │ 
-───╯
+    ╭─[ <input>:22:12 ]
+    │
+    │ 
+────╯
 Error: Undefined variable: deep-eager
     ╭─[ <input>:33:2 ]
     │

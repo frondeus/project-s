@@ -70,7 +70,7 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Spanned<T> {
     item: T,
     pub span: Span,
@@ -135,16 +135,16 @@ impl Span {
     }
 }
 
-impl Default for Span {
-    fn default() -> Self {
-        Self {
-            range: default_range(),
-            source_id: SourceId(0),
-            // filename: Arc::from(""),
-            // source: Arc::from(""),
-        }
-    }
-}
+// impl Default for Span {
+//     fn default() -> Self {
+//         Self {
+//             range: default_range(),
+//             source_id: SourceId(0),
+//             // filename: Arc::from(""),
+//             // source: Arc::from(""),
+//         }
+//     }
+// }
 
 pub trait WithRange {
     fn range(&self) -> Range;

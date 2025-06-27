@@ -30,25 +30,25 @@
 -}
 +```json
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++   ╭─[ <input>:1:12 ]
 +   │
-+ 1 │ (let :base {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++    ╭─[ <input>:5:9 ]
++    │
++    │ 
++────╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:7:18 ]
 +   │
-+ 1 │ (let :base {
++   │ 
 +───╯
 +Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :base {
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ (let :base {
-+───╯
++    ╭─[ <input>:12:4 ]
++    │
++ 12 │ (+ {:d 1} x)
++────╯
 +
  ```
  
