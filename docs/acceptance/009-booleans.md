@@ -8,7 +8,7 @@ true
 ```
 
 ```type
-Bool
+bool
 ```
 
 ```
@@ -20,6 +20,6 @@ false
 ```
 
 ```type
-Bool
+bool
 ```
 

@@ -74,30 +74,15 @@ fn canonical_pair_inner(
         }
         Canonical::Or(_canon_ids) => todo!(),
         Canonical::And(_canon_ids) => todo!(),
-        Canonical::Bool => {
-            let v_bool = env.engine.bool(span);
-            let u_bool = env.engine.bool_use(span);
-            (v_bool, u_bool)
-        }
-        Canonical::Number => {
-            let v_number = env.engine.number(span);
-            let u_number = env.engine.number_use(span);
-            (v_number, u_number)
-        }
-        Canonical::String => {
-            let v_string = env.engine.string(span);
-            let u_string = env.engine.string_use(span);
-            (v_string, u_string)
+        Canonical::Primitive(name) => {
+            let v_primitive = env.engine.primitive(name.clone(), span);
+            let u_primitive = env.engine.primitive_use(name.clone(), span);
+            (v_primitive, u_primitive)
         }
         Canonical::Error => {
             let v_error = env.engine.error(span);
             let u_error = env.engine.error_use(span);
             (v_error, u_error)
-        }
-        Canonical::Keyword => {
-            let v_keyword = env.engine.keyword(span);
-            let u_keyword = env.engine.keyword_use(span);
-            (v_keyword, u_keyword)
         }
         Canonical::Tuple { items } => {
             let mut values = Vec::with_capacity(items.len());
@@ -203,11 +188,8 @@ pub fn canonical_value(
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
-        Canonical::Bool => env.engine.bool(span),
-        Canonical::Number => env.engine.number(span),
-        Canonical::String => env.engine.string(span),
+        Canonical::Primitive(name) => env.engine.primitive(name.clone(), span),
         Canonical::Error => env.engine.error(span),
-        Canonical::Keyword => env.engine.keyword(span),
         Canonical::Tuple { items } => {
             let mut values = Vec::with_capacity(items.len());
             for item in items {
@@ -270,11 +252,8 @@ pub fn canonical_use(
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
         Canonical::Skip => env.engine.var(span).1,
-        Canonical::Bool => env.engine.bool_use(span),
-        Canonical::Number => env.engine.number_use(span),
-        Canonical::String => env.engine.string_use(span),
+        Canonical::Primitive(name) => env.engine.primitive_use(name.clone(), span),
         Canonical::Error => env.engine.error_use(span),
-        Canonical::Keyword => env.engine.keyword_use(span),
         Canonical::Tuple { items } => {
             let mut uses = Vec::with_capacity(items.len());
             for item in items {
@@ -344,12 +323,16 @@ pub mod canon {
     //     move |canon: &mut CanonicalBuilder| Canonical::Recursive(inner.build(canon))
     // }
 
+    pub fn primitive(name: impl ToString) -> impl CanonBuilder {
+        Canonical::Primitive(name.to_string())
+    }
+
     pub fn bool() -> impl CanonBuilder {
-        Canonical::Bool
+        primitive("bool")
     }
 
     pub fn number() -> impl CanonBuilder {
-        Canonical::Number
+        primitive("number")
     }
 
     // pub fn string() -> impl CanonBuilder {
@@ -361,7 +344,7 @@ pub mod canon {
     // }
 
     pub fn keyword() -> impl CanonBuilder {
-        Canonical::Keyword
+        primitive("keyword")
     }
 
     // pub fn obj() -> impl CanonBuilder {}

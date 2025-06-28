@@ -31,10 +31,11 @@ impl TypeEnv {
         vars: &mut HashMap<String, CanonId>,
     ) -> CanonId {
         let sexp = asts.get(id);
+        const PRIMITIVES: &[&str] = &["number", "string", "bool", "keyword"];
         match &**sexp {
-            SExp::Keyword(symbol) if symbol == "number" => canon.add(Canonical::Number),
-            SExp::Keyword(symbol) if symbol == "string" => canon.add(Canonical::String),
-            SExp::Keyword(symbol) if symbol == "bool" => canon.add(Canonical::Bool),
+            SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
+                canon.add(Canonical::Primitive(symbol.to_string()))
+            }
             SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Skip),
             SExp::List(items) => match &items[..] {
                 &[first, inner] if Self::is_symbol(asts, first, "list") => {

@@ -8,5 +8,5 @@
 ```
 
 ```type
-Number
+number
 ```

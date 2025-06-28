@@ -24,11 +24,8 @@ pub enum Canonical {
 
     Or(Vec<CanonId>),
     And(Vec<CanonId>),
-    Bool,
-    Number,
-    String,
     Error,
-    Keyword,
+    Primitive(String),
     Tuple {
         items: Vec<CanonId>,
     },
@@ -56,12 +53,9 @@ impl Canonical {
         match self {
             Canonical::Todo(_)
             | Canonical::Any(_)
-            | Canonical::Bool
-            | Canonical::Number
             | Canonical::Skip
-            | Canonical::String
             | Canonical::Error
-            | Canonical::Keyword => vec![].into_iter(),
+            | Canonical::Primitive(_) => vec![].into_iter(),
             Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
             Canonical::And(canon_ids) => canon_ids.clone().into_iter(),
@@ -206,11 +200,8 @@ impl Canonicalizer {
         engine: &core::TypeCheckerCore,
     ) -> CanonId {
         match value {
-            core::VTypeHead::VBool => self.add_canon(Canonical::Bool),
-            core::VTypeHead::VNumber => self.add_canon(Canonical::Number),
-            core::VTypeHead::VString => self.add_canon(Canonical::String),
             core::VTypeHead::VError => self.add_canon(Canonical::Error),
-            core::VTypeHead::VKeyword => self.add_canon(Canonical::Keyword),
+            core::VTypeHead::VPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
             core::VTypeHead::VTuple { items } => {
                 let items = items
                     .iter()
@@ -267,11 +258,8 @@ impl Canonicalizer {
         engine: &core::TypeCheckerCore,
     ) -> CanonId {
         match use_ {
-            core::UTypeHead::UBool => self.add_canon(Canonical::Bool),
-            core::UTypeHead::UNumber => self.add_canon(Canonical::Number),
-            core::UTypeHead::UString => self.add_canon(Canonical::String),
-            core::UTypeHead::UKeyword => self.add_canon(Canonical::Keyword),
             core::UTypeHead::UError => self.add_canon(Canonical::Error),
+            core::UTypeHead::UPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
             core::UTypeHead::UTuple { items } => {
                 let items = items
                     .iter()

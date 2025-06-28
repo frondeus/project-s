@@ -76,11 +76,8 @@ impl Formatter<'_> {
                 }
             }
             Canonical::Skip => self.f.push('_'),
-            Canonical::Bool => self.f.push_str("Bool"),
-            Canonical::Number => self.f.push_str("Number"),
-            Canonical::String => self.f.push_str("String"),
             Canonical::Error => self.f.push_str("Error"),
-            Canonical::Keyword => self.f.push_str("Keyword"),
+            Canonical::Primitive(name) => self.f.push_str(name),
             Canonical::Tuple { items } => {
                 self.f.push('(');
                 for (i, item) in items.iter().enumerate() {
