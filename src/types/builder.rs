@@ -62,7 +62,6 @@ fn canonical_pair_inner(
             }
             env.engine.var(span)
         }
-        Canonical::Recursive(_canon_id) => todo!(),
         &Canonical::As(i, inner) => {
             let (u_type_value, u_type) = env.engine.var(span);
             let (v_type, v_type_bound) = env.engine.var(span);
@@ -201,7 +200,6 @@ pub fn canonical_value(
             any_var
         }
         Canonical::Skip => env.engine.var(span).0,
-        Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
@@ -268,7 +266,6 @@ pub fn canonical_use(
             let (_any_var, any_bound) = env.engine.var(span);
             any_bound
         }
-        Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),

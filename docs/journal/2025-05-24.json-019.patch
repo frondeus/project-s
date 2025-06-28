@@ -1,0 +1,31 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:322
+```
+(struct 
+  :key (+ 1 (self :another))
+  :another (+ 1 1)
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
++++ json-019
+@@ -327,10 +327,16 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 2.0,
+-  "key": 3.0
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 4 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ Yep.

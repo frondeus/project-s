@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::core;
 use super::core::TypeNode;
 use super::core::WithID;
@@ -16,9 +18,6 @@ pub enum Canonical {
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
     Any(Option<usize>),
-
-    /// An old representation of recursive types.
-    Recursive(CanonId),
 
     /// A new representation of recursive types.
     As(usize, CanonId),
@@ -63,7 +62,6 @@ impl Canonical {
             | Canonical::String
             | Canonical::Error
             | Canonical::Keyword => vec![].into_iter(),
-            Canonical::Recursive(canon_id) => vec![*canon_id].into_iter(),
             Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
             Canonical::And(canon_ids) => canon_ids.clone().into_iter(),
@@ -117,6 +115,7 @@ impl CanonicalBuilder {
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Canonicalizer {
     visited: Vec<core::ID>,
+    recursive: HashMap<core::ID, usize>,
     builder: CanonicalBuilder,
 }
 
@@ -342,6 +341,10 @@ impl Canonicalizer {
         is
     }
 
+    fn is_recursive(&mut self, id: impl WithID) -> Option<usize> {
+        self.recursive.get(&id.id()).copied()
+    }
+
     fn recursive_with<ID: WithID + Copy>(
         &mut self,
         id: ID,
@@ -350,13 +353,19 @@ impl Canonicalizer {
         if self.is_visited(id) {
             return self.recursive(id);
         }
-        let id = f(self, id);
+        let result = f(self, id);
         self.visited.pop();
-        id
+        if let Some(i) = self.is_recursive(id) {
+            return self.add_canon(Canonical::As(i, result));
+        }
+        result
     }
 
     fn recursive(&mut self, id: impl WithID) -> CanonId {
-        self.add_canon(Canonical::Recursive(CanonId(id.id())))
+        let i = self.recursive.len();
+        self.recursive.insert(id.id(), i);
+        self.add_canon(Canonical::Any(Some(i)))
+        // self.add_canon(Canonical::Recursive(CanonId(id.id())))
     }
     fn add_canon(&mut self, canon: Canonical) -> CanonId {
         self.builder.add(canon)

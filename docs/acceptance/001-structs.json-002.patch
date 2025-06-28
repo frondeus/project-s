@@ -1,0 +1,26 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:19
+```
+( 
+  (struct :key 1 :another 2)
+  :another
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-002
+@@ -24,7 +24,14 @@
+ ```
+ 
+ ```json
+-2.0
++Error: Undefined variable: obj/con
++   ╭─[ <input>:2:3 ]
++   │
++ 2 │   (struct :key 1 :another 2)
++   │   ─────────────┬────────────  
++   │                ╰────────────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ Or when struct is named

@@ -1,0 +1,25 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-11.md:294
+```
+(let { :a :b :c } { :a 1 :d 4 :b 2 :e 6 :c 3})
+
+(+ a b c)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
++++ json-003
+@@ -298,7 +298,14 @@
+ ```
+ 
+ ```json
+-6.0
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:19 ]
++   │
++ 1 │ (let { :a :b :c } { :a 1 :d 4 :b 2 :e 6 :c 3})
++   │                   ─────────────┬─────────────  
++   │                                ╰─────────────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ Renaming

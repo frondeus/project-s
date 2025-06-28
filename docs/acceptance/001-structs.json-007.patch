@@ -1,0 +1,35 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:109
+```
+(let :x {
+  :key 42.0
+})
+  (has? x :key)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-007
+@@ -114,7 +114,23 @@
+ ```
+ 
+ ```json
+-true
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:9 ]
++   │
++ 1 │ ╭─▶ (let :x {
++   ┆ ┆   
++ 3 │ ├─▶ })
++   │ │        
++   │ ╰──────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: has?
++   ╭─[ <input>:4:4 ]
++   │
++ 4 │   (has? x :key)
++   │    ──┬─  
++   │      ╰─── Undefined variable: has?
++───╯
++
+ ```
+ 
+ ```

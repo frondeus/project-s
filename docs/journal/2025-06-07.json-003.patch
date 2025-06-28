@@ -1,0 +1,87 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-07.md:58
+```
+(+ {
+  :a (+ ((self :b) :c) 10.0)
+  :b {
+    :c 10.0
+  }
+}
+
+{
+  (obj/+ :b {
+    :d (origin :a)
+  })
+})
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
++++ json-003
+@@ -71,13 +71,61 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 20.0,
+-  "b": {
+-    "c": 10.0,
+-    "d": 20.0
+-  }
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:4 ]
++   │
++ 1 │ ╭─▶ (+ {
++   ┆ ┆   
++ 6 │ ├─▶ }
++   │ │       
++   │ ╰─────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:3:6 ]
++   │
++ 3 │ ╭─▶   :b {
++   ┆ ┆   
++ 5 │ ├─▶   }
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:8:1 ]
++    │
++  8 │ ╭─▶ {
++    ┆ ┆   
++ 12 │ ├─▶ })
++    │ │       
++    │ ╰─────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/eval
++    ╭─[ <input>:8:1 ]
++    │
++  8 │ ╭─▶ {
++    ┆ ┆   
++ 12 │ ├─▶ })
++    │ │       
++    │ ╰─────── Undefined variable: obj/eval
++────╯
++Error: Undefined variable: has?
++    ╭─[ <input>:9:3 ]
++    │
++  9 │ ╭─▶   (obj/+ :b {
++    ┆ ┆   
++ 11 │ ├─▶   })
++    │ │          
++    │ ╰────────── Undefined variable: has?
++────╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:9:13 ]
++    │
++  9 │ ╭─▶   (obj/+ :b {
++    ┆ ┆   
++ 11 │ ├─▶   })
++    │ │          
++    │ ╰────────── Undefined variable: obj/con
++────╯
++
+ ```
+ 
+ 

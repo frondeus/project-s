@@ -1,0 +1,31 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:3
+```
+(struct 
+    :name "Name"
+    :surname "Surname"
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json
+@@ -8,10 +8,16 @@
+ ```
+ 
+ ```json
+-{
+-  "name": "Name",
+-  "surname": "Surname"
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 4 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ # Accessing struct

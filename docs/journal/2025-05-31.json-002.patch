@@ -1,0 +1,28 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-31.md:52
+```
+(({
+  :a 42.0
+  :b (fn () (self :a))
+} :b))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-31.md
++++ json-002
+@@ -61,7 +61,16 @@
+ ```
+ 
+ ```json
+-42.0
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:3 ]
++   │
++ 1 │ ╭─▶ (({
++   ┆ ┆   
++ 4 │ ├─▶ } :b))
++   │ │           
++   │ ╰─────────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ Okay, self works. Now root!

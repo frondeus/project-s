@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:558
+```
+(let :self (ref obj/empty))
+
+self
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-007
+@@ -566,6 +566,8 @@
+    ╭─[ <input>:1:17 ]
+    │
+  1 │ (let :self (ref obj/empty))
++   │                 ────┬────  
++   │                     ╰────── Undefined variable: obj/empty
+ ───╯
+ 
+ ```

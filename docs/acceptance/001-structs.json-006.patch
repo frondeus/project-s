@@ -1,0 +1,56 @@
+/Users/frondeus/Code/project-s/docs/acceptance/001-structs.md:86
+```
+{
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
++++ json-006
+@@ -95,13 +95,34 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/eval
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:4:8 ]
++   │
++ 4 │ ╭─▶   :key {
++   ┆ ┆   
++ 7 │ ├─▶   }
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ # has? function

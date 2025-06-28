@@ -9,18 +9,39 @@ struct Formatter<'a> {
     f: &'a mut String,
 }
 
+fn variable_letters(mut i: usize) -> String {
+    const LETTERS: &[char] = &[
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    ];
+    let letter = LETTERS[i % LETTERS.len()];
+    let mut result = format!("'{letter}");
+    if i < LETTERS.len() {
+        return result;
+    }
+    let mut num = 1;
+    while i > 0 {
+        i = match i.checked_sub(LETTERS.len()) {
+            Some(i) => i,
+            None => break,
+        };
+        num += 1;
+    }
+    result.push_str(&num.to_string());
+    result
+}
+
 impl Formatter<'_> {
     fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
         match canonical.get(id) {
             Canonical::Todo(todo) => self.f.push_str(&format!("TODO: {}", todo)),
             Canonical::Any(None) => self.f.push_str("Any"),
-            Canonical::Any(Some(i)) => self.f.push_str(&format!("?T{}", i)),
-            Canonical::Recursive(_canon_id) => self.f.push_str("<recursive>"),
+            Canonical::Any(Some(i)) => self.f.push_str(&variable_letters(*i)),
             Canonical::As(i, canon_id) => {
                 self.f.push('(');
                 self.print_canon(*canon_id, canonical);
                 self.f.push_str(") as ");
-                self.f.push_str(&format!("T{}", i));
+                self.f.push_str(&variable_letters(*i));
             }
             Canonical::Or(canon_ids) => {
                 // assert!(canon_ids.len() > 1);
@@ -146,5 +167,29 @@ impl TypeEnv {
         let mut f = String::new();
         Formatter { f: &mut f }.value(value, &self.engine);
         f
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn letters() {
+        assert_eq!(variable_letters(0), "'a");
+        assert_eq!(variable_letters(25), "'z");
+        assert_eq!(variable_letters(26), "'a2");
+        assert_eq!(variable_letters(27), "'b2");
+        assert_eq!(variable_letters(28), "'c2");
+        assert_eq!(variable_letters(29), "'d2");
+        assert_eq!(variable_letters(30), "'e2");
+        assert_eq!(variable_letters(31), "'f2");
+        assert_eq!(variable_letters(51), "'z2");
+        assert_eq!(variable_letters(52), "'a3");
+        assert_eq!(variable_letters(53), "'b3");
+        assert_eq!(variable_letters(54), "'c3");
+        assert_eq!(variable_letters(55), "'d3");
+        assert_eq!(variable_letters(56), "'e3");
+        assert_eq!(variable_letters(57), "'f3");
     }
 }

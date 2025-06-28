@@ -1,0 +1,100 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-26.md:25
+````
+(let :add-obj (macro (:key :value) 
+  `(if (has? super ,key)
+    '(,key (+ (super ,key) ,value))
+    '(,key ,value)
+  )
+))
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right (thunk () {
+  :another 9
+  
+  (add-obj :key {:c 3})
+}))
+
+(+ left right)
+````
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
++++ json-002
+@@ -47,16 +47,61 @@
+ (+ left right)
+ ```
+ 
+-```json
+-{
+-  "another": 9.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 10.0,
+-    "c": 3.0
+-  }
+-}
+-```
++````json
++Error: Undefined variable: obj/con
++    ╭─[ <input>:7:12 ]
++    │
++  7 │ ╭─▶ (let :left {
++    ┆ ┆   
++ 14 │ ├─▶   })
++    │ │          
++    │ ╰────────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/eval
++    ╭─[ <input>:7:12 ]
++    │
++  7 │ ╭─▶ (let :left {
++    ┆ ┆   
++ 14 │ ├─▶   })
++    │ │          
++    │ ╰────────── Undefined variable: obj/eval
++────╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:10:10 ]
++    │
++ 10 │ ╭─▶     :key {
++    ┆ ┆   
++ 13 │ ├─▶     }
++    │ │           
++    │ ╰─────────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:16:23 ]
++    │
++ 16 │ ╭─▶ (let :right (thunk () {
++    ┆ ┆   
++ 20 │ ├─▶ }))
++    │ │         
++    │ ╰───────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/eval
++    ╭─[ <input>:16:23 ]
++    │
++ 16 │ ╭─▶ (let :right (thunk () {
++    ┆ ┆   
++ 20 │ ├─▶ }))
++    │ │         
++    │ ╰───────── Undefined variable: obj/eval
++────╯
++Error: Undefined variable: has?
++   ╭─[ <input>:2:9 ]
++   │
++ 2 │   `(if (has? super ,key)
++   │         ──┬─  
++   │           ╰─── Undefined variable: has?
++───╯
++
++````
+ 
+ NICE
+ 

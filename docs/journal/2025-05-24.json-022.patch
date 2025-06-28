@@ -1,0 +1,55 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-24.md:389
+```
+{
+  (let :x 4)
+  :another x
+  :key {
+    :a 1
+    :b (+ 1 (root :another))
+  }
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-24.md
++++ json-022
+@@ -398,12 +398,33 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 8 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/eval
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:4:8 ]
++   │
++ 4 │ ╭─▶   :key {
++   ┆ ┆   
++ 7 │ ├─▶   }
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
++───╯
++
+ ```
+ 

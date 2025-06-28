@@ -1,0 +1,97 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-04.md:152
+```
+(let :left {
+    (let :x 4)
+    :another x
+    :key {
+      :a 1
+      :b (+ 1 (root :another))
+    }
+  })
+
+(let :right {
+  :another 9
+  
+  (obj/+ :key {:c 3})
+})
+
+(+ left right)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
++++ json-005
+@@ -169,14 +169,66 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 9.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 10.0,
+-    "c": 3.0
+-  }
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:12 ]
++   │
++ 1 │ ╭─▶ (let :left {
++   ┆ ┆   
++ 8 │ ├─▶   })
++   │ │          
++   │ ╰────────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/eval
++   ╭─[ <input>:1:12 ]
++   │
++ 1 │ ╭─▶ (let :left {
++   ┆ ┆   
++ 8 │ ├─▶   })
++   │ │          
++   │ ╰────────── Undefined variable: obj/eval
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:4:10 ]
++   │
++ 4 │ ╭─▶     :key {
++   ┆ ┆   
++ 7 │ ├─▶     }
++   │ │           
++   │ ╰─────────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:10:13 ]
++    │
++ 10 │ ╭─▶ (let :right {
++    ┆ ┆   
++ 14 │ ├─▶ })
++    │ │        
++    │ ╰──────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/eval
++    ╭─[ <input>:10:13 ]
++    │
++ 10 │ ╭─▶ (let :right {
++    ┆ ┆   
++ 14 │ ├─▶ })
++    │ │        
++    │ ╰──────── Undefined variable: obj/eval
++────╯
++Error: Undefined variable: has?
++    ╭─[ <input>:13:3 ]
++    │
++ 13 │   (obj/+ :key {:c 3})
++    │   ─────────┬─────────  
++    │            ╰─────────── Undefined variable: has?
++────╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:13:15 ]
++    │
++ 13 │   (obj/+ :key {:c 3})
++    │               ───┬──  
++    │                  ╰──── Undefined variable: obj/con
++────╯
++
+ ```
+ 
+ Thunk was not inserted because...

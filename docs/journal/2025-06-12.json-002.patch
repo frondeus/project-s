@@ -1,0 +1,33 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-12.md:36
+```
+{
+    :a 3
+    :b 4
+    :c (+ (self :a) (self :b))
+}
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
++++ json-002
+@@ -42,11 +42,16 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 3.0,
+-  "b": 4.0,
+-  "c": 7.0
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ {
++   ┆ ┆   
++ 5 │ ├─▶ }
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ # Let*

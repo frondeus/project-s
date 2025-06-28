@@ -1,0 +1,77 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:560
+```
+(obj/condef
+    (obj/put :a "the most top a")
+    (obj/put :b (+
+        (obj/condef
+            (obj/put :d "left side d")
+            (obj/put :a "left side a")
+        )
+        (obj/condef
+            (obj/put :a "the most top a from right side")
+            (obj/put :b (obj/condef
+                (obj/put :a "the most inner a from right side")
+                (obj/put :c (self :a))
+            ))
+        )
+    ))
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-023
+@@ -577,17 +577,43 @@
+ ```
+ 
+ ```json
+-{
+-  "a": "the most top a",
+-  "b": {
+-    "a": "the most top a from right side",
+-    "b": {
+-      "a": "the most inner a from right side",
+-      "c": "the most inner a from right side"
+-    },
+-    "d": "left side d"
+-  }
+-}
++Error: Undefined variable: obj/con
++    ╭─[ <input>:1:1 ]
++    │
++  1 │ ╭─▶ (obj/condef
++    ┆ ┆   
++ 16 │ ├─▶ )
++    │ │      
++    │ ╰────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:4:9 ]
++   │
++ 4 │ ╭─▶         (obj/condef
++   ┆ ┆   
++ 7 │ ├─▶         )
++   │ │               
++   │ ╰─────────────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:8:9 ]
++    │
++  8 │ ╭─▶         (obj/condef
++    ┆ ┆   
++ 14 │ ├─▶         )
++    │ │               
++    │ ╰─────────────── Undefined variable: obj/con
++────╯
++Error: Undefined variable: obj/con
++    ╭─[ <input>:10:25 ]
++    │
++ 10 │ ╭─▶             (obj/put :b (obj/condef
++    ┆ ┆   
++ 13 │ ├─▶             ))
++    │ │                    
++    │ ╰──────────────────── Undefined variable: obj/con
++────╯
++
+ ```
+ 
+ ### Origin

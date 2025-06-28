@@ -1,0 +1,43 @@
+/Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md:224
+```
+(+
+    (obj/condef
+        (obj/put :a 1)
+    )
+    (obj/condef
+        (obj/put :a (+ (super :a) 1))
+    )
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
++++ json-011
+@@ -233,9 +233,25 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 2.0
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:2:5 ]
++   │
++ 2 │ ╭─▶     (obj/condef
++   ┆ ┆   
++ 4 │ ├─▶     )
++   │ │           
++   │ ╰─────────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:5:5 ]
++   │
++ 5 │ ╭─▶     (obj/condef
++   ┆ ┆   
++ 7 │ ├─▶     )
++   │ │           
++   │ ╰─────────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ Even though right side modifies self.a, super has an access to :a 1

@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-08.md:20
+```
+(let :foo { :b 4 :a (root :b )})
+foo
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-08.md
++++ json
+@@ -23,10 +23,14 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 4.0,
+-  "b": 4.0
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:11 ]
++   │
++ 1 │ (let :foo { :b 4 :a (root :b )})
++   │           ──────────┬──────────  
++   │                     ╰──────────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ ```

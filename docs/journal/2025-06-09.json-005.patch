@@ -1,0 +1,46 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-09.md:95
+```
+(struct 
+  :another 4
+  :key (struct 
+    :a 1
+    :b (+ 1 (root :another))
+  )
+)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-09.md
++++ json-005
+@@ -103,13 +103,25 @@
+ ```
+ 
+ ```json
+-{
+-  "another": 4.0,
+-  "key": {
+-    "a": 1.0,
+-    "b": 5.0
+-  }
+-}
++Error: Undefined variable: obj/con
++   ╭─[ <input>:1:1 ]
++   │
++ 1 │ ╭─▶ (struct
++   ┆ ┆   
++ 7 │ ├─▶ )
++   │ │      
++   │ ╰────── Undefined variable: obj/con
++───╯
++Error: Undefined variable: obj/con
++   ╭─[ <input>:3:8 ]
++   │
++ 3 │ ╭─▶   :key (struct
++   ┆ ┆   
++ 6 │ ├─▶   )
++   │ │         
++   │ ╰───────── Undefined variable: obj/con
++───╯
++
+ ```
+ 
+ The problem is we expand top struct macro:

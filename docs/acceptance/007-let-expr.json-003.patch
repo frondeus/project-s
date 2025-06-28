@@ -1,0 +1,44 @@
+/Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md:44
+`````
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
+    :a 3
+    :b 4
+    :c (+ (this :a) (this :b))
+}))
+
+(fix pkgs)
+`````
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
++++ json-003
+@@ -56,13 +56,18 @@
+ (fix pkgs)
+ ```
+ 
+-```json
+-{
+-  "a": 3.0,
+-  "b": 4.0,
+-  "c": 7.0
+-}
+-```
++`````json
++Error: Undefined variable: obj/con
++    ╭─[ <input>:6:24 ]
++    │
++  6 │ ╭─▶ (let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
++    ┆ ┆   
++ 10 │ ├─▶ }))
++    │ │         
++    │ ╰───────── Undefined variable: obj/con
++────╯
++
++`````
+ 
+ # Typechecking
+ 
