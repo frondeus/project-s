@@ -239,10 +239,10 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
                 };
 
                 let value = Spanned::new(value, span);
-                let expr = obj_put_thunk(key.to_string(), value, span).build(&mut rt.asts, span);
+                let expr = obj_put_thunk(key.to_string(), value).build_ast(&mut rt.asts, span);
 
-                let expr = expr.build(&mut rt.asts, span);
-                last = Some(rt.eval(expr));
+                // let expr = expr.build(&mut rt.asts, span);
+                last = Some(rt.eval(expr.inner()));
             }
             Ok(last.unwrap_or_else(|| Value::Error("Expected at least one argument".into())))
         }

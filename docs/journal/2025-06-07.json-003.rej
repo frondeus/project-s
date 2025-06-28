@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
 +++ json-003
-@@ -71,13 +71,70 @@
+@@ -71,13 +71,61 @@
  ```
  
  ```json
@@ -71,15 +71,6 @@
 + 11 │ ├─▶   })
 +    │ │          
 +    │ ╰────────── Undefined variable: has?
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:9:13 ]
-+    │
-+  9 │ ╭─▶   (obj/+ :b {
-+    ┆ ┆   
-+ 11 │ ├─▶   })
-+    │ │          
-+    │ ╰────────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:9:13 ]

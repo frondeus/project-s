@@ -67,7 +67,7 @@ impl Env {
                 Ok(id) => id,
                 Err(err) => {
                     tracing::error!("Error: {}", err);
-                    Spanned::new(error().build(asts, span), span)
+                    error().build_ast(asts, span)
                 }
             }
         })

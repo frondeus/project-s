@@ -20,7 +20,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-005
-@@ -169,14 +169,73 @@
+@@ -169,14 +169,66 @@
  ```
  
  ```json
@@ -83,13 +83,6 @@
 + 13 │   (obj/+ :key {:c 3})
 +    │   ─────────┬─────────  
 +    │            ╰─────────── Undefined variable: has?
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:13:15 ]
-+    │
-+ 13 │   (obj/+ :key {:c 3})
-+    │               ───┬──  
-+    │                  ╰──── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:13:15 ]

@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/016-low-level-struct-creation.md
 +++ json-027
-@@ -679,12 +679,61 @@
+@@ -679,12 +679,52 @@
  ```
  
  ```json
@@ -61,15 +61,6 @@
 + 10 │ ├─▶         ))
 +    │ │                
 +    │ ╰──────────────── Undefined variable: has?
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:8:19 ]
-+    │
-+  8 │ ╭─▶         (obj/+ :a (obj/condef
-+    ┆ ┆   
-+ 10 │ ├─▶         ))
-+    │ │                
-+    │ ╰──────────────── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:8:19 ]

@@ -5,66 +5,57 @@ use crate::{
     source::{Span, Spanned},
 };
 
-pub trait ASTBuilder {
-    fn assemble(self, ast: &mut AST) -> SExp;
-    fn dep(self, ast: &mut AST, span: Span) -> SExpId
-    where
-        Self: Sized,
-    {
-        let assembled = self.assemble(ast);
-        ast.add_node(assembled, span)
+pub trait ASTBuilder: Sized {
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp;
+    fn assemble_with_span(self, ast: &mut AST, caller: Span) -> Spanned<SExp> {
+        Spanned::new(self.assemble(ast, caller), caller)
     }
-    fn spanned(self, ast: &mut AST, span: Span) -> Spanned<SExpId>
-    where
-        Self: Sized,
-    {
-        let id = self.dep(ast, span);
-        Spanned::new(id, span)
+    fn assemble_id(self, ast: &mut AST, caller: Span) -> SExpId {
+        let sexp = self.assemble_with_span(ast, caller);
+        let span = sexp.span;
+        ast.add_node(sexp.inner(), span)
     }
-
-    fn build_spanned(self, asts: &mut ASTS, span: Span) -> Spanned<SExpId>
-    where
-        Self: Sized,
-    {
-        let built = self.build(asts, span);
-        Spanned::new(built, span)
+    fn assemble_id_with_span(self, ast: &mut AST, caller: Span) -> Spanned<SExpId> {
+        let sexp = self.assemble_with_span(ast, caller);
+        let span = sexp.span;
+        sexp.map(|sexp| ast.add_node(sexp, span))
     }
 
-    fn build(self, asts: &mut ASTS, span: Span) -> SExpId
-    where
-        Self: Sized,
-    {
+    fn build_ast(self, asts: &mut ASTS, caller: Span) -> Spanned<SExpId> {
         let mut ast = asts.new_ast();
-        let result = self.assemble(&mut ast);
-        let id = ast.add_node(result, span);
-        ast.set_root(id);
+        let root = self.assemble_id_with_span(&mut ast, caller);
+        ast.set_root(root.inner());
         asts.add_ast(ast);
-        id
+        root
     }
-
-    // fn assemble(self, ast: &mut AST) -> SExpId;
-    // fn build(self, asts: &mut ASTS) -> SExpId
-    // where
-    //     Self: Sized,
-    // {
-    //     let mut ast = asts.new_ast();
-    //     let result = self.assemble(&mut ast);
-    //     asts.add_ast(ast);
-    //     result
-    // }
 }
 
 impl<F> ASTBuilder for F
 where
-    F: FnOnce(&mut AST) -> SExp,
+    F: FnOnce(&mut AST, Span) -> SExp,
 {
-    fn assemble(self, ast: &mut AST) -> SExp {
-        self(ast)
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
+        self(ast, caller)
+    }
+}
+
+impl ASTBuilder for Spanned<SExpId> {
+    fn assemble_with_span(self, _ast: &mut AST, _caller: Span) -> Spanned<SExp> {
+        unreachable!()
+    }
+    fn assemble(self, _ast: &mut AST, _caller: Span) -> SExp {
+        unreachable!()
+    }
+    fn assemble_id(self, _ast: &mut AST, _caller: Span) -> SExpId {
+        self.inner()
+    }
+    fn assemble_id_with_span(self, _ast: &mut AST, _caller: Span) -> Spanned<SExpId> {
+        self
     }
 }
 
 pub fn symbol(name: &str) -> impl ASTBuilder {
-    |_ast: &mut AST| {
+    |_ast: &mut AST, _caller: Span| {
         if name.starts_with(":") {
             let name = name.trim_start_matches(':');
             SExp::Keyword(name.to_string())
@@ -76,62 +67,65 @@ pub fn symbol(name: &str) -> impl ASTBuilder {
 
 pub fn string(s: impl ToString) -> impl ASTBuilder {
     let s = s.to_string();
-    move |_ast: &mut AST| SExp::String(s)
+    move |_ast: &mut AST, _caller: Span| SExp::String(s)
 }
 
-pub fn rest(name: &str, span: Span, mut rest: Vec<Spanned<SExpId>>) -> impl ASTBuilder {
-    move |ast: &mut AST| {
-        let first = name.dep(ast, span);
-        let first = Spanned::new(first, span);
+pub fn rest(name: &str, rest: Vec<impl ASTBuilder>) -> impl ASTBuilder {
+    move |ast: &mut AST, caller: Span| {
+        let first = name.assemble_id(ast, caller);
+        let mut rest = rest
+            .into_iter()
+            .map(|item| item.assemble_id(ast, caller))
+            .collect::<Vec<_>>();
         rest.insert(0, first);
-        rest.assemble(ast)
+        rest.assemble(ast, caller)
     }
 }
 
 pub fn error() -> impl ASTBuilder {
-    |_ast: &mut AST| SExp::Error
+    |_ast: &mut AST, _caller: Span| SExp::Error
 }
 
 impl ASTBuilder for &str {
-    fn assemble(self, ast: &mut AST) -> SExp {
-        symbol(self).assemble(ast)
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
+        symbol(self).assemble(ast, caller)
     }
 }
 
 impl ASTBuilder for String {
-    fn assemble(self, ast: &mut AST) -> SExp {
-        symbol(&self).assemble(ast)
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
+        symbol(&self).assemble(ast, caller)
     }
 }
 
-pub fn quote(span: Span, exp: Spanned<impl ASTBuilder>) -> impl ASTBuilder {
-    (Spanned::new(symbol("quote"), span), exp)
+pub fn quote(exp: impl ASTBuilder) -> impl ASTBuilder {
+    ("quote", exp)
 }
 
-impl<T: ASTBuilder + Copy> ASTBuilder for &[Spanned<T>] {
-    fn assemble(self, ast: &mut AST) -> SExp {
+impl<T: ASTBuilder + Copy> ASTBuilder for &[T] {
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
         let mut items = vec![];
         for item in self {
-            items.push(item.dep(ast));
+            items.push(item.assemble_id(ast, caller));
         }
         SExp::List(items)
     }
 }
-impl<T: ASTBuilder> ASTBuilder for BTreeSet<Spanned<T>> {
-    fn assemble(self, ast: &mut AST) -> SExp {
+impl<T: ASTBuilder> ASTBuilder for BTreeSet<T> {
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
         let mut items = vec![];
         for item in self {
-            let item = item.dep(ast);
+            let item = item.assemble_id(ast, caller);
             items.push(item);
         }
         SExp::List(items)
     }
 }
-impl<T: ASTBuilder> ASTBuilder for Vec<Spanned<T>> {
-    fn assemble(self, ast: &mut AST) -> SExp {
+impl<T: ASTBuilder> ASTBuilder for Vec<T> {
+    fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
         let mut items = vec![];
         for item in self {
-            let item = item.dep(ast);
+            let item = item.assemble_id(ast, caller);
             items.push(item);
         }
         SExp::List(items)
@@ -139,49 +133,47 @@ impl<T: ASTBuilder> ASTBuilder for Vec<Spanned<T>> {
 }
 
 pub fn list() -> impl ASTBuilder {
-    |_ast: &mut AST| SExp::List(vec![])
+    |_ast: &mut AST, _caller: Span| SExp::List(vec![])
 }
 
 impl ASTBuilder for SExpId {
-    fn assemble(self, _ast: &mut AST) -> SExp {
+    fn assemble(self, _ast: &mut AST, _caller: Span) -> SExp {
         unreachable!()
     }
-    fn dep(self, _ast: &mut AST, _span: Span) -> SExpId {
+    fn assemble_id(self, _ast: &mut AST, _caller: Span) -> SExpId {
         self
     }
 }
 
+// impl<T: ASTBuilder + Copy> ASTBuilder for &T {
+//     fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
+//         (*self).assemble(ast, caller)
+//     }
+// }
+
 impl ASTBuilder for &SExpId {
-    fn assemble(self, _ast: &mut AST) -> SExp {
+    fn assemble(self, _ast: &mut AST, _caller: Span) -> SExp {
         unreachable!()
+    }
+    fn assemble_id(self, _ast: &mut AST, _caller: Span) -> SExpId {
+        *self
     }
 }
 
 impl ASTBuilder for () {
-    fn assemble(self, _ast: &mut AST) -> SExp {
+    fn assemble(self, _ast: &mut AST, _caller: Span) -> SExp {
         SExp::List(vec![])
-    }
-}
-
-pub trait SpannedASTBuilder {
-    fn dep(self, ast: &mut AST) -> SExpId;
-}
-
-impl<T: ASTBuilder> SpannedASTBuilder for Spanned<T> {
-    fn dep(self, ast: &mut AST) -> SExpId {
-        let span = self.span;
-        self.inner().dep(ast, span)
     }
 }
 
 macro_rules! impl_list {
     ($($t:tt),*) => {
         #[allow(non_snake_case)]
-        impl<$($t: ASTBuilder),*> ASTBuilder for ($(Spanned<$t>,)*)
+        impl<$($t: ASTBuilder),*> ASTBuilder for ($($t,)*)
         {
-            fn assemble(self, ast: &mut AST) -> SExp {
+            fn assemble(self, ast: &mut AST, caller: Span) -> SExp {
                 let ($($t,)*) = self;
-                $( let $t = $t.dep(ast); )*
+                $( let $t = $t.assemble_id(ast, caller); )*
 
                 SExp::List(vec![$($t),*])
             }

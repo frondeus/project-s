@@ -218,17 +218,16 @@ impl<'a> LambdaPass<'a> {
                 .collect::<BTreeSet<String>>();
 
             free_vars.extend(new_free_vars);
-            let free_vars = free_vars
-                .into_iter()
-                .map(|v| Spanned::new(v, span))
-                .collect::<Vec<Spanned<String>>>();
+            // let free_vars = free_vars
+            //     .into_iter()
+            //     .map(|v| Spanned::new(v, span))
+            //     .collect::<Vec<Spanned<String>>>();
 
-            let thunk =
-                (first_id, Spanned::new(free_vars, span), new_body).dep(self.new_ast(), span);
+            let thunk = (first_id, free_vars, new_body).assemble_id(self.new_ast(), span);
 
             Some(thunk)
         } else if edited {
-            Some((first_id, Spanned::new(free_vars, span), body).dep(self.new_ast(), span))
+            Some((first_id, free_vars, body).assemble_id(self.new_ast(), span))
         } else {
             None
         }
@@ -273,18 +272,12 @@ impl<'a> LambdaPass<'a> {
         self.envs.pop();
 
         if let Some((new_body, free_vars)) = maybe_new_body {
-            // let first_id_span = self.asts.get(first_id).span;
-            let cl = Spanned::new("cl", first_id.span);
-            let free_vars = free_vars
-                .into_iter()
-                .map(|v| Spanned::new(v, span))
-                .collect::<Vec<Spanned<String>>>();
-            let closure =
-                (cl, pattern_id, Spanned::new(free_vars, span), new_body).dep(self.new_ast(), span);
+            let cl = "cl".assemble_id(self.new_ast(), first_id.span);
+            let closure = (cl, pattern_id, free_vars, new_body).assemble_id(self.new_ast(), span);
 
             Some(closure)
         } else if edited {
-            Some((first_id, pattern_id, body).dep(self.new_ast(), span))
+            Some((first_id, pattern_id, body).assemble_id(self.new_ast(), span))
         } else {
             None
         }

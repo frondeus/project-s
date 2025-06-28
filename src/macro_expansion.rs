@@ -63,10 +63,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
             self.diagnostics
                 .add(&list, "Macro is forbidden in this context");
             return self.helper.then_assemble(
-                (
-                    Spanned::new("error", list.span),
-                    Spanned::new(string("Macro is forbidden in this context"), list.span),
-                ),
+                ("error", string("Macro is forbidden in this context")),
                 list.span,
             );
         }

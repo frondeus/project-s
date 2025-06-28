@@ -20,7 +20,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
 +++ json-004
-@@ -104,14 +104,73 @@
+@@ -104,14 +104,66 @@
  ```
  
  ```json
@@ -83,13 +83,6 @@
 + 13 │   (obj/+ :key {:c 3})
 +    │   ─────────┬─────────  
 +    │            ╰─────────── Undefined variable: has?
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:13:15 ]
-+    │
-+ 13 │   (obj/+ :key {:c 3})
-+    │               ───┬──  
-+    │                  ╰──── Undefined variable: obj/con
 +────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:13:15 ]

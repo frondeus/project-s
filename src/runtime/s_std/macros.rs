@@ -9,27 +9,14 @@ pub fn obj_record(
     caller: Span,
     args: Vec<Spanned<SExpId>>,
 ) -> Result<Spanned<SExpId>, String> {
-    Ok((
-        Spanned::new("fn", caller),
-        Spanned::new(
-            (
-                Spanned::new(":self", caller),
-                Spanned::new(":super", caller),
-            ),
-            caller,
-        ),
-        Spanned::new(
-            |ast: &mut AST| {
-                let mut items = args;
-                items.insert(0, Spanned::new("obj/extend", caller).spanned(ast, caller));
-                items.insert(1, Spanned::new("super", caller).spanned(ast, caller));
+    Ok(("fn", (":self", ":super"), |ast: &mut AST, caller: Span| {
+        let mut items = args;
+        items.insert(0, "obj/extend".assemble_id_with_span(ast, caller));
+        items.insert(1, "super".assemble_id_with_span(ast, caller));
 
-                items.assemble(ast)
-            },
-            caller,
-        ),
-    )
-        .build_spanned(rt, caller))
+        items.assemble(ast, caller)
+    })
+        .build_ast(rt, caller))
 }
 
 pub fn let_star(
@@ -38,35 +25,15 @@ pub fn let_star(
     args: Vec<Spanned<SExpId>>,
 ) -> Result<Spanned<SExpId>, String> {
     match &args[..] {
-        &[pattern, value] => Ok((
-            Spanned::new("let-rec", caller),
-            pattern,
-            Spanned::new(
-                (
-                    Spanned::new("thunk", caller),
-                    Spanned::new((), caller),
-                    value,
-                ),
-                caller,
-            ),
-        )
-            .build_spanned(rt, caller)),
+        &[pattern, value] => Ok(("let-rec", pattern, ("thunk", (), value)).build_ast(rt, caller)),
         _ => Err("Expected two arguments".into()),
     }
 }
 
-pub fn obj_put_thunk(key: String, value: Spanned<impl ASTBuilder>, span: Span) -> impl ASTBuilder {
-    let value = (Spanned::new("obj/construct-or", span), value);
-    let value = (
-        Spanned::new("thunk", span),
-        Spanned::new((), span),
-        Spanned::new(value, span),
-    );
-    (
-        Spanned::new("obj/put", span),
-        Spanned::new(format!(":{key}"), span),
-        Spanned::new(value, span),
-    )
+pub fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
+    let value = ("obj/construct-or", value);
+    let value = ("thunk", (), value);
+    ("obj/put", format!(":{key}"), value)
 }
 
 pub fn obj_struct(
@@ -84,14 +51,14 @@ pub fn obj_struct(
             let Some(value) = args.next() else {
                 return Err("Expected value".into());
             };
-            inner.push(obj_put_thunk(key.to_string(), value, caller).spanned(&mut ast, caller));
+            inner.push(obj_put_thunk(key.to_string(), value).assemble_id(&mut ast, caller));
         } else {
-            inner.push((Spanned::new("obj/eval", caller), arg_id).spanned(&mut ast, caller));
+            inner.push(("obj/eval", arg_id).assemble_id(&mut ast, caller));
         }
     }
 
-    inner.insert(0, "obj/condef".spanned(&mut ast, caller));
-    let result = inner.spanned(&mut ast, caller);
+    inner.insert(0, "obj/condef".assemble_id(&mut ast, caller));
+    let result = inner.assemble_id_with_span(&mut ast, caller);
     ast.set_root(result.inner());
     rt.add_ast(ast);
     // tracing::debug!("obj/struct: {}", rt.asts.fmt(result));
@@ -104,33 +71,19 @@ pub fn condef(
     args: Vec<Spanned<SExpId>>,
 ) -> Result<Spanned<SExpId>, String> {
     Ok((
-        Spanned::new("obj/con", caller),
-        Spanned::new(
-            (
-                Spanned::new("fn", caller),
-                Spanned::new(
-                    (
-                        Spanned::new(":self", caller),
-                        Spanned::new(":root", caller),
-                        Spanned::new(":super", caller),
-                        Spanned::new(":origin", caller),
-                    ),
-                    caller,
-                ),
-                Spanned::new(
-                    move |ast: &mut AST| {
-                        let mut items = args;
-                        items.insert(0, Spanned::new("do".dep(ast, caller), caller));
-                        items.push(Spanned::new("self".dep(ast, caller), caller));
-                        (&items[..]).assemble(ast)
-                    },
-                    caller,
-                ),
-            ),
-            caller,
+        "obj/con",
+        (
+            "fn",
+            (":self", ":root", ":super", ":origin"),
+            move |ast: &mut AST, caller: Span| {
+                let mut items = args;
+                items.insert(0, "do".assemble_id_with_span(ast, caller));
+                items.push("self".assemble_id_with_span(ast, caller));
+                (&items[..]).assemble(ast, caller)
+            },
         ),
     )
-        .build_spanned(rt, caller))
+        .build_ast(rt, caller))
 }
 pub fn objput(
     rt: &mut ASTS,
@@ -141,13 +94,7 @@ pub fn objput(
         return Err("Expected two arguments".into());
     };
 
-    Ok((
-        Spanned::new("obj/insert", caller),
-        Spanned::new("self", caller),
-        key,
-        value,
-    )
-        .build_spanned(rt, caller))
+    Ok(("obj/insert", "self", key, value).build_ast(rt, caller))
 }
 
 pub fn obj_add(
@@ -157,33 +104,11 @@ pub fn obj_add(
 ) -> Result<Spanned<SExpId>, String> {
     match &args[..] {
         &[key, value] => Ok((
-            Spanned::new("if", caller),
-            Spanned::new(
-                (
-                    Spanned::new("has?", caller),
-                    Spanned::new("super", caller),
-                    key,
-                ),
-                caller,
-            ),
-            Spanned::new(
-                (
-                    Spanned::new("obj/put", caller),
-                    key,
-                    Spanned::new(
-                        (
-                            Spanned::new("+", caller),
-                            Spanned::new((Spanned::new("super", caller), key), caller),
-                            value,
-                        ),
-                        caller,
-                    ),
-                ),
-                caller,
-            ),
-            Spanned::new((Spanned::new("obj/put", caller), key, value), caller),
+            "if",
+            ("has?", "super", key),
+            ("obj/put", key, ("+", ("super", key), value)),
         )
-            .build_spanned(rt, caller)),
+            .build_ast(rt, caller)),
         arg => Err(format!("Expected two arguments. Found: {}", arg.len())),
     }
 }

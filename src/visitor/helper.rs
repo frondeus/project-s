@@ -37,7 +37,7 @@ impl VisitorHelper<'_> {
     }
 
     pub fn assemble(&mut self, builder: impl ASTBuilder, span: Span) -> Spanned<SExpId> {
-        Spanned::new(builder.dep(self.new_ast(), span), span)
+        builder.assemble_id_with_span(self.new_ast(), span)
     }
 
     pub fn then_assemble(
