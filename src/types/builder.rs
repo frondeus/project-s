@@ -74,6 +74,7 @@ fn canonical_pair_inner(
             (v_type, u_type)
         }
         Canonical::Or(_canon_ids) => todo!(),
+        Canonical::And(_canon_ids) => todo!(),
         Canonical::Bool => {
             let v_bool = env.engine.bool(span);
             let u_bool = env.engine.bool_use(span);
@@ -203,6 +204,7 @@ pub fn canonical_value(
         Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
+        Canonical::And(_) => todo!(),
         Canonical::Bool => env.engine.bool(span),
         Canonical::Number => env.engine.number(span),
         Canonical::String => env.engine.string(span),
@@ -269,6 +271,7 @@ pub fn canonical_use(
         Canonical::Recursive(_) => todo!(),
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
+        Canonical::And(_) => todo!(),
         Canonical::Skip => env.engine.var(span).1,
         Canonical::Bool => env.engine.bool_use(span),
         Canonical::Number => env.engine.number_use(span),
@@ -340,9 +343,9 @@ pub mod canon {
         Canonical::Any(i.into())
     }
 
-    pub fn recursive(inner: impl CanonBuilder) -> impl CanonBuilder {
-        move |canon: &mut CanonicalBuilder| Canonical::Recursive(inner.build(canon))
-    }
+    // pub fn recursive(inner: impl CanonBuilder) -> impl CanonBuilder {
+    //     move |canon: &mut CanonicalBuilder| Canonical::Recursive(inner.build(canon))
+    // }
 
     pub fn bool() -> impl CanonBuilder {
         Canonical::Bool
@@ -352,19 +355,19 @@ pub mod canon {
         Canonical::Number
     }
 
-    pub fn string() -> impl CanonBuilder {
-        Canonical::String
-    }
+    // pub fn string() -> impl CanonBuilder {
+    //     Canonical::String
+    // }
 
-    pub fn error() -> impl CanonBuilder {
-        Canonical::Error
-    }
+    // pub fn error() -> impl CanonBuilder {
+    //     Canonical::Error
+    // }
 
     pub fn keyword() -> impl CanonBuilder {
         Canonical::Keyword
     }
 
-    pub fn obj() -> impl CanonBuilder {}
+    // pub fn obj() -> impl CanonBuilder {}
 
     pub fn list(item: impl CanonBuilder) -> impl CanonBuilder {
         move |canon: &mut CanonicalBuilder| Canonical::List {

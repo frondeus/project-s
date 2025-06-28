@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use core::WithID;
 use std::{collections::BTreeMap, rc::Rc};
 
@@ -561,12 +559,12 @@ impl Envs {
         self.envs.pop().map(|env| env.vars)
     }
 
-    pub fn with<T>(&mut self, f: impl FnOnce() -> T) -> T {
-        self.push();
-        let result = f();
-        self.pop();
-        result
-    }
+    // pub fn with<T>(&mut self, f: impl FnOnce() -> T) -> T {
+    //     self.push();
+    //     let result = f();
+    //     self.pop();
+    //     result
+    // }
 }
 
 #[allow(clippy::print_stderr)]

@@ -53,15 +53,6 @@ pub enum Scheme {
     Polymorphic(PolyFunc),
 }
 
-impl Scheme {
-    pub fn as_mono(&self) -> Option<Value> {
-        match self {
-            Self::Monomorphic(value) => Some(*value),
-            Self::Polymorphic(_) => None,
-        }
-    }
-}
-
 impl std::fmt::Debug for Scheme {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -167,10 +158,6 @@ pub enum UTypeHead {
     UTuple {
         items: Vec<Use>,
     },
-    /// Access to a specific element of a tuple.
-    UTupleAccess {
-        index: Use,
-    },
     UFunc {
         pattern: Value,
         ret: Use,
@@ -184,9 +171,6 @@ pub enum UTypeHead {
     },
     UStruct {
         fields: HashMap<String, Use>,
-    },
-    UStructAccess {
-        field: (String, Use),
     },
     UApplication {
         args: Value,
@@ -211,7 +195,6 @@ impl std::fmt::Display for UTypeHead {
             UTypeHead::UString => write!(f, "string"),
             UTypeHead::UKeyword => write!(f, "keyword"),
             UTypeHead::UTuple { items } => write!(f, "tuple"),
-            UTypeHead::UTupleAccess { index } => write!(f, "tuple_access"),
             UTypeHead::UList {
                 items,
                 min_len,
@@ -219,7 +202,6 @@ impl std::fmt::Display for UTypeHead {
             } => write!(f, "list"),
             UTypeHead::UFunc { pattern, ret } => write!(f, "function"),
             UTypeHead::UStruct { fields } => write!(f, "object"),
-            UTypeHead::UStructAccess { field } => write!(f, "object_access"),
             UTypeHead::UApplication { .. } => write!(f, "function"),
             UTypeHead::URef { write, read } => write!(f, "ref"),
         }
@@ -237,9 +219,6 @@ impl UTypeHead {
             UTypeHead::UTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
             }
-            UTypeHead::UTupleAccess { index } => {
-                ids.push(index.id());
-            }
             UTypeHead::UList {
                 items,
                 min_len,
@@ -249,11 +228,6 @@ impl UTypeHead {
             }
             UTypeHead::UStruct { fields } => {
                 ids.extend(fields.values().copied().map(WithID::id));
-            }
-            UTypeHead::UStructAccess {
-                field: (_, field_use),
-            } => {
-                ids.push(field_use.id());
             }
             UTypeHead::UFunc { pattern, ret } => {
                 ids.push(pattern.id());
@@ -285,7 +259,7 @@ impl UTypeHead {
 
 #[derive(Clone)]
 pub enum TypeNode {
-    Var(Span),
+    Var(#[allow(dead_code)] Span),
     Value(VTypeHead, Span),
     Use(UTypeHead, Span),
 }
@@ -353,10 +327,6 @@ impl TypeCheckerCore {
 
     pub fn successors(&self, id: impl WithID) -> impl Iterator<Item = (&TypeNode, ID)> {
         self.r.successors(id.id()).map(|id| (&self.types[id], id))
-    }
-
-    pub fn all_linked(&self, id: impl WithID) -> impl Iterator<Item = &TypeNode> {
-        self.r.all_linked(id.id()).map(|id| &self.types[id])
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (ID, &TypeNode)> {
@@ -452,9 +422,6 @@ impl TypeCheckerCore {
     pub fn tuple_use(&mut self, items: Vec<Use>, span: impl WithSpan) -> Use {
         self.new_use(UTypeHead::UTuple { items }, span)
     }
-    pub fn tuple_access_use(&mut self, index: Use, span: impl WithSpan) -> Use {
-        self.new_use(UTypeHead::UTupleAccess { index }, span)
-    }
 
     pub fn list_use(
         &mut self,
@@ -495,9 +462,6 @@ impl TypeCheckerCore {
             },
             span,
         )
-    }
-    pub fn obj_field_access_use(&mut self, field: (String, Use), span: impl WithSpan) -> Use {
-        self.new_use(UTypeHead::UStructAccess { field }, span)
     }
 
     pub fn reference(

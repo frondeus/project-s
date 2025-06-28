@@ -133,19 +133,6 @@ impl TypeCheckerCore {
                 }
             }
             (
-                VStruct { fields, .. },
-                &UStructAccess {
-                    field: (ref field, field_use),
-                },
-            ) => match fields.get(field) {
-                None => {
-                    diagnostics.add(rhs_span, format!("Undefined field: {}", field));
-                }
-                Some(field_ty) => {
-                    out.push((*field_ty, field_use));
-                }
-            },
-            (
                 VTuple { items },
                 &UList {
                     items: args,

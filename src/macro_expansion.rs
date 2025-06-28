@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::collections::BTreeMap;
 
 use crate::{
@@ -67,6 +66,12 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                 list.span,
             );
         }
+        if self.helper.is_special_form(&list, "do") {
+            self.envs.push();
+            list.visit_children(self);
+            self.envs.pop();
+            return list.id();
+        }
         if self.helper.is_special_form(&list, "let") {
             if let &[_let, pat_id, value] = &list.list[..] {
                 let mut let_visitor = LetVisitor {
@@ -106,7 +111,6 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                     env: Default::default(),
                     diag: self.diagnostics,
                     macro_,
-                    is_top: true,
                     args: &list.list[1..],
                 }
                 .evaluate(list.span)?;
@@ -170,7 +174,6 @@ struct MacroEvaluator<'a, 'b> {
     diag: &'b mut Diagnostics,
     macro_: Macro,
     args: &'b [Spanned<SExpId>],
-    is_top: bool,
 }
 
 impl MacroEvaluator<'_, '_> {

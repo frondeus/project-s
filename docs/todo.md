@@ -45,7 +45,8 @@ Like vertical stack
   * [x] Ref
   * [ ] import
   * [/] Ascription
-    * [ ] Or
+    * [ ] Or (value)
+    * [ ] And (use)
     * [x] Recursive
     * [ ] Applicable
   * [ ] Application

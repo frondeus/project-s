@@ -109,7 +109,6 @@ impl std::fmt::Debug for Function {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Thunk {
     pub(crate) inner: Rc<RefCell<InnerThunk>>,

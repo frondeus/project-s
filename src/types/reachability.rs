@@ -44,10 +44,6 @@ impl Reachability {
     pub fn successors(&self, id: ID) -> impl Iterator<Item = ID> {
         self.downsets[id].iter().cloned()
     }
-
-    pub fn all_linked(&self, id: ID) -> impl Iterator<Item = ID> {
-        self.predecessors(id).chain(self.successors(id))
-    }
 }
 
 struct OrderedSet<T> {

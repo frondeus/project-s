@@ -23,9 +23,33 @@ impl Formatter<'_> {
                 self.f.push_str(&format!("T{}", i));
             }
             Canonical::Or(canon_ids) => {
+                // assert!(canon_ids.len() > 1);
+                if canon_ids.len() == 1 {
+                    self.f.push_str("or<");
+                    self.print_canon(canon_ids[0], canonical);
+                    self.f.push('>');
+                    return;
+                }
+
                 for (i, canon_id) in canon_ids.iter().enumerate() {
                     if i > 0 {
                         self.f.push_str(" | ");
+                    }
+                    self.print_canon(*canon_id, canonical);
+                }
+            }
+            Canonical::And(canon_ids) => {
+                // assert!(canon_ids.len() > 1);
+                if canon_ids.len() == 1 {
+                    self.f.push_str("and<");
+                    self.print_canon(canon_ids[0], canonical);
+                    self.f.push('>');
+                    return;
+                }
+
+                for (i, canon_id) in canon_ids.iter().enumerate() {
+                    if i > 0 {
+                        self.f.push_str(" & ");
                     }
                     self.print_canon(*canon_id, canonical);
                 }

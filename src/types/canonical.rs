@@ -24,6 +24,7 @@ pub enum Canonical {
     As(usize, CanonId),
 
     Or(Vec<CanonId>),
+    And(Vec<CanonId>),
     Bool,
     Number,
     String,
@@ -51,6 +52,7 @@ pub enum Canonical {
 }
 
 impl Canonical {
+    #[cfg(test)]
     fn ids(&self) -> impl Iterator<Item = CanonId> {
         match self {
             Canonical::Todo(_)
@@ -64,6 +66,7 @@ impl Canonical {
             Canonical::Recursive(canon_id) => vec![*canon_id].into_iter(),
             Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
+            Canonical::And(canon_ids) => canon_ids.clone().into_iter(),
             Canonical::Tuple { items } => items.clone().into_iter(),
             Canonical::List { item } => vec![*item].into_iter(),
             Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),
@@ -126,6 +129,7 @@ impl Canonicalized {
         &self.canonical[id.0]
     }
 
+    #[cfg(test)]
     pub fn dot(&self, root: CanonId) -> String {
         use std::fmt::Write;
         let mut buffer = String::new();
@@ -163,16 +167,14 @@ impl Canonicalizer {
     }
 
     fn canon_value_var(&mut self, value: core::Value, engine: &core::TypeCheckerCore) -> CanonId {
-        let ids = self.value_predecessors(value, engine);
+        let mut ids = self.value_predecessors(value, engine);
+        ids.sort_unstable();
+        ids.dedup();
+
         match &ids[..] {
             [] => self.add_canon(Canonical::Any(None)),
             [id] => *id,
-            ids => {
-                let mut ids = ids.to_vec();
-                ids.sort_unstable();
-                ids.dedup();
-                self.add_canon(Canonical::Or(ids))
-            }
+            ids => self.add_canon(Canonical::Or(ids.to_vec())),
         }
     }
 
@@ -278,9 +280,6 @@ impl Canonicalizer {
                     .collect();
                 self.add_canon(Canonical::Tuple { items })
             }
-            core::UTypeHead::UTupleAccess { .. } => {
-                self.add_canon(Canonical::Todo(format!("{:?}", use_)))
-            }
             core::UTypeHead::UFunc { pattern, ret } => {
                 let pattern = self.canon_value(*pattern, engine);
                 let ret = self.canon_use(*ret, engine);
@@ -300,9 +299,6 @@ impl Canonicalizer {
                     .map(|(name, id)| (name.clone(), self.canon_use(*id, engine)))
                     .collect();
                 self.add_canon(Canonical::Struct { fields })
-            }
-            core::UTypeHead::UStructAccess { .. } => {
-                self.add_canon(Canonical::Todo(format!("{:?}", use_)))
             }
             app @ core::UTypeHead::UApplication { .. } => {
                 self.add_canon(Canonical::Todo(format!("{:?}", app)))
@@ -327,15 +323,13 @@ impl Canonicalizer {
                 }
             }
         }
+        let mut ids = ids.to_vec();
+        ids.sort_unstable();
+        ids.dedup();
         match &ids[..] {
             [] => self.add_canon(Canonical::Any(None)),
             [id] => *id,
-            ids => {
-                let mut ids = ids.to_vec();
-                ids.sort_unstable();
-                ids.dedup();
-                self.add_canon(Canonical::Or(ids))
-            }
+            ids => self.add_canon(Canonical::And(ids.to_vec())),
         }
     }
 
