@@ -1,19 +1,57 @@
+// use std::{
+//     path::{Path, PathBuf},
+//     sync::Arc,
+// };
+
 use highlights::lsp_legend;
+// use tokio::sync::Mutex;
 use tower_lsp_server::{
     Client, LanguageServer, UriExt,
     jsonrpc::Result,
     lsp_types::{
         DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-        DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams,
-        MessageType, OneOf, SemanticTokens, SemanticTokensFullOptions, SemanticTokensOptions,
-        SemanticTokensParams, SemanticTokensResult, SemanticTokensServerCapabilities,
-        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+        DidSaveTextDocumentParams, Hover, HoverContents, HoverParams, HoverProviderCapability,
+        InitializeParams, InitializeResult, InitializedParams, MarkupContent, MarkupKind,
+        MessageType, OneOf, Position, SemanticTokens, SemanticTokensFullOptions,
+        SemanticTokensOptions, SemanticTokensParams, SemanticTokensResult,
+        SemanticTokensServerCapabilities, ServerCapabilities, TextDocumentSyncCapability,
+        TextDocumentSyncKind, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     },
+};
+use tree_sitter::Point;
+
+fn pos_to_point(pos: Position) -> Point {
+    let Position { line, character } = pos;
+    Point {
+        row: line as usize,
+        column: character as usize,
+    }
+}
+
+use crate::{
+    ast::{ASTS, SExpParser},
+    process_ast,
+    s_std::prelude,
+    source::Sources,
+    types::TypeEnv,
 };
 
 mod highlights;
+
+// #[derive(Default)]
+// pub struct LSPSources {
+//     sources: Arc<Mutex<Sources>>,
+// }
+
+// impl LSPSources {
+//     async fn load(&self, path: impl AsRef<Path>) {
+//         let mut sources = self.sources.lock().await;
+//         let filename = path.as_ref().display().to_string();
+//         let source =
+//             sources.find_or_load_with(&filename, || std::fs::read_to_string(path).expect("File"));
+//     }
+// }
 
 pub struct Backend {
     client: Client,
@@ -37,6 +75,8 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
 
                 // completion_provider: Some(CompletionOptions {
                 //     resolve_provider: Some(false),
@@ -165,6 +205,105 @@ impl LanguageServer for Backend {
             data: highlights,
             ..Default::default()
         })))
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        self.client
+            .log_message(MessageType::INFO, format!("On Hover"))
+            .await;
+
+        let selected = params.text_document_position_params.position;
+        let selected = pos_to_point(selected);
+
+        let Some(document) = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .to_file_path()
+        else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not get file path"),
+                )
+                .await;
+            return Ok(None);
+        };
+
+        let filename = document.display().to_string();
+        let Ok(document) = std::fs::read_to_string(document) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not get file content: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
+
+        let (mut sources, source_id) = Sources::single(&filename, &document);
+        let mut asts = ASTS::new();
+        let Ok(tree) = SExpParser::parse_tree(&document) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("Could not parse file: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
+        let Some(selected) = tree
+            .root_node()
+            .named_descendant_for_point_range(selected, selected)
+        else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not find selected node: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
+        let Ok(ast) = asts.parse_with_tree(tree, source_id, sources.get(source_id)) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not parse file: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
+        let Some(root) = ast.root_id() else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not get parsed root SEXP: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
+        let prelude = prelude();
+        // let mut env = TypeEnv::default().with_prelude(&mut sources);
+        let type_ = {
+            let sources: &mut Sources = &mut sources;
+            let asts: &mut ASTS = &mut asts;
+            let envs = &[prelude];
+            let (_root, mut diagnostics) = process_ast(asts, root, envs);
+            let mut type_env = TypeEnv::default().with_prelude(sources);
+            let type_ = type_env.check(asts, root, &mut diagnostics);
+            type_env.to_string(type_)
+        };
+        self.client
+            .log_message(MessageType::INFO, format!("On Hover: {type_}"))
+            .await;
+
+        Ok(Some(Hover {
+            contents: HoverContents::Markup(MarkupContent {
+                kind: MarkupKind::PlainText,
+                value: type_,
+            }),
+            range: None,
+        }))
     }
 
     // async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {

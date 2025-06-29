@@ -1,9 +1,9 @@
-```
+```s
 (let :dwarf {
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
     :features {
-        :stout (do 
+        :stout (do
             # "Cursed" operation - when its evaluated (and it is lazy)
             # It will mutate the `origin` reference.
             (set origin (obj/new (+ origin {
@@ -38,12 +38,12 @@
 Error: Undefined variable: obj/con
     ╭─[ <input>:1:13 ]
     │
-    │ 
+    │
 ────╯
 Error: Undefined variable: obj/con
     ╭─[ <input>:4:15 ]
     │
-    │ 
+    │
 ────╯
 Error: Undefined variable: obj/new
    ╭─[ <input>:8:26 ]
@@ -53,7 +53,7 @@ Error: Undefined variable: obj/new
 Error: Undefined variable: obj/con
     ╭─[ <input>:8:44 ]
     │
-    │ 
+    │
 ────╯
 Error: Undefined variable: obj/new
     ╭─[ <input>:21:15 ]
@@ -63,12 +63,12 @@ Error: Undefined variable: obj/new
 Error: Undefined variable: obj/con
     ╭─[ <input>:21:26 ]
     │
-    │ 
+    │
 ────╯
 Error: Undefined variable: obj/con
     ╭─[ <input>:22:12 ]
     │
-    │ 
+    │
 ────╯
 Error: Undefined variable: deep-eager
     ╭─[ <input>:33:2 ]

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
-use tree_sitter::Parser as TSParser;
+use tree_sitter::{Parser as TSParser, Point, Tree, ffi::TSTree};
 
 use crate::source::{Source, SourceId, Span, Spanned};
 
@@ -50,6 +50,19 @@ impl ASTS {
 
     pub fn fmt_list<'a>(&'a self, list: &'a [SExpId]) -> SExpFmtList<'a> {
         SExpFmtList { list, asts: self }
+    }
+
+    pub fn parse_with_tree(
+        &mut self,
+        tree: Tree,
+        source_id: SourceId,
+        source: &Source,
+    ) -> Result<&AST, ParseError> {
+        let parser = SExpParser::new(self, source_id, source)?;
+        let ast = parser.parse_with_tree(tree)?;
+        let root = ast.root_id().unwrap();
+        self.add_ast(ast);
+        Ok(self.get_ast(root))
     }
 
     pub fn parse(&mut self, source_id: SourceId, source: &Source) -> Result<&AST, ParseError> {
@@ -316,21 +329,32 @@ pub enum ParseError {
 }
 
 pub struct SExpParser {
-    parser: TSParser,
     ast: AST,
     source_id: SourceId,
     source: Arc<str>,
 }
 
 impl SExpParser {
-    pub fn new(asts: &mut ASTS, source_id: SourceId, source: &Source) -> Result<Self, ParseError> {
+    pub fn parser() -> Result<TSParser, ParseError> {
         let mut parser = TSParser::new();
         parser
             .set_language(&tree_sitter_s::LANGUAGE.into())
             .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
+        Ok(parser)
+    }
 
+    pub fn parse_tree(source: &str) -> Result<Tree, ParseError> {
+        let mut parser = Self::parser()?;
+
+        let tree = parser
+            .parse(source.as_bytes(), None)
+            .ok_or_else(|| ParseError::TreeSitterError("Failed to parse input".to_string()))?;
+
+        Ok(tree)
+    }
+
+    pub fn new(asts: &mut ASTS, source_id: SourceId, source: &Source) -> Result<Self, ParseError> {
         Ok(SExpParser {
-            parser,
             ast: asts.new_ast(),
             source_id,
             source: source.source.clone(),
@@ -450,12 +474,7 @@ impl SExpParser {
         Ok(self.ast.add_node(SExp::List(items), span))
     }
 
-    pub fn parse(mut self) -> Result<AST, ParseError> {
-        let tree = self
-            .parser
-            .parse(self.source.as_bytes(), None)
-            .ok_or_else(|| ParseError::TreeSitterError("Failed to parse input".to_string()))?;
-
+    pub fn parse_with_tree(mut self, tree: Tree) -> Result<AST, ParseError> {
         let root = tree.root_node();
         if root.kind() != "source_file" {
             return Err(ParseError::UnexpectedNode(format!(
@@ -490,6 +509,11 @@ impl SExpParser {
         let root = self.ast.add_node(SExp::List(ids), span);
         self.ast.root = Some(root);
         Ok(self.ast)
+    }
+
+    pub fn parse(self) -> Result<AST, ParseError> {
+        let tree = Self::parse_tree(&self.source)?;
+        self.parse_with_tree(tree)
     }
 }
 

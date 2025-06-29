@@ -1,10 +1,10 @@
 /Users/frondeus/Code/project-s/docs/frondeus.md:1
-```````````
+```````````s
 (let :dwarf {
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
     :features {
-        :stout (do 
+        :stout (do
             # "Cursed" operation - when its evaluated (and it is lazy)
             # It will mutate the `origin` reference.
             (set origin (obj/new (+ origin {
@@ -41,7 +41,7 @@
  Error: Undefined variable: obj/con
      ╭─[ <input>:1:13 ]
      │
--    │ 
+-    │
 +  1 │ ╭─▶ (let :dwarf {
 +    ┆ ┆   
 + 14 │ ├─▶ })
@@ -51,7 +51,7 @@
  Error: Undefined variable: obj/con
      ╭─[ <input>:4:15 ]
      │
--    │ 
+-    │
 +  4 │ ╭─▶     :features {
 +    ┆ ┆   
 + 13 │ ├─▶     }
@@ -68,7 +68,7 @@
  Error: Undefined variable: obj/con
      ╭─[ <input>:8:44 ]
      │
--    │ 
+-    │
 +  8 │ ╭─▶             (set origin (obj/new (+ origin {
 +    ┆ ┆   
 + 10 │ ├─▶             })))
@@ -85,7 +85,7 @@
  Error: Undefined variable: obj/con
      ╭─[ <input>:21:26 ]
      │
--    │ 
+-    │
 + 21 │ ╭─▶ (let :result (obj/new (+ {
 +    ┆ ┆   
 + 30 │ ├─▶ } dwarf)))
@@ -95,7 +95,7 @@
  Error: Undefined variable: obj/con
      ╭─[ <input>:22:12 ]
      │
--    │ 
+-    │
 + 22 │ ╭─▶     :stats {
 +    ┆ ┆   
 + 29 │ ├─▶     }

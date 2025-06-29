@@ -1,33 +1,32 @@
-(let :dwarf {
+(let :fix-super (fn (:f :super) (do
+    (let* :result (f result super))
+    result
+)))
+(let :fix-record (fn (:f) (do
+    (let* :result (f result (obj/plain)))
+    result
+)))
+
+(let :extend (fn (:base :ext) (do
+    (fix-super ext (fix-super base (obj/plain)))
+)))
+
+
+(let :dwarf (obj/record
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
-    :features {
-        :stout (do 
-            # "Cursed" operation - when its evaluated (and it is lazy)
-            # It will mutate the `origin` reference.
-            (set origin (obj/new (+ origin {
-                :is_stout true
-            })))
-            "Stout"
-        )
-        :tout '(:a 2 3)
-    }
-})
+    :features (obj/plain
+        :stout "Stout"
+    )
+))
 
-(let :result (obj/new (+ {
-    :stats {
+(extend (obj/record
+    :stats (fix-record (obj/record
         :str 6
         :dex 11
         :con 13
         :int 11
-        :wis 17
+        :wis (thunk () (self :str))
         :cha 13
-    }
-} dwarf)))
-
-# In order to evaluate all fields before priting the JSON we use `deep-eager` here.
-(deep-eager result)
-(doo)
-
-
-
+    ))
+) dwarf)

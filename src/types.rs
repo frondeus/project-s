@@ -1,12 +1,15 @@
 use core::WithID;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 
 use builder::{
     TypeBuilder,
     canon::{keyword, number},
     canonical_pair, u_canonical,
 };
-use canonical::CanonicalBuilder;
+use canonical::{Canonical, CanonicalBuilder, Canonicalizer};
 use itertools::Itertools;
 
 use crate::{
@@ -28,6 +31,7 @@ mod reachability;
 pub struct TypeEnv {
     engine: core::TypeCheckerCore,
     envs: Envs,
+    exprs: HashMap<SExpId, core::Value>,
 }
 
 impl TypeEnv {
@@ -40,8 +44,34 @@ impl TypeEnv {
         ret_type
     }
 
-    #[allow(clippy::result_large_err)]
+    fn assign_expr(&mut self, sexp_id: SExpId, id: core::Value) {
+        self.exprs.insert(sexp_id, id);
+    }
+
     pub fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
+        let type_ = self.check_inner(asts, id, diagnostics);
+        self.assign_expr(id, type_);
+
+        type_
+    }
+
+    pub fn get_ty_id(&self, id: SExpId) -> Option<core::Value> {
+        self.exprs.get(&id).cloned()
+    }
+
+    pub fn get_canonical(&self, id: SExpId) -> Option<Canonical> {
+        let id = self.get_ty_id(id)?;
+        let (id, canonical) = Canonicalizer::default().canonicalize(id, &self.engine);
+        Some(canonical.get(id).clone())
+    }
+
+    #[allow(clippy::result_large_err)]
+    fn check_inner(
+        &mut self,
+        asts: &ASTS,
+        id: SExpId,
+        diagnostics: &mut Diagnostics,
+    ) -> core::Value {
         let sexp = asts.get(id);
         let span = sexp.span;
         match &**sexp {

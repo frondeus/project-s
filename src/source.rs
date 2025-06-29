@@ -33,6 +33,34 @@ impl Sources {
         &self.sources[id.0]
     }
 
+    pub fn find<'a>(&'a self, filename: &str) -> Option<&'a Source> {
+        self.sources.iter().find(|s| &*s.filename == filename)
+    }
+
+    fn find_id(&self, filename: &str) -> Option<SourceId> {
+        self.sources
+            .iter()
+            .enumerate()
+            .find(|(_, s)| &*s.filename == filename)
+            .map(|(id, _)| SourceId(id))
+    }
+
+    pub fn find_or_load_with<'a>(
+        &'a mut self,
+        filename: &str,
+        with: impl FnOnce() -> String,
+    ) -> &'a Source {
+        let id = match self.find_id(filename) {
+            Some(id) => id,
+            None => {
+                let source = with();
+                self.add(filename, source.as_str())
+            }
+        };
+
+        self.get(id)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Source> {
         self.sources.iter()
     }
