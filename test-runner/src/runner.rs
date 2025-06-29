@@ -52,19 +52,9 @@ impl<'a> TestCase<'a> {
 }
 
 #[allow(dead_code)]
-pub fn test_snapshots<R>(root: &str, section_name: &str, test_fn: R) -> Result<()>
-where
-    R: RefUnwindSafe,
-    R: Send + Fn(&str, &HashMap<CowStr, &str>, &HashSet<&str>) -> String,
-    for<'a> &'a R: Send,
-{
-    test_snapshots_custom(root, "", section_name, test_fn)
-}
-
-#[allow(dead_code)]
-pub fn test_snapshots_custom<R>(
+pub fn test_snapshots<R>(
     root: &str,
-    source_name: &str,
+    source_names: &[&str],
     section_name: &str,
     test_fn: R,
 ) -> Result<()>
@@ -111,7 +101,7 @@ where
             let mut name_iter = name.split(' ');
             let name = name_iter.next().unwrap_or_default();
             match name {
-                name if name == source_name => {
+                name if source_names.contains(&name) => {
                     let source_line = source_line(&files[entry_id], section.range.start);
                     test_cases.push(TestCase::new(
                         &files[entry_id],
@@ -151,8 +141,17 @@ where
     test_cases.retain(|t| !t.has_arg("ignore"));
 
     for test_case in test_cases {
-        let code = test_case.previous.get(source_name).expect("Source");
-        // eprintln!("{code}");
+        let (code, source_name) = source_names
+            .iter()
+            .find_map(|source_name| {
+                test_case
+                    .previous
+                    .get(*source_name)
+                    .map(|code| (code, *source_name))
+            })
+            .expect("Source");
+
+        // eprintln!("{source_name} - {code}");
         let test_fn = &test_fn;
         let previous = &test_case.previous;
 
@@ -272,6 +271,7 @@ mod tests {
     fn test_runner() -> Result<()> {
         test_snapshots(
             "crates/test-runner/v2",
+            &[""],
             "assert",
             |src: &str, _sections, _args| src.to_string(),
         )

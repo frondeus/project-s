@@ -1,0 +1,16 @@
+id = "project_s"
+name = "Project S"
+version = "0.0.1"
+schema_version = 1
+authors = ["Wojciech Polak<wojciech.polak@frondeus.pl>"]
+description = "Project S"
+repository = "https://github.com/frondeus/project-s"
+
+[grammars.s]
+repository = "file:///Users/frondeus/Code/project-s"
+path = "tree-sitter-s"
+rev = "7b451f590a4ce84ec854b0f4e0a0ead86b165660"
+
+[language_servers.project-s]
+name = "Project S LSP"
+languages = ["Project S"]

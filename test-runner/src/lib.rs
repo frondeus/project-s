@@ -5,6 +5,6 @@ pub type Result<T = (), E = anyhow::Error> = std::result::Result<T, E>;
 mod runner;
 
 pub use pulldown_cmark::CowStr;
-pub use runner::{test_snapshots, test_snapshots_custom};
+pub use runner::test_snapshots;
 
 mod utils;

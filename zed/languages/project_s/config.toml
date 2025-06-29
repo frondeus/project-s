@@ -1,0 +1,9 @@
+name = "Project S"
+grammar = "s"
+path_suffixes = ["s"]
+line_comments = ["# "]
+brackets = [
+    { start = "(", end = ")", close = true, newline = true },
+    { start = "[", end = "]", close = true, newline = true },
+    { start = "{", end = "}", close = true, newline = true },
+]

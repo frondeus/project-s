@@ -13,7 +13,7 @@ pub enum Canonical {
     Todo(String),
 
     /// "_" type
-    Skip,
+    Wildcard,
     /// Any type. If there is integer it means it is generic type
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
@@ -54,7 +54,7 @@ impl Canonical {
         match self {
             Canonical::Todo(_)
             | Canonical::Any(_)
-            | Canonical::Skip
+            | Canonical::Wildcard
             | Canonical::Error
             | Canonical::Primitive(_) => vec![].into_iter(),
             Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),

@@ -54,7 +54,7 @@ fn canonical_pair_inner(
     diagnostics: &mut Diagnostics,
 ) -> (core::Value, core::Use) {
     match canon.get(id) {
-        Canonical::Skip => env.engine.var(span),
+        Canonical::Wildcard => env.engine.var(span),
         Canonical::Todo(_) => todo!(),
         Canonical::Any(i) => {
             if let Some(i) = *i {
@@ -184,7 +184,7 @@ pub fn canonical_value(
             let (any_var, _any_bound) = env.engine.var(span);
             any_var
         }
-        Canonical::Skip => env.engine.var(span).0,
+        Canonical::Wildcard => env.engine.var(span).0,
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
@@ -251,7 +251,7 @@ pub fn canonical_use(
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
-        Canonical::Skip => env.engine.var(span).1,
+        Canonical::Wildcard => env.engine.var(span).1,
         Canonical::Primitive(name) => env.engine.primitive_use(name.clone(), span),
         Canonical::Error => env.engine.error_use(span),
         Canonical::Tuple { items } => {

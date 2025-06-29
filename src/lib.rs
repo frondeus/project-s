@@ -68,7 +68,7 @@ mod tests {
         // to evaluate js in documentation in order to compare it with
         // this language
 
-        test_runner::test_snapshots_custom("docs/", "js", "js-eval", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["js"], "js-eval", |input, _deps, _args| {
             let output = Command::new("node")
                 .args(["-p", input])
                 .output()

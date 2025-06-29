@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn lift() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "lift", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["", "s"], "lift", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let (sources, source_id) = Sources::single("<input>", input);
             let ast = asts.parse(source_id, sources.get(source_id)).unwrap();

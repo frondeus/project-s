@@ -36,7 +36,7 @@ impl TypeEnv {
             SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
                 canon.add(Canonical::Primitive(symbol.to_string()))
             }
-            SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Skip),
+            SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Wildcard),
             SExp::List(items) => match &items[..] {
                 &[first, inner] if Self::is_symbol(asts, first, "list") => {
                     let inner = Self::parse_type_inner(asts, inner, canon, diagnostics, vars);
@@ -48,7 +48,7 @@ impl TypeEnv {
                     canon.add(Canonical::Func { pattern, ret })
                 }
                 [first, fields_exprs @ ..] if Self::is_symbol(asts, *first, "extend") => {
-                    let proto = canon.add(Canonical::Skip);
+                    let proto = canon.add(Canonical::Wildcard);
                     let mut fields = Vec::new();
                     for (key, value) in fields_exprs.iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, *key) else {

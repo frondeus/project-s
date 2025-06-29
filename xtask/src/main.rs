@@ -11,6 +11,7 @@ mod helix;
 mod repl;
 mod review_tests;
 mod test;
+mod zed;
 
 fn main() {
     if let Err(e) = try_main() {
@@ -33,6 +34,7 @@ fn try_main() -> Result {
         Some("clippy") | Some("cl") => clippy::run(&root)?,
         Some("fmt") | Some("f") => fmt::run(&root)?,
         Some("helix") | Some("hx") => helix::run(&root)?,
+        Some("zed") => zed::run(&root)?,
         Some("ci") => {
             fmt::run(&root)?;
             clippy::run(&root)?;

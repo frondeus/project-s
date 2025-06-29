@@ -501,7 +501,7 @@ mod tests {
 
     #[test]
     fn cst() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "cst", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["s", ""], "cst", |input, _deps, _args| {
             let mut parser = TSParser::new();
             parser
                 .set_language(&tree_sitter_s::LANGUAGE.into())
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn ast() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "ast", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["s", ""], "ast", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let (sources, source_id) = Sources::single("<input>", input);
             let ast = asts

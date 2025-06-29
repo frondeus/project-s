@@ -75,7 +75,7 @@ impl Formatter<'_> {
                     self.print_canon(*canon_id, canonical);
                 }
             }
-            Canonical::Skip => self.f.push('_'),
+            Canonical::Wildcard => self.f.push('_'),
             Canonical::Error => self.f.push_str("Error"),
             Canonical::Primitive(name) => self.f.push_str(name),
             Canonical::Tuple { items } => {

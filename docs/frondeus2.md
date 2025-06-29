@@ -1,4 +1,4 @@
-```
+```s
 (let :fix-super (fn (:f :super) (do
     (let* :result (f result super))
     result
@@ -12,6 +12,7 @@
     (fix-super ext (fix-super base (obj/plain)))
 )))
 
+
 (let :dwarf (obj/record
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
@@ -20,7 +21,7 @@
     )
 ))
 
-(extend (obj/record 
+(extend (obj/record
     :stats (fix-record (obj/record
         :str 6
         :dex 11

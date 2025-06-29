@@ -357,7 +357,7 @@ mod tests {
     #[test]
     fn macro_expansion() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
-        test_runner::test_snapshots("docs/", "macro", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["", "s"], "macro", |input, _deps, _args| {
             let mut asts = ASTS::new();
             let (sources, source_id) = Sources::single("<input>", input);
             let ast = asts.parse(source_id, sources.get(source_id)).unwrap();

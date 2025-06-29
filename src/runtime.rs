@@ -488,7 +488,7 @@ mod tests {
 
     #[test]
     fn json() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "json", |input, deps, args| {
+        test_runner::test_snapshots("docs/", &["s", ""], "json", |input, deps, args| {
             let lazy = args.contains("lazy");
             tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
                 let (deps, source_id) = deps_to_modules(input, deps);
@@ -516,7 +516,7 @@ mod tests {
 
     #[test]
     fn traces() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "traces", |input, deps, args| {
+        test_runner::test_snapshots("docs/", &["s", ""], "traces", |input, deps, args| {
             let mut reader = tempfile::NamedTempFile::new().unwrap();
 
             let writer = reader.reopen().unwrap();
@@ -559,7 +559,7 @@ mod tests {
 
     #[test]
     fn processed() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", "processed", |input, _deps, _args| {
+        test_runner::test_snapshots("docs/", &["s", ""], "processed", |input, _deps, _args| {
             // eprintln!("---");
             let mut asts = ASTS::new();
             let (sources, source_id) = Sources::single("<input>", input);
