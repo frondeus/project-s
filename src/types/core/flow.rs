@@ -45,6 +45,8 @@ impl TypeCheckerCore {
 
         match (lhs, rhs) {
             (_, UError) | (VError, _) => (), // We assume that error type is like ! type in Rust.
+            (VLiteral(vlit), ULiteral(ulit)) if vlit == ulit => (),
+            (VLiteral(vlit), UPrimitive(uprim)) if vlit.ty_() == uprim => (),
             (VPrimitive(lhs_name), UPrimitive(rhs_name)) if lhs_name == rhs_name => (),
             (VStruct { fields, proto }, UStruct { fields: fields_use }) => {
                 for (field_name, field_use) in fields_use {

@@ -1,4 +1,4 @@
-use core::WithID;
+use core::{Literal, WithID};
 use std::{
     collections::{BTreeMap, HashMap},
     rc::Rc,
@@ -74,10 +74,31 @@ impl TypeEnv {
         let sexp = asts.get(id);
         let span = sexp.span;
         match &**sexp {
-            SExp::Number(_) => self.engine.number(span),
-            SExp::String(_) => self.engine.string(span),
-            SExp::Bool(_) => self.engine.bool(span),
-            SExp::Keyword(_) => self.engine.keyword(span),
+            SExp::Number(n) => {
+                let lit = self.engine.literal(Literal::Number(*n), span);
+                let ty = self.engine.number_use(span);
+                self.engine.flow(lit, ty, diagnostics);
+                lit
+            }
+            SExp::String(s) => {
+                let lit = self.engine.literal(Literal::String(s.clone()), span);
+                let ty = self.engine.string_use(span);
+                self.engine.flow(lit, ty, diagnostics);
+                lit
+            }
+
+            SExp::Bool(b) => {
+                let lit = self.engine.literal(Literal::Bool(*b), span);
+                let ty = self.engine.bool_use(span);
+                self.engine.flow(lit, ty, diagnostics);
+                lit
+            }
+            SExp::Keyword(k) => {
+                let lit = self.engine.literal(Literal::Keyword(k.clone()), span);
+                let ty = self.engine.keyword_use(span);
+                self.engine.flow(lit, ty, diagnostics);
+                lit
+            }
             SExp::Symbol(symbol) => match self.envs.get(symbol) {
                 Some(scheme) => match scheme {
                     core::Scheme::Monomorphic(value) => *value,

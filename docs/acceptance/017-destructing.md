@@ -19,7 +19,7 @@ a
 ```
 
 ```type
-number
+1 | 2 | 3
 ```
 
 Destructing nested lists
@@ -41,7 +41,7 @@ b
 ```
 
 ```type
-number
+2
 ```
 
 

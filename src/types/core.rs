@@ -63,10 +63,41 @@ impl std::fmt::Debug for Scheme {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum Literal {
+    Bool(bool),
+    Number(f64),
+    String(String),
+    Keyword(String),
+}
+
+impl Literal {
+    fn ty_(&self) -> &str {
+        match self {
+            Self::Bool(_) => "bool",
+            Self::Number(_) => "number",
+            Self::String(_) => "string",
+            Self::Keyword(_) => "keyword",
+        }
+    }
+}
+
+impl std::fmt::Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bool(b) => write!(f, "{b}"),
+            Self::Number(n) => write!(f, "{n}"),
+            Self::String(s) => write!(f, "\"{s}\""),
+            Self::Keyword(k) => write!(f, ":{k}"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 #[allow(clippy::enum_variant_names)]
 pub enum VTypeHead {
     VError,
     VPrimitive(String),
+    VLiteral(Literal),
     VTuple {
         items: Vec<Value>,
     },
@@ -92,6 +123,8 @@ impl std::fmt::Display for VTypeHead {
         match self {
             VTypeHead::VError => write!(f, "error"),
             VTypeHead::VPrimitive(name) => write!(f, "{name}"),
+            VTypeHead::VLiteral(lit) => write!(f, "{lit}"),
+
             VTypeHead::VTuple { items } => write!(f, "tuple"),
             VTypeHead::VList { item } => write!(f, "list"),
             VTypeHead::VStruct { .. } => write!(f, "struct"),
@@ -105,7 +138,7 @@ impl VTypeHead {
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         let mut ids = Vec::new();
         match self {
-            VTypeHead::VError | VTypeHead::VPrimitive(_) => (),
+            VTypeHead::VError | VTypeHead::VPrimitive(_) | VTypeHead::VLiteral(_) => (),
             VTypeHead::VTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
             }
@@ -140,6 +173,7 @@ impl VTypeHead {
 pub enum UTypeHead {
     UError,
     UPrimitive(String),
+    ULiteral(Literal),
     /// A tuple where each element might have a different type.
     /// Tuple has a fixed number of elements.
     UTuple {
@@ -177,6 +211,7 @@ impl std::fmt::Display for UTypeHead {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             UTypeHead::UError => write!(f, "error"),
+            UTypeHead::ULiteral(value) => write!(f, "{value}"),
             UTypeHead::UPrimitive(name) => write!(f, "{name}"),
             UTypeHead::UTuple { items } => write!(f, "tuple"),
             UTypeHead::UList {
@@ -195,7 +230,7 @@ impl UTypeHead {
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         let mut ids = Vec::new();
         match self {
-            UTypeHead::UError | UTypeHead::UPrimitive(_) => (),
+            UTypeHead::UError | UTypeHead::UPrimitive(_) | UTypeHead::ULiteral(_) => (),
             UTypeHead::UTuple { items } => {
                 ids.extend(items.iter().copied().map(WithID::id));
             }
@@ -322,6 +357,14 @@ impl TypeCheckerCore {
         (Value(i), Use(i))
     }
 
+    pub fn literal(&mut self, lit: Literal, span: impl WithSpan) -> Value {
+        self.new_val(VTypeHead::VLiteral(lit), span)
+    }
+
+    pub fn literal_use(&mut self, lit: Literal, span: impl WithSpan) -> Use {
+        self.new_use(UTypeHead::ULiteral(lit), span)
+    }
+
     pub fn primitive(&mut self, name: impl ToString, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VPrimitive(name.to_string()), span)
     }
@@ -330,37 +373,37 @@ impl TypeCheckerCore {
         self.new_use(UTypeHead::UPrimitive(name.to_string()), span)
     }
 
-    pub fn bool(&mut self, span: impl WithSpan) -> Value {
-        self.primitive("bool", span)
-    }
+    // pub fn bool(&mut self, span: impl WithSpan) -> Value {
+    //     self.primitive("bool", span)
+    // }
 
     pub fn bool_use(&mut self, span: impl WithSpan) -> Use {
         self.primitive_use("bool", span)
     }
 
-    pub fn keyword(&mut self, span: impl WithSpan) -> Value {
-        self.primitive("keyword", span)
-    }
-
-    // pub fn keyword_use(&mut self, span: impl WithSpan) -> Use {
-    //     self.primitive_use("keyword", span)
+    // pub fn keyword(&mut self, span: impl WithSpan) -> Value {
+    //     self.primitive("keyword", span)
     // }
 
-    pub fn string(&mut self, span: impl WithSpan) -> Value {
-        self.primitive("string", span)
+    pub fn keyword_use(&mut self, span: impl WithSpan) -> Use {
+        self.primitive_use("keyword", span)
     }
 
-    // pub fn string_use(&mut self, span: impl WithSpan) -> Use {
-    //     self.primitive_use("string", span)
+    // pub fn string(&mut self, span: impl WithSpan) -> Value {
+    //     self.primitive("string", span)
     // }
 
-    pub fn number(&mut self, span: impl WithSpan) -> Value {
-        self.primitive("number", span)
+    pub fn string_use(&mut self, span: impl WithSpan) -> Use {
+        self.primitive_use("string", span)
     }
 
-    // pub fn number_use(&mut self, span: impl WithSpan) -> Use {
-    //     self.primitive_use("number", span)
+    // pub fn number(&mut self, span: impl WithSpan) -> Value {
+    //     self.primitive("number", span)
     // }
+
+    pub fn number_use(&mut self, span: impl WithSpan) -> Use {
+        self.primitive_use("number", span)
+    }
 
     pub fn error(&mut self, span: impl WithSpan) -> Value {
         self.new_val(VTypeHead::VError, span)

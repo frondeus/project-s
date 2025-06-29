@@ -9,5 +9,5 @@ Basic string
 ```
 
 ```type
-string
+"5"
 ```

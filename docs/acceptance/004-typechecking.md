@@ -7,7 +7,7 @@
 ```
 
 ```type
-number
+5
 ```
 
 ```
@@ -15,7 +15,7 @@ number
 ```
 
 ```type
-string
+"41"
 ```
 
 ## Let expressions
@@ -26,7 +26,7 @@ x
 ```
 
 ```type
-number
+5
 ```
 
 ## If else
@@ -38,7 +38,7 @@ x
 ```
 
 ```type
-number | string
+5 | "foo"
 ```
 
 ## If else the same type 
@@ -50,7 +50,7 @@ x
 ```
 
 ```type
-number
+5 | 3
 ```
 
 ## If only
@@ -62,7 +62,7 @@ x
 ```
 
 ```type
-number | ()
+5 | ()
 ```
 
 ## Functions
@@ -121,7 +121,7 @@ f
 ```
 
 ```type
-(bool, Any) -> Any | string
+(bool, Any) -> Any | "foo"
 ```
 
 
@@ -137,7 +137,7 @@ f
 ```
 
 ```type
-(bool, Any) -> Any | string
+(bool, Any) -> Any | "foo"
 ```
 
 # Dynamically:

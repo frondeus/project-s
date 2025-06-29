@@ -56,6 +56,7 @@ fn canonical_pair_inner(
     match canon.get(id) {
         Canonical::Wildcard => env.engine.var(span),
         Canonical::Todo(_) => todo!(),
+        Canonical::Literal(_lit) => todo!(),
         Canonical::Any(i) => {
             if let Some(i) = *i {
                 return *vars.entry(i).or_insert_with(|| env.engine.var(span));
@@ -188,6 +189,7 @@ pub fn canonical_value(
         Canonical::As(_, _) => todo!(),
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
+        Canonical::Literal(lit) => env.engine.literal(lit.clone(), span),
         Canonical::Primitive(name) => env.engine.primitive(name.clone(), span),
         Canonical::Error => env.engine.error(span),
         Canonical::Tuple { items } => {
@@ -252,6 +254,7 @@ pub fn canonical_use(
         Canonical::Or(_) => todo!(),
         Canonical::And(_) => todo!(),
         Canonical::Wildcard => env.engine.var(span).1,
+        Canonical::Literal(lit) => env.engine.literal_use(lit.clone(), span),
         Canonical::Primitive(name) => env.engine.primitive_use(name.clone(), span),
         Canonical::Error => env.engine.error_use(span),
         Canonical::Tuple { items } => {

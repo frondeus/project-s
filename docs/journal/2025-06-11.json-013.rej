@@ -35,7 +35,7 @@
 +   │
 + 3 │     ..(3 4 5)
 +   │       ─┬─┬───  
-+   │        ╰─────── But got number
++   │        ╰─────── But got 3
 +   │          │     
 +   │          ╰───── Incompatible types
 +   │          │     

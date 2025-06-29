@@ -29,13 +29,7 @@ fn pos_to_point(pos: Position) -> Point {
     }
 }
 
-use crate::{
-    ast::{ASTS, SExpParser},
-    process_ast,
-    s_std::prelude,
-    source::Sources,
-    types::TypeEnv,
-};
+use crate::{ast::ASTS, process_ast, s_std::prelude, source::Sources, types::TypeEnv};
 
 mod highlights;
 
@@ -243,28 +237,7 @@ impl LanguageServer for Backend {
 
         let (mut sources, source_id) = Sources::single(&filename, &document);
         let mut asts = ASTS::new();
-        let Ok(tree) = SExpParser::parse_tree(&document) else {
-            self.client
-                .log_message(
-                    MessageType::WARNING,
-                    format!("Could not parse file: {filename}"),
-                )
-                .await;
-            return Ok(None);
-        };
-        let Some(selected) = tree
-            .root_node()
-            .named_descendant_for_point_range(selected, selected)
-        else {
-            self.client
-                .log_message(
-                    MessageType::WARNING,
-                    format!("On Hover: Could not find selected node: {filename}"),
-                )
-                .await;
-            return Ok(None);
-        };
-        let Ok(ast) = asts.parse_with_tree(&tree, source_id, sources.get(source_id)) else {
+        let Ok(ast) = asts.parse(source_id, sources.get(source_id)) else {
             self.client
                 .log_message(
                     MessageType::WARNING,
@@ -282,11 +255,11 @@ impl LanguageServer for Backend {
                 .await;
             return Ok(None);
         };
-        let Some(selected) = ast.get_from_ts(selected) else {
+        let Some(selected) = ast.get_by_point(selected) else {
             self.client
                 .log_message(
                     MessageType::WARNING,
-                    format!("On Hover: Could not find selected node: {filename}"),
+                    format!("On Hover: Could not get selected SEXP: {filename}"),
                 )
                 .await;
             return Ok(None);

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::core;
+use super::core::Literal;
 use super::core::TypeNode;
 use super::core::WithID;
 
@@ -18,6 +19,8 @@ pub enum Canonical {
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
     Any(Option<usize>),
+
+    Literal(Literal),
 
     /// A new representation of recursive types.
     As(usize, CanonId),
@@ -56,7 +59,8 @@ impl Canonical {
             | Canonical::Any(_)
             | Canonical::Wildcard
             | Canonical::Error
-            | Canonical::Primitive(_) => vec![].into_iter(),
+            | Canonical::Primitive(_)
+            | Canonical::Literal(_) => vec![].into_iter(),
             Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
             Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
             Canonical::And(canon_ids) => canon_ids.clone().into_iter(),
@@ -203,6 +207,7 @@ impl Canonicalizer {
     ) -> CanonId {
         match value {
             core::VTypeHead::VError => self.add_canon(Canonical::Error),
+            core::VTypeHead::VLiteral(lit) => self.add_canon(Canonical::Literal(lit.clone())),
             core::VTypeHead::VPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
             core::VTypeHead::VTuple { items } => {
                 let items = items
@@ -264,6 +269,7 @@ impl Canonicalizer {
     ) -> CanonId {
         match use_ {
             core::UTypeHead::UError => self.add_canon(Canonical::Error),
+            core::UTypeHead::ULiteral(lit) => self.add_canon(Canonical::Literal(lit.clone())),
             core::UTypeHead::UPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
             core::UTypeHead::UTuple { items } => {
                 let items = items

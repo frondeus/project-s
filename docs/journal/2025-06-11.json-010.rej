@@ -22,7 +22,7 @@
 +   │
 + 1 │ (+ (splice (1 2 3)))
 +   │            ─┬─┬───  
-+   │             ╰─────── But got number
++   │             ╰─────── But got 1
 +   │               │     
 +   │               ╰───── Incompatible types
 +   │               │     
