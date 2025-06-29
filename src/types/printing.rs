@@ -99,6 +99,18 @@ impl Formatter<'_> {
                 self.f.push_str(" -> ");
                 self.print_canon(*ret, canonical);
             }
+            Canonical::Applicable { args, ret } => {
+                self.f.push_str("Applicable(");
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        self.f.push_str(", ");
+                    }
+                    self.print_canon(*arg, canonical);
+                }
+                self.f.push_str(" -> ");
+                self.print_canon(*ret, canonical);
+                self.f.push(')');
+            }
             Canonical::Record { fields, proto: _ } => {
                 self.f.push('{');
                 for (i, (name, id)) in fields.iter().enumerate() {

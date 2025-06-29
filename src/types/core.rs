@@ -166,6 +166,20 @@ impl VTypeHead {
         }
         ids.into_iter()
     }
+
+    fn as_number_literal(&self) -> Option<f64> {
+        match self {
+            Self::VLiteral(Literal::Number(n)) => Some(*n),
+            _ => None,
+        }
+    }
+
+    fn as_keyword_literal(&self) -> Option<String> {
+        match self {
+            Self::VLiteral(Literal::Keyword(k)) => Some(k.clone()),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -196,10 +210,7 @@ pub enum UTypeHead {
     UApplication {
         args: Value,
         ret: Use,
-        // In case its object access
-        field: (Option<String>, Use),
-        // In case its list access
-        index: (Option<usize>, Use),
+        first_arg: Option<Value>,
     },
     URef {
         write: Option<Value>,
@@ -251,13 +262,14 @@ impl UTypeHead {
             UTypeHead::UApplication {
                 args,
                 ret,
-                field: (_, field_use),
-                index: (_, index_use),
+                first_arg, // first_arg, // field: (_, field_use),
+                           // index: (_, index_use),
             } => {
                 ids.push(args.id());
                 ids.push(ret.id());
-                ids.push(field_use.id());
-                ids.push(index_use.id());
+                if let Some(first_arg) = first_arg {
+                    ids.push(first_arg.id());
+                }
             }
             UTypeHead::URef { write, read } => {
                 if let Some(write) = write {
@@ -425,18 +437,17 @@ impl TypeCheckerCore {
         &mut self,
         args: Vec<Value>,
         ret: Use,
-        field: (Option<String>, Use),
-        index: (Option<usize>, Use),
         args_span: impl WithSpan,
         span: impl WithSpan,
     ) -> Use {
+        let first_arg = args.first().cloned();
         let args = self.tuple(args, args_span);
         self.new_use(
             UTypeHead::UApplication {
                 args,
                 ret,
-                field,
-                index,
+                first_arg, // first_arg, // field,
+                           // index,
             },
             span,
         )

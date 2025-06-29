@@ -4,11 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use builder::{
-    TypeBuilder,
-    canon::{keyword, number},
-    canonical_pair, u_canonical,
-};
+use builder::canonical_pair;
 use canonical::{Canonical, CanonicalBuilder, Canonicalizer};
 use itertools::Itertools;
 
@@ -311,30 +307,9 @@ impl TypeEnv {
 
                     let (ret_type, ret_bound) = self.engine.var(span);
 
-                    let index_use = u_canonical((number(),), span).build(self, diagnostics);
-                    let field_use = u_canonical((keyword(),), span).build(self, diagnostics);
-
-                    let first_arg_index = args
-                        .first()
-                        .and_then(|arg| match &**asts.get(*arg) {
-                            SExp::Number(idx) => Some(idx),
-                            _ => None,
-                        })
-                        .map(|idx| *idx as usize);
-
-                    let first_arg_keyword = args.first().and_then(|arg| match &**asts.get(*arg) {
-                        SExp::Keyword(s) => Some(s.clone()),
-                        _ => None,
-                    });
-
-                    let bound = self.engine.application_use(
-                        args_types,
-                        ret_bound,
-                        (first_arg_keyword, field_use),
-                        (first_arg_index, index_use),
-                        span,
-                        span,
-                    );
+                    let bound = self
+                        .engine
+                        .application_use(args_types, ret_bound, span, span);
                     self.engine.flow(callee_type, bound, diagnostics);
                     ret_type
                 }

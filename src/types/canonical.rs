@@ -46,6 +46,10 @@ pub enum Canonical {
     Reference {
         read: Option<CanonId>,
         write: Option<CanonId>,
+    },
+    Applicable {
+        args: Vec<CanonId>,
+        ret: CanonId,
     }, // Applicable {
 
        // }
@@ -81,6 +85,12 @@ impl Canonical {
                 if let Some(write) = write {
                     ids.push(*write);
                 }
+                ids.into_iter()
+            }
+            Canonical::Applicable { args, ret } => {
+                let mut ids = Vec::new();
+                ids.extend(args.iter().copied());
+                ids.push(*ret);
                 ids.into_iter()
             }
         }
@@ -301,8 +311,19 @@ impl Canonicalizer {
                     proto: None,
                 })
             }
-            app @ core::UTypeHead::UApplication { .. } => {
-                self.add_canon(Canonical::Todo(format!("{:?}", app)))
+            core::UTypeHead::UApplication {
+                args,
+                ret,
+                first_arg: _,
+            } => {
+                let args = self.canon_value(*args, engine);
+                let args = self.builder.get(args);
+                let Canonical::Tuple { items: args } = args else {
+                    panic!("Expected a tuple")
+                };
+                let args = args.clone();
+                let ret = self.canon_use(*ret, engine);
+                self.add_canon(Canonical::Applicable { args, ret })
             }
             core::UTypeHead::URef { read, write } => {
                 let read = read.map(|read| self.canon_use(read, engine));

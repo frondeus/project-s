@@ -13,6 +13,8 @@ impl TypeCheckerCore {
                 if let TypeNode::Value(lhs_head, lhs_span) = &self.types[lhs] {
                     if let TypeNode::Use(rhs_head, rhs_span) = &self.types[rhs] {
                         Self::check_heads(
+                            &self.types,
+                            &self.r,
                             lhs_head,
                             rhs_head,
                             lhs,
@@ -29,8 +31,29 @@ impl TypeCheckerCore {
         assert!(pending_edges.is_empty() && type_pairs_to_check.is_empty());
     }
 
+    fn find_value<'a>(
+        nodes: &'a [TypeNode],
+        r: &Reachability,
+        val: Value,
+    ) -> Option<&'a VTypeHead> {
+        let node = &nodes[val.0];
+        match node {
+            TypeNode::Var(_) => {
+                let v = r.predecessors(val.0).find_map(|id| match &nodes[id] {
+                    TypeNode::Value(head, _) => Some(head),
+                    _ => None,
+                });
+                v
+            }
+            TypeNode::Value(head, _) => Some(head),
+            TypeNode::Use(_, _) => None,
+        }
+    }
+
     #[allow(clippy::result_large_err, clippy::too_many_arguments)]
     fn check_heads(
+        nodes: &[TypeNode],
+        r: &Reachability,
         lhs: &VTypeHead,
         rhs: &UTypeHead,
         lhs_id: ID,
@@ -65,27 +88,36 @@ impl TypeCheckerCore {
                     args,
                     ret: ret_use,
                     // field: (ref field_name, field_use),
-                    index: (index, index_use),
+                    // index: (index, index_use),
                     ..
                 },
             ) => {
                 out.push((item, ret_use));
-                out.push((args, index_use));
+                // out.push((args, index_use));
             }
             (
                 VTuple { items },
                 &UApplication {
                     args,
                     ret: ret_use,
-                    index: (index, index_use),
+                    first_arg,
+                    // index: (index, index_use),
                     ..
                 },
             ) => {
-                out.push((args, index_use));
-                let Some(index) = index else {
+                let Some(first_arg) = first_arg else {
                     diagnostics.add(lhs_span, "Expected int literal to access tuple element");
                     return;
                 };
+                let Some(first_arg) = Self::find_value(nodes, r, first_arg) else {
+                    diagnostics.add(lhs_span, "Expected int literal to access tuple element");
+                    return;
+                };
+                let Some(lit) = first_arg.as_number_literal() else {
+                    diagnostics.add(lhs_span, "Expected int literal to access tuple element");
+                    return;
+                };
+                let index = lit as usize;
                 if index >= items.len() {
                     diagnostics.add(
                         lhs_span,
@@ -113,17 +145,26 @@ impl TypeCheckerCore {
                 &UApplication {
                     args,
                     ret,
-                    field: (ref field, field_use),
-                    ..
+                    first_arg, // field: (ref field, field_use),
                 },
             ) => {
-                let Some(field) = field.as_ref() else {
+                let Some(field) = first_arg else {
                     diagnostics.add(rhs_span, "Expected field name");
                     return;
                 };
 
-                if let Some(field_ty) = fields.get(field) {
-                    out.push((args, field_use));
+                let Some(field) = Self::find_value(nodes, r, field) else {
+                    diagnostics.add(rhs_span, "Expected keyword literal");
+                    return;
+                };
+
+                let Some(field) = field.as_keyword_literal() else {
+                    diagnostics.add(rhs_span, "Expected keyword literal");
+                    return;
+                };
+
+                if let Some(field_ty) = fields.get(&field) {
+                    // out.push((args, field_use));
                     out.push((*field_ty, ret));
                 } else if let Some(proto) = proto {
                     out.push((*proto, Use(rhs_id)));

@@ -35,15 +35,15 @@ pub fn v_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuil
     }
 }
 
-pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Use> {
-    move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
-        let mut builder = CanonicalBuilder::default();
-        let canon_root = canon.build(&mut builder);
-        let canon = builder.finish();
-        let mut vars = HashMap::new();
-        canonical_use(env, &canon, &mut vars, canon_root, span)
-    }
-}
+// pub fn u_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Use> {
+//     move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
+//         let mut builder = CanonicalBuilder::default();
+//         let canon_root = canon.build(&mut builder);
+//         let canon = builder.finish();
+//         let mut vars = HashMap::new();
+//         canonical_use(env, &canon, &mut vars, canon_root, span)
+//     }
+// }
 
 fn canonical_pair_inner(
     env: &mut TypeEnv,
@@ -79,6 +79,9 @@ fn canonical_pair_inner(
             let v_primitive = env.engine.primitive(name.clone(), span);
             let u_primitive = env.engine.primitive_use(name.clone(), span);
             (v_primitive, u_primitive)
+        }
+        Canonical::Applicable { args: _, ret: _ } => {
+            todo!()
         }
         Canonical::Error => {
             let v_error = env.engine.error(span);
@@ -221,6 +224,9 @@ pub fn canonical_value(
             let read = read.map(|read| canonical_value(env, canon, vars, read, span));
             env.engine.reference(write, read, span)
         }
+        Canonical::Applicable { args: _, ret: _ } => {
+            todo!()
+        }
     }
 }
 
@@ -285,6 +291,15 @@ pub fn canonical_use(
             let read = read.map(|read| canonical_use(env, canon, vars, read, span));
             let write = write.map(|write| canonical_value(env, canon, vars, write, span));
             env.engine.reference_use(write, read, span)
+        }
+        Canonical::Applicable { args, ret } => {
+            let args = args
+                .iter()
+                .map(|arg| canonical_value(env, canon, vars, *arg, span))
+                .collect();
+            // let args = canonical_value(env, canon, vars, *args, span);
+            let ret = canonical_use(env, canon, vars, *ret, span);
+            env.engine.application_use(args, ret, span, span)
         }
     }
 }
