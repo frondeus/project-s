@@ -36,8 +36,9 @@ pub enum Canonical {
         pattern: CanonId,
         ret: CanonId,
     },
-    Struct {
+    Record {
         fields: Vec<(String, CanonId)>,
+        proto: Option<CanonId>,
     },
     Reference {
         read: Option<CanonId>,
@@ -62,9 +63,10 @@ impl Canonical {
             Canonical::Tuple { items } => items.clone().into_iter(),
             Canonical::List { item } => vec![*item].into_iter(),
             Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),
-            Canonical::Struct { fields } => fields
+            Canonical::Record { fields, proto } => fields
                 .iter()
                 .map(|(_, id)| *id)
+                .chain(*proto)
                 .collect::<Vec<_>>()
                 .into_iter(),
             Canonical::Reference { read, write } => {
@@ -217,7 +219,7 @@ impl Canonicalizer {
                 let mut proto = proto
                     .map(|proto| self.canon_value(proto, engine))
                     .and_then(|proto| match self.builder.get(proto) {
-                        Canonical::Struct { fields } => Some(fields.clone()),
+                        Canonical::Record { fields, proto: _ } => Some(fields.clone()),
                         _ => None,
                     })
                     .unwrap_or_default();
@@ -229,7 +231,10 @@ impl Canonicalizer {
 
                 proto.extend(new_fields);
 
-                self.add_canon(Canonical::Struct { fields: proto })
+                self.add_canon(Canonical::Record {
+                    fields: proto,
+                    proto: None,
+                })
             }
             core::VTypeHead::VFunc { pattern, ret } => {
                 let pattern = self.canon_use(*pattern, engine);
@@ -285,7 +290,10 @@ impl Canonicalizer {
                     .iter()
                     .map(|(name, id)| (name.clone(), self.canon_use(*id, engine)))
                     .collect();
-                self.add_canon(Canonical::Struct { fields })
+                self.add_canon(Canonical::Record {
+                    fields,
+                    proto: None,
+                })
             }
             app @ core::UTypeHead::UApplication { .. } => {
                 self.add_canon(Canonical::Todo(format!("{:?}", app)))

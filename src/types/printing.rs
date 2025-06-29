@@ -98,7 +98,7 @@ impl Formatter<'_> {
                 self.f.push_str(" -> ");
                 self.print_canon(*ret, canonical);
             }
-            Canonical::Struct { fields } => {
+            Canonical::Record { fields, proto: _ } => {
                 self.f.push('{');
                 for (i, (name, id)) in fields.iter().enumerate() {
                     if i > 0 {

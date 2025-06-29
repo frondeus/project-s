@@ -47,6 +47,27 @@ impl TypeEnv {
                     let ret = Self::parse_type_inner(asts, ret, canon, diagnostics, vars);
                     canon.add(Canonical::Func { pattern, ret })
                 }
+                [first, fields_exprs @ ..] if Self::is_symbol(asts, *first, "extend") => {
+                    let proto = canon.add(Canonical::Skip);
+                    let mut fields = Vec::new();
+                    for (key, value) in fields_exprs.iter().tuples() {
+                        let Some(key) = Self::as_keyword(asts, *key) else {
+                            diagnostics.add_sexp(
+                                asts,
+                                *key,
+                                format!("Expected keyword, got {:?}", key),
+                            );
+                            continue;
+                        };
+                        let value = Self::parse_type_inner(asts, *value, canon, diagnostics, vars);
+                        fields.push((key.to_string(), value));
+                    }
+
+                    canon.add(Canonical::Record {
+                        fields,
+                        proto: Some(proto),
+                    })
+                }
                 [first, fields_exprs @ ..] if Self::is_symbol(asts, *first, "record") => {
                     let mut fields = Vec::new();
                     for (key, value) in fields_exprs.iter().tuples() {
@@ -61,7 +82,10 @@ impl TypeEnv {
                         let value = Self::parse_type_inner(asts, *value, canon, diagnostics, vars);
                         fields.push((key.to_string(), value));
                     }
-                    canon.add(Canonical::Struct { fields })
+                    canon.add(Canonical::Record {
+                        fields,
+                        proto: None,
+                    })
                 }
 
                 &[first, mut_, inner]

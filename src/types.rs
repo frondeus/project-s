@@ -45,7 +45,10 @@ impl TypeEnv {
         env.with_mono(">", func((number(), number()), bool()), builtin);
         env.with_poly("print", || func(list(any(None)), number()), builtin);
 
-        let empty_struct = Canonical::Struct { fields: vec![] };
+        let empty_struct = Canonical::Record {
+            fields: vec![],
+            proto: None,
+        };
         let empty_struct_ref = reference(Some(empty_struct.clone()), Some(empty_struct));
 
         env.with_mono(

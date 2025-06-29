@@ -116,7 +116,7 @@ fn canonical_pair_inner(
                 env.engine.func_use(pattern_value, ret_use, span),
             )
         }
-        Canonical::Struct { fields } => {
+        Canonical::Record { fields, proto: _ } => {
             let mut values = Vec::with_capacity(fields.len());
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
@@ -206,7 +206,7 @@ pub fn canonical_value(
             let ret_value = canonical_value(env, canon, vars, *ret, span);
             env.engine.func(pattern_use, ret_value, span)
         }
-        Canonical::Struct { fields } => {
+        Canonical::Record { fields, proto: _ } => {
             let mut f = Vec::with_capacity(fields.len());
             for (name, id) in fields {
                 let value = canonical_value(env, canon, vars, *id, span);
@@ -270,7 +270,7 @@ pub fn canonical_use(
             let ret_u = canonical_use(env, canon, vars, *ret, span);
             env.engine.func_use(pattern_v, ret_u, span)
         }
-        Canonical::Struct { fields } => {
+        Canonical::Record { fields, proto: _ } => {
             let mut uses = Vec::with_capacity(fields.len());
             for (name, id) in fields {
                 let use_ = canonical_use(env, canon, vars, *id, span);
