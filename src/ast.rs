@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
-use tree_sitter::{Parser as TSParser, Point, Tree, ffi::TSTree};
+use tree_sitter::{Node, Parser as TSParser, Tree};
 
 use crate::source::{Source, SourceId, Span, Spanned};
 
@@ -54,7 +54,7 @@ impl ASTS {
 
     pub fn parse_with_tree(
         &mut self,
-        tree: Tree,
+        tree: &Tree,
         source_id: SourceId,
         source: &Source,
     ) -> Result<&AST, ParseError> {
@@ -74,11 +74,14 @@ impl ASTS {
     }
 }
 
+type TSNodeID = usize;
+
 #[derive(Debug)]
 pub struct AST {
     generation: usize,
     nodes: Vec<Spanned<SExp>>,
     root: Option<SExpId>,
+    ts_nodes: HashMap<TSNodeID, SExpId>,
 }
 
 impl AST {
@@ -86,6 +89,7 @@ impl AST {
         Self {
             generation,
             nodes: Vec::new(),
+            ts_nodes: HashMap::new(),
             root: None,
         }
     }
@@ -103,11 +107,19 @@ impl AST {
         self.root = Some(id);
     }
 
-    pub fn add_node(&mut self, node: SExp, span: Span) -> SExpId {
+    pub fn add_node(&mut self, node: SExp, span: Span, ts_node: Option<Node<'_>>) -> SExpId {
         let node = Spanned::new(node, span);
         let id = self.nodes.len();
         self.nodes.push(node);
-        self.new_id(id)
+        let id = self.new_id(id);
+        if let Some(ts_node) = ts_node {
+            self.ts_nodes.insert(ts_node.id(), id);
+        }
+        id
+    }
+
+    pub fn get_from_ts(&self, node: Node<'_>) -> Option<SExpId> {
+        self.ts_nodes.get(&node.id()).copied()
     }
 
     // pub fn reserve(&mut self) -> SExpId {
@@ -375,14 +387,14 @@ impl SExpParser {
                 let value = text
                     .parse::<f64>()
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(self.ast.add_node(SExp::Number(value), span))
+                Ok(self.ast.add_node(SExp::Number(value), span, Some(node)))
             }
             "boolean" => {
                 let text = node
                     .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 let value = text == "true";
-                Ok(self.ast.add_node(SExp::Bool(value), span))
+                Ok(self.ast.add_node(SExp::Bool(value), span, Some(node)))
             }
             "string" => {
                 let inner = node
@@ -391,20 +403,26 @@ impl SExpParser {
                 let text = inner
                     .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(self.ast.add_node(SExp::String(text.to_string()), span))
+                Ok(self
+                    .ast
+                    .add_node(SExp::String(text.to_string()), span, Some(node)))
             }
             "keyword" => {
                 let text = node
                     .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
                 let text = text.trim_start_matches(':');
-                Ok(self.ast.add_node(SExp::Keyword(text.to_string()), span))
+                Ok(self
+                    .ast
+                    .add_node(SExp::Keyword(text.to_string()), span, Some(node)))
             }
             "symbol" => {
                 let text = node
                     .utf8_text(self.source.as_bytes())
                     .map_err(|e| ParseError::TreeSitterError(e.to_string()))?;
-                Ok(self.ast.add_node(SExp::Symbol(text.to_string()), span))
+                Ok(self
+                    .ast
+                    .add_node(SExp::Symbol(text.to_string()), span, Some(node)))
             }
             "list" => {
                 let mut items = Vec::new();
@@ -415,34 +433,38 @@ impl SExpParser {
                     }
                     child = n.next_named_sibling();
                 }
-                Ok(self.ast.add_node(SExp::List(items), span))
+                Ok(self.ast.add_node(SExp::List(items), span, Some(node)))
             }
             "struct" => {
                 let mut child = node.named_child(0);
                 let mut children = Vec::new();
-                children.push(
-                    self.ast
-                        .add_node(SExp::Symbol("obj/struct".to_string()), span),
-                );
+                children.push(self.ast.add_node(
+                    SExp::Symbol("obj/struct".to_string()),
+                    span,
+                    Some(node),
+                ));
                 while let Some(n) = child {
                     if !n.is_extra() {
                         children.push(self.node_to_sexp(n)?);
                     }
                     child = n.next_named_sibling();
                 }
-                Ok(self.ast.add_node(SExp::List(children), span))
+                Ok(self.ast.add_node(SExp::List(children), span, Some(node)))
             }
             "array" => {
                 let mut items = Vec::new();
                 let mut child = node.named_child(0);
-                items.push(self.ast.add_node(SExp::Symbol("list".to_string()), span));
+                items.push(
+                    self.ast
+                        .add_node(SExp::Symbol("list".to_string()), span, Some(node)),
+                );
                 while let Some(n) = child {
                     if !n.is_extra() {
                         items.push(self.node_to_sexp(n)?);
                     }
                     child = n.next_named_sibling();
                 }
-                Ok(self.ast.add_node(SExp::List(items), span))
+                Ok(self.ast.add_node(SExp::List(items), span, Some(node)))
             }
             "quote" => self.shortcut(span, node, "quote"),
             "quasiquote" => self.shortcut(span, node, "quasiquote"),
@@ -463,7 +485,10 @@ impl SExpParser {
         symbol: &str,
     ) -> Result<SExpId, ParseError> {
         let mut items = Vec::new();
-        items.push(self.ast.add_node(SExp::Symbol(symbol.to_string()), span));
+        items.push(
+            self.ast
+                .add_node(SExp::Symbol(symbol.to_string()), span, Some(node)),
+        );
 
         let inner = node
             .child_by_field_name("inner")
@@ -471,10 +496,10 @@ impl SExpParser {
 
         let inner = self.node_to_sexp(inner)?;
         items.push(inner);
-        Ok(self.ast.add_node(SExp::List(items), span))
+        Ok(self.ast.add_node(SExp::List(items), span, Some(node)))
     }
 
-    pub fn parse_with_tree(mut self, tree: Tree) -> Result<AST, ParseError> {
+    pub fn parse_with_tree(mut self, tree: &Tree) -> Result<AST, ParseError> {
         let root = tree.root_node();
         if root.kind() != "source_file" {
             return Err(ParseError::UnexpectedNode(format!(
@@ -504,16 +529,18 @@ impl SExpParser {
             range: root.range(),
             source_id: self.source_id,
         };
-        let do_symbol = self.ast.add_node(SExp::Symbol("do".to_string()), span);
+        let do_symbol = self
+            .ast
+            .add_node(SExp::Symbol("do".to_string()), span, None);
         ids.insert(0, do_symbol);
-        let root = self.ast.add_node(SExp::List(ids), span);
+        let root = self.ast.add_node(SExp::List(ids), span, None);
         self.ast.root = Some(root);
         Ok(self.ast)
     }
 
     pub fn parse(self) -> Result<AST, ParseError> {
         let tree = Self::parse_tree(&self.source)?;
-        self.parse_with_tree(tree)
+        self.parse_with_tree(&tree)
     }
 }
 

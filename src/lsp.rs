@@ -209,7 +209,7 @@ impl LanguageServer for Backend {
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         self.client
-            .log_message(MessageType::INFO, format!("On Hover"))
+            .log_message(MessageType::INFO, "On Hover".to_string())
             .await;
 
         let selected = params.text_document_position_params.position;
@@ -224,7 +224,7 @@ impl LanguageServer for Backend {
             self.client
                 .log_message(
                     MessageType::WARNING,
-                    format!("On Hover: Could not get file path"),
+                    "On Hover: Could not get file path".to_string(),
                 )
                 .await;
             return Ok(None);
@@ -264,7 +264,7 @@ impl LanguageServer for Backend {
                 .await;
             return Ok(None);
         };
-        let Ok(ast) = asts.parse_with_tree(tree, source_id, sources.get(source_id)) else {
+        let Ok(ast) = asts.parse_with_tree(&tree, source_id, sources.get(source_id)) else {
             self.client
                 .log_message(
                     MessageType::WARNING,
@@ -282,24 +282,46 @@ impl LanguageServer for Backend {
                 .await;
             return Ok(None);
         };
-        let prelude = prelude();
+        let Some(selected) = ast.get_from_ts(selected) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Hover: Could not find selected node: {filename}"),
+                )
+                .await;
+            return Ok(None);
+        };
         // let mut env = TypeEnv::default().with_prelude(&mut sources);
         let type_ = {
             let sources: &mut Sources = &mut sources;
             let asts: &mut ASTS = &mut asts;
+            let prelude = prelude();
             let envs = &[prelude];
-            let (_root, mut diagnostics) = process_ast(asts, root, envs);
+            let (root, mut diagnostics) = process_ast(asts, root, envs);
             let mut type_env = TypeEnv::default().with_prelude(sources);
-            let type_ = type_env.check(asts, root, &mut diagnostics);
-            type_env.to_string(type_)
+            type_env.check(asts, root, &mut diagnostics);
+            // let type_ = type_env.check(asts, selected, &mut diagnostics);
+            let Some(type_) = type_env.get_ty_id(selected) else {
+                return Ok(None);
+            };
+
+            // for diag in diagnostics.print(sources) {}
+
+            let ty_ = type_env.to_string(type_);
+            if !diagnostics.has_errors() {
+                ty_
+            } else {
+                let errs = diagnostics.pretty_print(sources);
+                format!("{ty_}\n# Errors:\n```\n{errs}\n```")
+            }
         };
         self.client
-            .log_message(MessageType::INFO, format!("On Hover: {type_}"))
+            .log_message(MessageType::INFO, format!("On Hover infered type: {type_}"))
             .await;
 
         Ok(Some(Hover {
             contents: HoverContents::Markup(MarkupContent {
-                kind: MarkupKind::PlainText,
+                kind: MarkupKind::Markdown,
                 value: type_,
             }),
             range: None,

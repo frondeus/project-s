@@ -60,7 +60,7 @@ impl Runtime {
                     //     return *id;
                     // }
                     let new_list = SExp::List(result);
-                    new_ast.add_node(new_list, span)
+                    new_ast.add_node(new_list, span, None)
                 }
             }
             _ => *id,

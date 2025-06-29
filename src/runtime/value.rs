@@ -272,17 +272,17 @@ impl Value {
     pub fn to_sexp(&self, target: &mut AST, span: Span) -> SExpId {
         match self {
             Value::SExp(sexp_id) => *sexp_id,
-            Value::Number(n) => target.add_node(SExp::Number(*n), span),
-            Value::String(s) => target.add_node(SExp::String(s.clone()), span),
-            Value::Bool(b) => target.add_node(SExp::Bool(*b), span),
+            Value::Number(n) => target.add_node(SExp::Number(*n), span, None),
+            Value::String(s) => target.add_node(SExp::String(s.clone()), span, None),
+            Value::Bool(b) => target.add_node(SExp::Bool(*b), span, None),
             Value::Error(err) => {
                 tracing::error!("Error: {err}");
-                target.add_node(SExp::Error, span)
+                target.add_node(SExp::Error, span, None)
             }
             Value::List(list) => {
                 if list.iter().all(|v| matches!(v, Value::SExp(_))) {
                     let list = list.iter().filter_map(|v| v.as_sexp()).copied().collect();
-                    target.add_node(SExp::List(list), span)
+                    target.add_node(SExp::List(list), span, None)
                 } else {
                     todo!("Could not convert List to SExp: {:?}", list)
                 }

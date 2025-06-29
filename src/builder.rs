@@ -13,12 +13,12 @@ pub trait ASTBuilder: Sized {
     fn assemble_id(self, ast: &mut AST, caller: Span) -> SExpId {
         let sexp = self.assemble_with_span(ast, caller);
         let span = sexp.span;
-        ast.add_node(sexp.inner(), span)
+        ast.add_node(sexp.inner(), span, None)
     }
     fn assemble_id_with_span(self, ast: &mut AST, caller: Span) -> Spanned<SExpId> {
         let sexp = self.assemble_with_span(ast, caller);
         let span = sexp.span;
-        sexp.map(|sexp| ast.add_node(sexp, span))
+        sexp.map(|sexp| ast.add_node(sexp, span, None))
     }
 
     fn build_ast(self, asts: &mut ASTS, caller: Span) -> Spanned<SExpId> {

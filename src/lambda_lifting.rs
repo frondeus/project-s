@@ -58,7 +58,10 @@ impl<'a> LambdaPass<'a> {
             }
         }
         if edited {
-            Some(self.new_ast().add_node(SExp::List(new_sexp_ids), span))
+            Some(
+                self.new_ast()
+                    .add_node(SExp::List(new_sexp_ids), span, None),
+            )
         } else {
             None
         }
@@ -147,7 +150,7 @@ impl<'a> LambdaPass<'a> {
             }
         }
         if edited {
-            Some(self.new_ast().add_node(SExp::List(list), span))
+            Some(self.new_ast().add_node(SExp::List(list), span, None))
         } else {
             None
         }

@@ -45,13 +45,12 @@ impl TypeEnv {
     }
 
     fn assign_expr(&mut self, sexp_id: SExpId, id: core::Value) {
-        self.exprs.insert(sexp_id, id);
+        self.exprs.entry(sexp_id).or_insert(id);
     }
 
     pub fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
         let type_ = self.check_inner(asts, id, diagnostics);
         self.assign_expr(id, type_);
-
         type_
     }
 
