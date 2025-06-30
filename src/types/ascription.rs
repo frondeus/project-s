@@ -6,6 +6,7 @@ use crate::{
     ast::{ASTS, SExp, SExpId},
     diagnostics::{Diagnostics, SExpDiag},
     source::Span,
+    types::core::Literal,
 };
 
 use super::{
@@ -33,9 +34,13 @@ impl TypeEnv {
         let sexp = asts.get(id);
         const PRIMITIVES: &[&str] = &["number", "string", "bool", "keyword"];
         match &**sexp {
+            SExp::Bool(b) => canon.add(Canonical::Literal(Literal::Bool(*b))),
+            SExp::Number(n) => canon.add(Canonical::Literal(Literal::Number(*n))),
+            SExp::String(s) => canon.add(Canonical::Literal(Literal::String(s.to_string()))),
             SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
                 canon.add(Canonical::Primitive(symbol.to_string()))
             }
+            SExp::Keyword(k) => canon.add(Canonical::Literal(Literal::Keyword(k.to_string()))),
             SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Wildcard),
             SExp::List(items) => match &items[..] {
                 &[first, inner] if Self::is_symbol(asts, first, "list") => {

@@ -56,7 +56,11 @@ fn canonical_pair_inner(
     match canon.get(id) {
         Canonical::Wildcard => env.engine.var(span),
         Canonical::Todo(_) => todo!(),
-        Canonical::Literal(_lit) => todo!(),
+        Canonical::Literal(lit) => {
+            let u_lit = env.engine.literal_use(lit.clone(), span);
+            let v_lit = env.engine.literal(lit.clone(), span);
+            (v_lit, u_lit)
+        }
         Canonical::Any(i) => {
             if let Some(i) = *i {
                 return *vars.entry(i).or_insert_with(|| env.engine.var(span));
