@@ -3,20 +3,26 @@
 //     sync::Arc,
 // };
 
+use std::str::FromStr;
+
 use highlights::lsp_legend;
 // use tokio::sync::Mutex;
 use tower_lsp_server::{
     Client, LanguageServer, UriExt,
     jsonrpc::Result,
     lsp_types::{
-        DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
-        DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-        DidSaveTextDocumentParams, Hover, HoverContents, HoverParams, HoverProviderCapability,
-        InitializeParams, InitializeResult, InitializedParams, MarkupContent, MarkupKind,
-        MessageType, OneOf, Position, SemanticTokens, SemanticTokensFullOptions,
-        SemanticTokensOptions, SemanticTokensParams, SemanticTokensResult,
-        SemanticTokensServerCapabilities, ServerCapabilities, TextDocumentSyncCapability,
-        TextDocumentSyncKind, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+        Diagnostic, DiagnosticOptions, DiagnosticRelatedInformation, DiagnosticServerCapabilities,
+        DiagnosticSeverity, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+        DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
+        DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
+        DocumentDiagnosticReport, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
+        Hover, HoverContents, HoverParams, HoverProviderCapability, InitializeParams,
+        InitializeResult, InitializedParams, Location, MarkupContent, MarkupKind, MessageType,
+        OneOf, Position, RelatedFullDocumentDiagnosticReport, SemanticTokens,
+        SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensParams,
+        SemanticTokensResult, SemanticTokensServerCapabilities, ServerCapabilities,
+        TextDocumentSyncCapability, TextDocumentSyncKind, Uri, WorkspaceFoldersServerCapabilities,
+        WorkspaceServerCapabilities,
     },
 };
 use tree_sitter::Point;
@@ -29,7 +35,26 @@ fn pos_to_point(pos: Position) -> Point {
     }
 }
 
-use crate::{ast::ASTS, process_ast, s_std::prelude, source::Sources, types::TypeEnv};
+fn point_to_pos(point: Point) -> Position {
+    Position {
+        line: point.row as u32,
+        character: point.column as u32,
+    }
+}
+
+fn ts_range_to_range(range: tree_sitter::Range) -> tower_lsp_server::lsp_types::Range {
+    let start = point_to_pos(range.start_point);
+    let end = point_to_pos(range.end_point);
+    tower_lsp_server::lsp_types::Range { start, end }
+}
+
+use crate::{
+    ast::ASTS,
+    process_ast,
+    s_std::prelude,
+    source::{SourceId, Sources},
+    types::TypeEnv,
+};
 
 mod highlights;
 
@@ -71,6 +96,11 @@ impl LanguageServer for Backend {
                 )),
 
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        ..Default::default()
+                    },
+                )),
 
                 // completion_provider: Some(CompletionOptions {
                 //     resolve_provider: Some(false),
@@ -301,10 +331,155 @@ impl LanguageServer for Backend {
         }))
     }
 
+    async fn diagnostic(
+        &self,
+        params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        let items = self.diagnostics_inner(params).await.unwrap_or_default();
+
+        Ok(DocumentDiagnosticReportResult::Report(
+            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items,
+                },
+            }),
+        ))
+    }
+
     // async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
     //     Ok(Some(CompletionResponse::Array(vec![
     //         CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
     //         CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
     //     ])))
     // }
+}
+
+impl Backend {
+    async fn diagnostics_inner(&self, params: DocumentDiagnosticParams) -> Option<Vec<Diagnostic>> {
+        self.client
+            .log_message(MessageType::INFO, format!("On Diagnostic: {:?}", params))
+            .await;
+
+        let Some(document) = params.text_document.uri.to_file_path() else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    "On Diag: Could not get file path".to_string(),
+                )
+                .await;
+            return None;
+        };
+
+        let filename = document.display().to_string();
+        let Ok(document) = std::fs::read_to_string(document) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Diag: Could not get file content: {filename}"),
+                )
+                .await;
+            return None;
+        };
+
+        let (mut sources, source_id) = Sources::single(&filename, &document);
+        let mut asts = ASTS::new();
+        let Ok(ast) = asts.parse(source_id, sources.get(source_id)) else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Diag: Could not parse file: {filename}"),
+                )
+                .await;
+            return None;
+        };
+        let Some(root) = ast.root_id() else {
+            self.client
+                .log_message(
+                    MessageType::WARNING,
+                    format!("On Diag: Could not get parsed root SEXP: {filename}"),
+                )
+                .await;
+            return None;
+        };
+        let diag = {
+            let sources: &mut Sources = &mut sources;
+            let asts: &mut ASTS = &mut asts;
+            let prelude = prelude();
+            let envs = &[prelude];
+            let (root, mut diagnostics) = process_ast(asts, root, envs);
+            let mut type_env = TypeEnv::default().with_prelude(sources);
+            type_env.check(asts, root, &mut diagnostics);
+            diagnostics
+        };
+        let diag = diag
+            .into_iter()
+            .map(|d| from_diag(d, &sources, source_id))
+            .collect();
+        self.client
+            .log_message(MessageType::INFO, format!("On Diag: {:#?}", diag))
+            .await;
+        Some(diag)
+    }
+}
+
+fn from_diag(
+    value: crate::diagnostics::Diag,
+    sources: &Sources,
+    current_file: SourceId,
+) -> Diagnostic {
+    let mut range = value.span.range;
+    let mut message = value.message.clone();
+    let mut missing_main = false;
+    if current_file != value.span.source_id {
+        for extra in value.extras.iter() {
+            let Some(span) = extra.span else {
+                continue;
+            };
+            if span.source_id == current_file && !missing_main {
+                range = span.range;
+                missing_main = true;
+            }
+            if span.source_id != current_file {
+                message += &format!("\n{}", extra.message);
+            }
+        }
+    }
+    let range = ts_range_to_range(range);
+    let related = value
+        .extras
+        .into_iter()
+        .filter_map(|e| from_extra(e, sources))
+        .collect();
+    Diagnostic {
+        range,
+        severity: Some(DiagnosticSeverity::ERROR),
+        code: None,
+        code_description: None,
+        source: Some("project-s".to_string()),
+        message,
+        related_information: Some(related),
+        tags: None,
+        data: None,
+    }
+}
+
+fn from_extra(
+    value: crate::diagnostics::Extra,
+    sources: &Sources,
+) -> Option<DiagnosticRelatedInformation> {
+    let span = value.span.unwrap();
+    let range = ts_range_to_range(span.range);
+    let uri = span.source_id;
+    let source = sources.get(uri);
+    let uri = format!("file://{}", source.filename);
+    let location = Location {
+        uri: Uri::from_str(&uri).ok()?,
+        range,
+    };
+    Some(DiagnosticRelatedInformation {
+        location,
+        message: value.message,
+    })
 }

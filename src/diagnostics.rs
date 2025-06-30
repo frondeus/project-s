@@ -75,6 +75,15 @@ impl ariadne::Cache<SourceId> for SourcesCache<'_> {
     }
 }
 
+impl IntoIterator for Diagnostics {
+    type Item = Diag;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.diags.into_iter()
+    }
+}
+
 impl Diagnostics {
     pub fn add(&mut self, span: impl WithSpan, message: impl ToString) -> &mut Diag {
         self.diags.push(Diag {
@@ -100,24 +109,11 @@ impl Diagnostics {
 
     pub fn pretty_print(&self, sources: &Sources) -> String {
         let mut cache = SourcesCache::new(sources);
-        // let mut cache = ariadne::sources(
-        //     sources.iter_with_id().map(|(_id, s)| (s.filename.clone(), s.source.clone())).collect::<Vec<_>>(),
-        // self.diags
-        //     .iter()
-        //     .flat_map(|d| {
-        //         std::iter::once(d.span.clone())
-        //             .chain(d.extras.iter().filter_map(|e| e.span.clone()))
-        //     })
-        //     .map(|span| (span.filename.clone(), span.source.clone()))
-        //     .unique()
-        //     .collect::<Vec<_>>(),
-        // );
         let mut out = Vec::new();
         let mut output_buf = BufWriter::new(&mut out);
 
         for report in self.diags.iter().map(|d| d.to_report()) {
             report.write(&mut cache, &mut output_buf).unwrap();
-            // diag.write(
         }
 
         drop(output_buf);

@@ -14,23 +14,24 @@
 )))
 
 
-# (let :dwarf (obj/record
-#     :ancestry "Dwarf"
-#     :languages [ "Common" "Dwarvish" ]
-#     :features (obj/plain
-#         :stout "Stout"
-#     )
-# ))
+(let :dwarf (obj/record
+    :ancestry "Dwarf"
+    :languages [ "Common" "Dwarvish" ]
+    :features (obj/plain
+        :stout "Stout"
+    )
+))
 
-# (extend (obj/record
-#     :stats (fix-record (obj/record
-#         :str 6
-#         :dex 11
-#         :con 13
-#         :int 11
-#         :wis (thunk () (self :str))
-#         :cha 13
-#     ))
-# ) dwarf)
+(let :result (extend (obj/record
+    :stats (fix-record (obj/record
+        :str 6
+        :dex 11
+        :con 13
+        :int 11
+        :wis (thunk () (self :wis))
+        :cha 13
+    ))
+) dwarf))
 
-fix-super
+result
+# fix-super
