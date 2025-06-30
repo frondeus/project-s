@@ -13,6 +13,16 @@ pub struct Source {
     pub source: Arc<str>,
 }
 
+impl Source {
+    pub fn slice(&self, range: Range) -> &str {
+        &self.source[range.start_byte..range.end_byte]
+    }
+
+    pub fn set(&mut self, source: &str) {
+        self.source = Arc::from(source);
+    }
+}
+
 impl Sources {
     pub fn single(filename: &str, source: &str) -> (Self, SourceId) {
         let mut sources = Self::default();
@@ -31,6 +41,10 @@ impl Sources {
 
     pub fn get(&self, id: SourceId) -> &Source {
         &self.sources[id.0]
+    }
+
+    pub fn get_mut(&mut self, id: SourceId) -> &mut Source {
+        &mut self.sources[id.0]
     }
 
     pub fn find<'a>(&'a self, filename: &str) -> Option<&'a Source> {

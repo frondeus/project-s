@@ -46,7 +46,7 @@
 +    ┆ ┆   
 + 14 │ ├─▶ })
 +    │ │        
-+    │ ╰──────── Undefined variable: obj/con
++    │ ╰──────── Used here
  ────╯
  Error: Undefined variable: obj/con
      ╭─[ <input>:4:15 ]
@@ -56,14 +56,14 @@
 +    ┆ ┆   
 + 13 │ ├─▶     }
 +    │ │           
-+    │ ╰─────────── Undefined variable: obj/con
++    │ ╰─────────── Used here
  ────╯
  Error: Undefined variable: obj/new
     ╭─[ <input>:8:26 ]
     │
   8 │             (set origin (obj/new (+ origin {
 +   │                          ───┬───  
-+   │                             ╰───── Undefined variable: obj/new
++   │                             ╰───── Used here
  ───╯
  Error: Undefined variable: obj/con
      ╭─[ <input>:8:44 ]
@@ -73,14 +73,14 @@
 +    ┆ ┆   
 + 10 │ ├─▶             })))
 +    │ │                      
-+    │ ╰────────────────────── Undefined variable: obj/con
++    │ ╰────────────────────── Used here
  ────╯
  Error: Undefined variable: obj/new
      ╭─[ <input>:21:15 ]
      │
   21 │ (let :result (obj/new (+ {
 +    │               ───┬───  
-+    │                  ╰───── Undefined variable: obj/new
++    │                  ╰───── Used here
  ────╯
  Error: Undefined variable: obj/con
      ╭─[ <input>:21:26 ]
@@ -90,7 +90,7 @@
 +    ┆ ┆   
 + 30 │ ├─▶ } dwarf)))
 +    │ │                
-+    │ ╰──────────────── Undefined variable: obj/con
++    │ ╰──────────────── Used here
  ────╯
  Error: Undefined variable: obj/con
      ╭─[ <input>:22:12 ]
@@ -100,14 +100,14 @@
 +    ┆ ┆   
 + 29 │ ├─▶     }
 +    │ │           
-+    │ ╰─────────── Undefined variable: obj/con
++    │ ╰─────────── Used here
  ────╯
  Error: Undefined variable: deep-eager
      ╭─[ <input>:33:2 ]
      │
   33 │ (deep-eager result)
 +    │  ─────┬────  
-+    │       ╰────── Undefined variable: deep-eager
++    │       ╰────── Used here
  ────╯
  
  ```

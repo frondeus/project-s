@@ -60,7 +60,8 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
     fn visit_list(&mut self, mut list: crate::visitor::List) -> Option<Spanned<SExpId>> {
         if self.helper.is_special_form(&list, "macro") {
             self.diagnostics
-                .add(&list, "Macro is forbidden in this context");
+                .add(&list, "Macro is forbidden in this context")
+                .add_extra("Used here", Some(list.span));
             return self.helper.then_assemble(
                 ("error", string("Macro is forbidden in this context")),
                 list.span,
@@ -245,7 +246,10 @@ impl<'a> Visitor<'a> for MacroEvaluator<'a, '_> {
     }
 
     fn visit_list(&mut self, list: crate::visitor::List) -> Option<Spanned<SExpId>> {
-        self.diag.add(list, "Expected quote or unquote");
+        let span = list.span;
+        self.diag
+            .add(list, "Expected quote or unquote")
+            .add_extra("But got this", Some(span));
         None
     }
 
@@ -256,7 +260,9 @@ impl<'a> Visitor<'a> for MacroEvaluator<'a, '_> {
             return Some(*item);
         }
 
-        self.diag.add(id, "Expected quote or unquote");
+        self.diag
+            .add(id, "Expected quote or unquote")
+            .add_extra("But got this", Some(id.span));
 
         None
     }

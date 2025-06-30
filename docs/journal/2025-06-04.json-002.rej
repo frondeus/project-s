@@ -25,14 +25,14 @@
 +   ┆ ┆   
 + 4 │ ├─▶ })
 +   │ │        
-+   │ ╰──────── Undefined variable: obj/con
++   │ ╰──────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:6:4 ]
 +   │
 + 6 │ (+ {:value 5} x)
 +   │    ─────┬────  
-+   │         ╰────── Undefined variable: obj/con
++   │         ╰────── Used here
 +───╯
 +
  ```

@@ -78,7 +78,10 @@ impl TypeCheckerCore {
                     } else if let Some(proto) = proto {
                         out.push((*proto, Use(rhs_id)));
                     } else {
-                        diagnostics.add(lhs_span, format!("Object has no field: {}", field_name));
+                        diagnostics
+                            .add(lhs_span, format!("Object has no field: {}", field_name))
+                            .add_extra("Defined here", Some(lhs_span))
+                            .add_extra("Used here", Some(rhs_span));
                     }
                 }
             }

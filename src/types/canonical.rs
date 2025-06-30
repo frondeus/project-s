@@ -64,6 +64,26 @@ pub enum Canonical {
 }
 
 impl Canonical {
+    pub fn span(&self) -> Option<Span> {
+        match self {
+            Canonical::Todo(_, span)
+            | Canonical::Wildcard(span)
+            | Canonical::Any(_, span)
+            | Canonical::Literal(_, span)
+            | Canonical::As(_, _, span)
+            | Canonical::Or(_, span)
+            | Canonical::And(_, span)
+            | Canonical::Error(span)
+            | Canonical::Primitive(_, span)
+            | Canonical::Tuple { span, .. }
+            | Canonical::List { span, .. }
+            | Canonical::Func { span, .. }
+            | Canonical::Record { span, .. }
+            | Canonical::Reference { span, .. }
+            | Canonical::Applicable { span, .. } => *span,
+        }
+    }
+
     #[cfg(test)]
     fn ids(&self) -> impl Iterator<Item = CanonId> {
         match self {
@@ -132,7 +152,7 @@ impl CanonicalBuilder {
             CanonId(i)
         }
     }
-    fn get(&self, id: CanonId) -> &Canonical {
+    pub fn get(&self, id: CanonId) -> &Canonical {
         &self.canonical[id.0]
     }
     pub fn finish(self) -> Canonicalized {

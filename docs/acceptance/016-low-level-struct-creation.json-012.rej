@@ -30,7 +30,7 @@
 +   ┆ ┆   
 + 4 │ ├─▶     )
 +   │ │           
-+   │ ╰─────────── Undefined variable: obj/con
++   │ ╰─────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:5:5 ]
@@ -39,7 +39,7 @@
 +   ┆ ┆   
 + 8 │ ├─▶     )
 +   │ │           
-+   │ ╰─────────── Undefined variable: obj/con
++   │ ╰─────────── Used here
 +───╯
 +
  ```

@@ -19,7 +19,7 @@ foo
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
 +   │           ──────────┬──────────  
-+   │                     ╰──────────── Undefined variable: obj/con
++   │                     ╰──────────── Used here
 +───╯
 +
  ```

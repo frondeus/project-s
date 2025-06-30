@@ -16,7 +16,7 @@ Error: Undefined variable: symbol
    │
  1 │ symbol
    │ ───┬──  
-   │    ╰──── Undefined variable: symbol
+   │    ╰──── Used here
 ───╯
 
 ```

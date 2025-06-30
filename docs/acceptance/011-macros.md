@@ -13,7 +13,7 @@ Error: Macro is forbidden in this context
    │
  2 │   (macro (:x :y) `(+ ,x ,y))
    │   ─────────────┬────────────  
-   │                ╰────────────── Macro is forbidden in this context
+   │                ╰────────────── Used here
 ───╯
 
 ````
@@ -24,7 +24,7 @@ Error: Macro is forbidden in this context
    │
  2 │   (macro (:x :y) `(+ ,x ,y))
    │   ─────────────┬────────────  
-   │                ╰────────────── Macro is forbidden in this context
+   │                ╰────────────── Used here
 ───╯
 
 ````

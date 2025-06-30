@@ -5,11 +5,11 @@ use super::canonical::Canonicalized;
 use super::canonical::Canonicalizer;
 use super::core;
 
-struct Formatter<'a> {
+pub struct Formatter<'a> {
     f: &'a mut String,
 }
 
-fn variable_letters(mut i: usize) -> String {
+pub fn variable_letters(mut i: usize) -> String {
     const LETTERS: &[char] = &[
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -32,7 +32,12 @@ fn variable_letters(mut i: usize) -> String {
 }
 
 impl Formatter<'_> {
-    fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
+    #[cfg(test)]
+    pub fn new(f: &mut String) -> Formatter<'_> {
+        Formatter { f }
+    }
+
+    pub fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
         match canonical.get(id) {
             Canonical::Todo(todo, _) => self.f.push_str(&format!("TODO: {}", todo)),
             Canonical::Any(None, _) => self.f.push_str("Any"),

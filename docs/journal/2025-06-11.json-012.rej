@@ -5,7 +5,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-012
-@@ -424,7 +424,25 @@
+@@ -424,7 +424,23 @@
  ```
  
  ```json
@@ -15,7 +15,7 @@
 +   │
 + 1 │ (+ ..(1 2 3))
 +   │    ────┬────  
-+   │        ╰────── Undefined variable: splice
++   │        ╰────── Used here
 +───╯
 +Error: Incompatible types
 +   ╭─[ <input>:1:6 ]
@@ -23,8 +23,6 @@
 + 1 │ (+ ..(1 2 3))
 +   │      ─┬─┬───  
 +   │       ╰─────── But got 1
-+   │         │     
-+   │         ╰───── Incompatible types
 +   │         │     
 +   │         ╰───── Expected function
 +───╯

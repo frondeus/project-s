@@ -20,7 +20,7 @@
 +   ┆ ┆   
 + 4 │ ├─▶ } :b)
 +   │ │          
-+   │ ╰────────── Undefined variable: obj/con
++   │ ╰────────── Used here
 +───╯
 +
  ```

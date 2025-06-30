@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-003
-@@ -72,7 +72,56 @@
+@@ -72,7 +72,54 @@
  And technically, :x doesnt need to be a thunk.
  
  ```json
@@ -28,7 +28,7 @@
 +   ┆ ┆   
 + 3 │ ├─▶ })
 +   │ │        
-+   │ ╰──────── Undefined variable: obj/con
++   │ ╰──────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:5:9 ]
@@ -37,7 +37,7 @@
 +    ┆ ┆   
 + 10 │ ├─▶ })
 +    │ │        
-+    │ ╰──────── Undefined variable: obj/con
++    │ ╰──────── Used here
 +────╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:7:18 ]
@@ -46,29 +46,27 @@
 +   ┆ ┆   
 + 9 │ ├─▶   })
 +   │ │          
-+   │ ╰────────── Undefined variable: obj/con
++   │ ╰────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:12:6 ]
 +    │
 + 12 │ (((+ {:d 1 } x) :value) :a)
 +    │      ───┬───  
-+    │         ╰───── Undefined variable: obj/con
++    │         ╰───── Used here
 +────╯
 +Error: Incompatible types
 +    ╭─[ <input>:12:2 ]
 +    │
 + 12 │ (((+ {:d 1 } x) :value) :a)
 +    │  ───────────┬──────────  
-+    │             ╰──────────── Incompatible types
-+    │             │            
 +    │             ╰──────────── Expected function
 +    │
-+    ├─[ <builtin>:1:1 ]
++    ├─[ <builtin>:1:18 ]
 +    │
-+  1 │ 
-+    │ │ 
-+    │ ╰─ But got number
++  1 │ "+": [number] -> number
++    │                  ───┬──  
++    │                     ╰──── But got number
 +────╯
 +
  ```

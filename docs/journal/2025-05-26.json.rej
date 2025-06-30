@@ -24,7 +24,7 @@
 +   ┆ ┆   
 + 6 │ ├─▶ }
 +   │ │      
-+   │ ╰────── Undefined variable: obj/con
++   │ ╰────── Used here
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:4:1 ]
@@ -33,7 +33,7 @@
 +   ┆ ┆   
 + 6 │ ├─▶ }
 +   │ │      
-+   │ ╰────── Undefined variable: obj/eval
++   │ ╰────── Used here
 +───╯
 +
  ```

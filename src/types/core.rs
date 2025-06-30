@@ -1,9 +1,6 @@
 #![allow(unused_variables)]
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    rc::Rc,
-};
+use std::{collections::BTreeMap, rc::Rc};
 
 use crate::{
     ast::ASTS,
@@ -205,7 +202,7 @@ pub enum UTypeHead {
         max_len: Option<usize>,
     },
     UStruct {
-        fields: HashMap<String, Use>,
+        fields: BTreeMap<String, Use>,
     },
     UApplication {
         args: Value,

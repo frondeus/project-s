@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use canon::SourceBuilder;
+
 use crate::{
     diagnostics::Diagnostics,
     source::Span,
@@ -25,11 +27,15 @@ where
     }
 }
 
-pub fn v_canonical(canon: impl canon::CanonBuilder, span: Span) -> impl TypeBuilder<core::Value> {
+pub fn v_canonical(
+    canon: impl canon::CanonBuilder,
+    source: &mut SourceBuilder,
+) -> impl TypeBuilder<core::Value> {
     move |env: &mut TypeEnv, _diag: &mut Diagnostics| {
         let mut builder = CanonicalBuilder::default();
-        let canon_root = canon.build(&mut builder);
+        let canon_root = canon.build(&mut builder, source);
         let canon = builder.finish();
+        let span = canon.get(canon_root).span().expect("Span");
         let mut vars = HashMap::new();
         canonical_value(env, &canon, &mut vars, canon_root, span)
     }
@@ -385,57 +391,144 @@ pub fn canonical_use(
 // -----------------
 
 pub mod canon {
+    use tree_sitter::{Point, Range};
+
     use crate::{
-        source::Span,
-        types::canonical::{CanonId, Canonical, CanonicalBuilder},
+        source::{SourceId, Span},
+        types::{
+            canonical::{CanonId, Canonical, CanonicalBuilder},
+            printing::variable_letters,
+        },
     };
 
-    pub trait CanonBuilder {
-        fn build(self, canon: &mut CanonicalBuilder) -> CanonId;
+    #[derive(Default, Clone, Copy)]
+    pub struct OffsetPoint {
+        pub point: Point,
+        pub offset: usize,
     }
+
+    pub struct SourceBuilder {
+        cursor: OffsetPoint,
+        source: String,
+        source_id: SourceId,
+    }
+
+    impl SourceBuilder {
+        pub fn new(source_id: SourceId) -> Self {
+            SourceBuilder {
+                cursor: Default::default(),
+                source: String::new(),
+                source_id,
+            }
+        }
+        pub fn finalize(self) -> String {
+            self.source
+        }
+        fn point(&self) -> OffsetPoint {
+            self.cursor
+        }
+        fn range(&self, start: OffsetPoint, end: OffsetPoint) -> Range {
+            Range {
+                start_point: start.point,
+                end_point: end.point,
+                start_byte: start.offset,
+                end_byte: end.offset,
+            }
+        }
+        fn span(&self, start: OffsetPoint, end: OffsetPoint) -> Span {
+            Span {
+                range: self.range(start, end),
+                source_id: self.source_id,
+            }
+        }
+        pub fn append(&mut self, s: &str) -> Span {
+            let start = self.cursor;
+            let start_byte = self.cursor.offset;
+            // let start_byte = self.offset;
+            let end_byte = start_byte + s.len();
+            let end = start.point.column + s.len();
+            let end = Point {
+                row: start.point.row,
+                column: end,
+            };
+            self.source.push_str(s);
+            self.cursor.point.column += s.len();
+            self.cursor.offset += s.len();
+            Span {
+                range: Range {
+                    start_point: start.point,
+                    end_point: end,
+                    start_byte,
+                    end_byte,
+                },
+                source_id: self.source_id,
+            }
+        }
+        pub fn new_line(&mut self) {
+            self.source += "\n";
+            self.cursor.point.row += 1;
+            self.cursor.offset += 1;
+        }
+    }
+
+    pub trait CanonBuilder {
+        fn build(self, canon: &mut CanonicalBuilder, source: &mut SourceBuilder) -> CanonId;
+    }
+
     impl<F> CanonBuilder for F
     where
-        F: FnOnce(&mut CanonicalBuilder) -> Canonical,
+        F: FnOnce(&mut CanonicalBuilder, &mut SourceBuilder) -> Canonical,
     {
-        fn build(self, canon: &mut CanonicalBuilder) -> CanonId {
-            let res = self(canon);
+        fn build(self, canon: &mut CanonicalBuilder, source: &mut SourceBuilder) -> CanonId {
+            let res = self(canon, source);
             canon.add(res)
         }
     }
-    impl CanonBuilder for Canonical {
-        fn build(self, canon: &mut CanonicalBuilder) -> CanonId {
-            canon.add(self)
+
+    fn primitive(s: &str) -> impl CanonBuilder {
+        move |_canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let span = source.append(s);
+            Canonical::Primitive(s.into(), Some(span))
         }
     }
 
-    impl CanonBuilder for CanonId {
-        fn build(self, _canon: &mut CanonicalBuilder) -> CanonId {
-            self
+    pub fn number() -> impl CanonBuilder {
+        primitive("number")
+    }
+
+    pub fn func(pattern: impl CanonBuilder, ret: impl CanonBuilder) -> impl CanonBuilder {
+        move |canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let from = source.point();
+            let pattern = pattern.build(canon, source);
+            source.append(" -> ");
+            let ret = ret.build(canon, source);
+            let to = source.point();
+            let span = source.span(from, to);
+            Canonical::Func {
+                pattern,
+                ret,
+                span: Some(span),
+            }
         }
     }
 
-    pub fn any(i: impl Into<Option<usize>>, span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        Canonical::Any(i.into(), span)
+    pub fn any(i: impl Into<Option<usize>>) -> impl CanonBuilder {
+        move |_canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let i = i.into();
+            let span = match i {
+                Some(i) => source.append(&variable_letters(i)),
+                None => source.append("Any"),
+            };
+            Canonical::Any(i, Some(span))
+        }
     }
 
     // pub fn recursive(inner: impl CanonBuilder) -> impl CanonBuilder {
     //     move |canon: &mut CanonicalBuilder| Canonical::Recursive(inner.build(canon))
     // }
 
-    pub fn primitive(name: impl ToString, span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        Canonical::Primitive(name.to_string(), span)
-    }
-
-    pub fn bool(span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        primitive("bool", span)
-    }
-
-    pub fn number(span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        primitive("number", span)
+    pub fn bool() -> impl CanonBuilder {
+        primitive("bool")
     }
 
     // pub fn string() -> impl CanonBuilder {
@@ -446,51 +539,61 @@ pub mod canon {
     //     Canonical::Error
     // }
 
-    pub fn keyword(span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        primitive("keyword", span)
+    pub fn keyword() -> impl CanonBuilder {
+        primitive("keyword")
     }
 
     // pub fn obj() -> impl CanonBuilder {}
 
-    pub fn list(item: impl CanonBuilder, span: impl Into<Option<Span>>) -> impl CanonBuilder {
-        let span = span.into();
-        move |canon: &mut CanonicalBuilder| Canonical::List {
-            item: item.build(canon),
-            span,
+    pub fn list(item: impl CanonBuilder) -> impl CanonBuilder {
+        move |canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let from = source.point();
+            source.append("[");
+            let item = item.build(canon, source);
+            source.append("]");
+            let to = source.point();
+            let span = source.span(from, to);
+            Canonical::List {
+                item,
+                span: Some(span),
+            }
         }
     }
     pub fn reference(
         read: Option<impl CanonBuilder>,
         write: Option<impl CanonBuilder>,
-        span: impl Into<Option<Span>>,
     ) -> impl CanonBuilder {
-        let span = span.into();
-        move |canon: &mut CanonicalBuilder| Canonical::Reference {
-            read: read.map(|read| read.build(canon)),
-            write: write.map(|write| write.build(canon)),
-            span,
+        move |canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let from = source.point();
+            let read = read.map(|read| read.build(canon, source));
+            let write = write.map(|write| write.build(canon, source));
+            let to = source.point();
+            let span = source.span(from, to);
+            Canonical::Reference {
+                read,
+                write,
+                span: Some(span),
+            }
         }
     }
 
-    pub fn func(
-        pattern: impl CanonBuilder,
-        ret: impl CanonBuilder,
-        span: impl Into<Option<Span>>,
-    ) -> impl CanonBuilder {
-        let span = span.into();
-        move |canon: &mut CanonicalBuilder| {
-            let pattern = pattern.build(canon);
-            let ret = ret.build(canon);
-            Canonical::Func { pattern, ret, span }
+    pub fn empty_record() -> impl CanonBuilder {
+        move |_canon: &mut CanonicalBuilder, source: &mut SourceBuilder| {
+            let span = source.append("{}");
+            Canonical::Record {
+                fields: vec![],
+                proto: None,
+                span: Some(span),
+            }
         }
     }
 
     impl CanonBuilder for () {
-        fn build(self, canon: &mut CanonicalBuilder) -> CanonId {
+        fn build(self, canon: &mut CanonicalBuilder, source: &mut SourceBuilder) -> CanonId {
+            let span = source.append("()");
             canon.add(Canonical::Tuple {
                 items: vec![],
-                span: None,
+                span: Some(span),
             })
         }
     }
@@ -499,12 +602,17 @@ pub mod canon {
         ($($item:tt),*) => {
             impl<$($item: CanonBuilder),*> CanonBuilder for ($($item,)*) {
                 #[allow(non_snake_case)]
-                fn build(self, canon: &mut CanonicalBuilder) -> CanonId {
+                fn build(self, canon: &mut CanonicalBuilder, source: &mut SourceBuilder) -> CanonId {
+                    let from = source.point();
+                    source.append("(");
                     let ($($item,)*) = self;
                     $(
-                        let $item = $item.build(canon);
+                        let $item = $item.build(canon, source);
                     )*
-                    canon.add(Canonical::Tuple { items: vec![$($item),*], span: None })
+                    source.append(")");
+                    let to =source.point();
+                    let span = source.span(from, to);
+                    canon.add(Canonical::Tuple { items: vec![$($item),*], span: Some(span) })
                 }
             }
         }
@@ -520,4 +628,51 @@ pub mod canon {
     canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8);
     canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
     canon_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
+
+    #[cfg(test)]
+    mod tests {
+        use crate::{
+            source::Sources,
+            types::{canonical::Canonicalized, printing::Formatter},
+        };
+
+        use super::*;
+
+        #[test]
+        fn test_number() {
+            test_canon(number(), "number");
+        }
+
+        #[test]
+        fn test_func() {
+            test_canon(func(number(), number()), "number -> number")
+        }
+
+        fn test_canon(b: impl CanonBuilder, expected: &str) {
+            let mut canon = CanonicalBuilder::default();
+            let mut sources = Sources::default();
+            let source_id = sources.add("<builtin>", "");
+            let mut source = SourceBuilder::new(source_id);
+            let id = b.build(&mut canon, &mut source);
+            let canon = canon.finish();
+            sources.get_mut(source_id).set(&source.source);
+            let canonical = canon.get(id);
+            assert_eq!(expected, source.source);
+            assert_eq!(expected, print_canon(id, &canon));
+            assert_eq!(expected, print_canon_span(canonical, &sources));
+        }
+
+        fn print_canon(id: CanonId, canon: &Canonicalized) -> String {
+            let mut f = String::new();
+            Formatter::new(&mut f).print_canon(id, canon);
+            f
+        }
+
+        fn print_canon_span(canon: &Canonical, sources: &Sources) -> String {
+            let span = canon.span().expect("Span");
+            let source = sources.get(span.source_id);
+            let source = source.slice(span.range);
+            source.to_string()
+        }
+    }
 }

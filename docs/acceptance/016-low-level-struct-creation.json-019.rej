@@ -33,7 +33,7 @@
 +   ┆ ┆   
 + 5 │ ├─▶     )
 +   │ │           
-+   │ ╰─────────── Undefined variable: obj/con
++   │ ╰─────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:6:5 ]
@@ -42,7 +42,7 @@
 +    ┆ ┆   
 + 10 │ ├─▶     )
 +    │ │           
-+    │ ╰─────────── Undefined variable: obj/con
++    │ ╰─────────── Used here
 +────╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:7:21 ]
@@ -51,7 +51,7 @@
 +   ┆ ┆   
 + 9 │ ├─▶         ))
 +   │ │                
-+   │ ╰──────────────── Undefined variable: obj/con
++   │ ╰──────────────── Used here
 +───╯
 +
  ```

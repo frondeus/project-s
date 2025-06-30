@@ -105,7 +105,9 @@ impl TypeEnv {
                     }
                 },
                 None => {
-                    diagnostics.add_sexp(asts, id, format!("Undefined variable: {}", symbol));
+                    diagnostics
+                        .add_sexp(asts, id, format!("Undefined variable: {}", symbol))
+                        .add_extra("Used here", Some(span));
                     self.engine.error(sexp)
                 }
             },

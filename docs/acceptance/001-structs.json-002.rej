@@ -18,7 +18,7 @@
 +   │
 + 2 │   (struct :key 1 :another 2)
 +   │   ─────────────┬────────────  
-+   │                ╰────────────── Undefined variable: obj/con
++   │                ╰────────────── Used here
 +───╯
 +
  ```

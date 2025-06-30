@@ -45,7 +45,7 @@
 +   ┆ ┆   
 + 8 │ ├─▶   })
 +   │ │          
-+   │ ╰────────── Undefined variable: obj/con
++   │ ╰────────── Used here
 +───╯
 +Error: Undefined variable: obj/eval
 +   ╭─[ <input>:1:12 ]
@@ -54,7 +54,7 @@
 +   ┆ ┆   
 + 8 │ ├─▶   })
 +   │ │          
-+   │ ╰────────── Undefined variable: obj/eval
++   │ ╰────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:4:10 ]
@@ -63,7 +63,7 @@
 +   ┆ ┆   
 + 7 │ ├─▶     }
 +   │ │           
-+   │ ╰─────────── Undefined variable: obj/con
++   │ ╰─────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:10:19 ]
@@ -72,7 +72,7 @@
 +    ┆ ┆   
 + 22 │ ├─▶ }))
 +    │ │        
-+    │ ╰──────── Undefined variable: obj/con
++    │ ╰──────── Used here
 +────╯
 +Error: Undefined variable: obj/eval
 +    ╭─[ <input>:10:19 ]
@@ -81,14 +81,14 @@
 +    ┆ ┆   
 + 22 │ ├─▶ }))
 +    │ │        
-+    │ ╰──────── Undefined variable: obj/eval
++    │ ╰──────── Used here
 +────╯
 +Error: Undefined variable: has?
 +    ╭─[ <input>:13:8 ]
 +    │
 + 13 │   (if (has? super :key)
 +    │        ──┬─  
-+    │          ╰─── Undefined variable: has?
++    │          ╰─── Used here
 +────╯
 +
  ```

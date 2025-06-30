@@ -34,7 +34,7 @@
 +   │
 + 1 │ (let :x {:e 1 :f (root :d)})
 +   │         ─────────┬─────────  
-+   │                  ╰─────────── Undefined variable: obj/con
++   │                  ╰─────────── Used here
 +───╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:3:1 ]
@@ -43,7 +43,7 @@
 +    ┆ ┆   
 + 10 │ ├─▶ }
 +    │ │      
-+    │ ╰────── Undefined variable: obj/con
++    │ ╰────── Used here
 +────╯
 +Error: Undefined variable: obj/con
 +   ╭─[ <input>:4:6 ]
@@ -52,7 +52,7 @@
 +   ┆ ┆   
 + 7 │ ├─▶   }
 +   │ │         
-+   │ ╰───────── Undefined variable: obj/con
++   │ ╰───────── Used here
 +───╯
 +
  ```

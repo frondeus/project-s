@@ -22,7 +22,7 @@
 +   │
 + 1 │ (obj/con (fn (:self :root :super :origin) (do
 +   │  ───┬───  
-+   │     ╰───── Undefined variable: obj/con
++   │     ╰───── Used here
 +───╯
 +
  ```

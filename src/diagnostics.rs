@@ -155,13 +155,13 @@ impl ariadne::Span for Span {
 
 impl Diag {
     pub fn to_report(&self) -> Report<'_, Span> {
-        let mut builder = Report::build(ariadne::ReportKind::Error, self.span)
-            .with_message(&self.message)
-            .with_label(
-                Label::new(self.span)
-                    .with_message(&self.message)
-                    .with_color(Color::Red),
-            );
+        let mut builder =
+            Report::build(ariadne::ReportKind::Error, self.span).with_message(&self.message);
+        // .with_label(
+        //     Label::new(self.span)
+        //         // .with_message(&self.message)
+        //         .with_color(Color::Red),
+        // );
 
         for extra in self.extras.iter() {
             if let Some(span) = &extra.span {

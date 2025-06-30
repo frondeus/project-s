@@ -10,7 +10,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-013
-@@ -451,15 +451,25 @@
+@@ -451,15 +451,23 @@
  ```
  
  ```json
@@ -28,7 +28,7 @@
 +   │
 + 3 │     ..(3 4 5)
 +   │     ────┬────  
-+   │         ╰────── Undefined variable: splice
++   │         ╰────── Used here
 +───╯
 +Error: Incompatible types
 +   ╭─[ <input>:3:7 ]
@@ -36,8 +36,6 @@
 + 3 │     ..(3 4 5)
 +   │       ─┬─┬───  
 +   │        ╰─────── But got 3
-+   │          │     
-+   │          ╰───── Incompatible types
 +   │          │     
 +   │          ╰───── Expected function
 +───╯

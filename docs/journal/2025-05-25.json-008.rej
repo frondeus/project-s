@@ -20,14 +20,14 @@
 +   ┆ ┆   
 + 3 │ ├─▶ })
 +   │ │        
-+   │ ╰──────── Undefined variable: obj/con
++   │ ╰──────── Used here
 +───╯
 +Error: Undefined variable: has?
 +   ╭─[ <input>:4:2 ]
 +   │
 + 4 │ (has? x :another)
 +   │  ──┬─  
-+   │    ╰─── Undefined variable: has?
++   │    ╰─── Used here
 +───╯
 +
  ```

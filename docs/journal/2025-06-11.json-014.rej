@@ -21,7 +21,7 @@ foo
 +   │
 + 1 │ (let :foo (import "foo.s"))
 +   │            ───┬──  
-+   │               ╰──── Undefined variable: import
++   │               ╰──── Used here
 +───╯
 +
  ```
