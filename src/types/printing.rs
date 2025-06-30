@@ -34,17 +34,17 @@ fn variable_letters(mut i: usize) -> String {
 impl Formatter<'_> {
     fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
         match canonical.get(id) {
-            Canonical::Todo(todo) => self.f.push_str(&format!("TODO: {}", todo)),
-            Canonical::Any(None) => self.f.push_str("Any"),
-            Canonical::Literal(lit) => self.f.push_str(&format!("{lit}")),
-            Canonical::Any(Some(i)) => self.f.push_str(&variable_letters(*i)),
-            Canonical::As(i, canon_id) => {
+            Canonical::Todo(todo, _) => self.f.push_str(&format!("TODO: {}", todo)),
+            Canonical::Any(None, _) => self.f.push_str("Any"),
+            Canonical::Literal(lit, _) => self.f.push_str(&format!("{lit}")),
+            Canonical::Any(Some(i), _) => self.f.push_str(&variable_letters(*i)),
+            Canonical::As(i, canon_id, _) => {
                 self.f.push('(');
                 self.print_canon(*canon_id, canonical);
                 self.f.push_str(") as ");
                 self.f.push_str(&variable_letters(*i));
             }
-            Canonical::Or(canon_ids) => {
+            Canonical::Or(canon_ids, _) => {
                 // assert!(canon_ids.len() > 1);
                 if canon_ids.len() == 1 {
                     self.f.push_str("or<");
@@ -60,7 +60,7 @@ impl Formatter<'_> {
                     self.print_canon(*canon_id, canonical);
                 }
             }
-            Canonical::And(canon_ids) => {
+            Canonical::And(canon_ids, _) => {
                 // assert!(canon_ids.len() > 1);
                 if canon_ids.len() == 1 {
                     self.f.push_str("and<");
@@ -76,10 +76,10 @@ impl Formatter<'_> {
                     self.print_canon(*canon_id, canonical);
                 }
             }
-            Canonical::Wildcard => self.f.push('_'),
-            Canonical::Error => self.f.push_str("Error"),
-            Canonical::Primitive(name) => self.f.push_str(name),
-            Canonical::Tuple { items } => {
+            Canonical::Wildcard(_) => self.f.push('_'),
+            Canonical::Error(_) => self.f.push_str("Error"),
+            Canonical::Primitive(name, _) => self.f.push_str(name),
+            Canonical::Tuple { items, span: _ } => {
                 self.f.push('(');
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 {
@@ -89,17 +89,21 @@ impl Formatter<'_> {
                 }
                 self.f.push(')');
             }
-            Canonical::List { item } => {
+            Canonical::List { item, span: _ } => {
                 self.f.push('[');
                 self.print_canon(*item, canonical);
                 self.f.push(']');
             }
-            Canonical::Func { pattern, ret } => {
+            Canonical::Func {
+                pattern,
+                ret,
+                span: _,
+            } => {
                 self.print_canon(*pattern, canonical);
                 self.f.push_str(" -> ");
                 self.print_canon(*ret, canonical);
             }
-            Canonical::Applicable { args, ret } => {
+            Canonical::Applicable { args, ret, span: _ } => {
                 self.f.push_str("Applicable(");
                 for (i, arg) in args.iter().enumerate() {
                     if i > 0 {
@@ -111,7 +115,11 @@ impl Formatter<'_> {
                 self.print_canon(*ret, canonical);
                 self.f.push(')');
             }
-            Canonical::Record { fields, proto: _ } => {
+            Canonical::Record {
+                fields,
+                proto: _,
+                span: _,
+            } => {
                 self.f.push('{');
                 for (i, (name, id)) in fields.iter().enumerate() {
                     if i > 0 {
@@ -126,6 +134,7 @@ impl Formatter<'_> {
             &Canonical::Reference {
                 read: Some(read),
                 write: Some(write),
+                span: _,
             } if read == write => {
                 self.f.push_str("refmut<");
                 self.print_canon(read, canonical);
@@ -134,6 +143,7 @@ impl Formatter<'_> {
             &Canonical::Reference {
                 read: Some(read),
                 write: Some(write),
+                span: _,
             } => {
                 self.f.push_str("ref<");
                 self.print_canon(read, canonical);
@@ -144,6 +154,7 @@ impl Formatter<'_> {
             &Canonical::Reference {
                 read: Some(read),
                 write: None,
+                span: _,
             } => {
                 self.f.push_str("ref<");
                 self.print_canon(read, canonical);
@@ -152,6 +163,7 @@ impl Formatter<'_> {
             &Canonical::Reference {
                 read: None,
                 write: Some(write),
+                span: _,
             } => {
                 self.f.push_str("mut<");
                 self.print_canon(write, canonical);
@@ -160,6 +172,7 @@ impl Formatter<'_> {
             Canonical::Reference {
                 read: None,
                 write: None,
+                span: _,
             } => {
                 unreachable!()
             }

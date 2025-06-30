@@ -32,28 +32,31 @@ impl TypeEnv {
         vars: &mut HashMap<String, CanonId>,
     ) -> CanonId {
         let sexp = asts.get(id);
+        let span = Some(sexp.span);
         const PRIMITIVES: &[&str] = &["number", "string", "bool", "keyword"];
         match &**sexp {
-            SExp::Bool(b) => canon.add(Canonical::Literal(Literal::Bool(*b))),
-            SExp::Number(n) => canon.add(Canonical::Literal(Literal::Number(*n))),
-            SExp::String(s) => canon.add(Canonical::Literal(Literal::String(s.to_string()))),
+            SExp::Bool(b) => canon.add(Canonical::Literal(Literal::Bool(*b), span)),
+            SExp::Number(n) => canon.add(Canonical::Literal(Literal::Number(*n), span)),
+            SExp::String(s) => canon.add(Canonical::Literal(Literal::String(s.to_string()), span)),
             SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
-                canon.add(Canonical::Primitive(symbol.to_string()))
+                canon.add(Canonical::Primitive(symbol.to_string(), span))
             }
-            SExp::Keyword(k) => canon.add(Canonical::Literal(Literal::Keyword(k.to_string()))),
-            SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Wildcard),
+            SExp::Keyword(k) => {
+                canon.add(Canonical::Literal(Literal::Keyword(k.to_string()), span))
+            }
+            SExp::Symbol(symbol) if symbol == "_" => canon.add(Canonical::Wildcard(span)),
             SExp::List(items) => match &items[..] {
                 &[first, inner] if Self::is_symbol(asts, first, "list") => {
                     let inner = Self::parse_type_inner(asts, inner, canon, diagnostics, vars);
-                    canon.add(Canonical::List { item: inner })
+                    canon.add(Canonical::List { item: inner, span })
                 }
                 &[first, pattern, ret] if Self::is_symbol(asts, first, "fn") => {
                     let pattern = Self::parse_type_inner(asts, pattern, canon, diagnostics, vars);
                     let ret = Self::parse_type_inner(asts, ret, canon, diagnostics, vars);
-                    canon.add(Canonical::Func { pattern, ret })
+                    canon.add(Canonical::Func { pattern, ret, span })
                 }
                 [first, fields_exprs @ ..] if Self::is_symbol(asts, *first, "extend") => {
-                    let proto = canon.add(Canonical::Wildcard);
+                    let proto = canon.add(Canonical::Wildcard(span));
                     let mut fields = Vec::new();
                     for (key, value) in fields_exprs.iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, *key) else {
@@ -71,6 +74,7 @@ impl TypeEnv {
                     canon.add(Canonical::Record {
                         fields,
                         proto: Some(proto),
+                        span,
                     })
                 }
                 [first, fields_exprs @ ..] if Self::is_symbol(asts, *first, "record") => {
@@ -90,6 +94,7 @@ impl TypeEnv {
                     canon.add(Canonical::Record {
                         fields,
                         proto: None,
+                        span,
                     })
                 }
 
@@ -101,6 +106,7 @@ impl TypeEnv {
                     canon.add(Canonical::Reference {
                         read: None,
                         write: Some(inner),
+                        span,
                     })
                 }
                 &[first, inner] if Self::is_symbol(asts, first, "ref") => {
@@ -108,6 +114,7 @@ impl TypeEnv {
                     canon.add(Canonical::Reference {
                         read: Some(inner),
                         write: None,
+                        span,
                     })
                 }
                 &[first, inner] if Self::is_symbol(asts, first, "refmut") => {
@@ -115,6 +122,7 @@ impl TypeEnv {
                     canon.add(Canonical::Reference {
                         read: Some(inner),
                         write: Some(inner),
+                        span,
                     })
                 }
                 &[first, inner] if Self::is_symbol(asts, first, "quote") => {
@@ -124,13 +132,13 @@ impl TypeEnv {
                             let id = vars.len();
                             let id = vars
                                 .entry(symbol.to_string())
-                                .or_insert_with(|| canon.add(Canonical::Any(Some(id))));
+                                .or_insert_with(|| canon.add(Canonical::Any(Some(id), span)));
                             *id
                         }
                         _ => {
                             diagnostics
                                 .add(inner, format!("Expected symbol, got {}", inner.fmt(asts)));
-                            canon.add(Canonical::Error)
+                            canon.add(Canonical::Error(span))
                         }
                     }
                 }
@@ -145,7 +153,7 @@ impl TypeEnv {
                             vars,
                         ));
                     }
-                    canon.add(Canonical::Tuple { items })
+                    canon.add(Canonical::Tuple { items, span })
                 }
                 &[first, var_id, value] if Self::is_symbol(asts, first, "as") => {
                     let mut reserved_id = None;
@@ -163,19 +171,19 @@ impl TypeEnv {
                                     None
                                 }
                                 Entry::Vacant(vacant_entry) => {
-                                    let entry =
-                                        vacant_entry.insert(canon.add(Canonical::Any(reserved_id)));
+                                    let entry = vacant_entry
+                                        .insert(canon.add(Canonical::Any(reserved_id, Some(span))));
                                     Some(*entry)
                                 }
                             }
                         },
                     ) else {
-                        return canon.add(Canonical::Error);
+                        return canon.add(Canonical::Error(span));
                     };
 
                     let value = Self::parse_type_inner(asts, value, canon, diagnostics, vars);
 
-                    canon.add(Canonical::As(reserved_id.unwrap(), value))
+                    canon.add(Canonical::As(reserved_id.unwrap(), value, span))
                 }
                 rest => {
                     let mut items = Vec::new();
@@ -188,12 +196,12 @@ impl TypeEnv {
                             vars,
                         ));
                     }
-                    canon.add(Canonical::Tuple { items })
+                    canon.add(Canonical::Tuple { items, span })
                 }
             },
             _ => {
                 diagnostics.add(sexp, format!("Unknown type: {}", asts.fmt(id)));
-                canon.add(Canonical::Error)
+                canon.add(Canonical::Error(span))
             }
         }
     }

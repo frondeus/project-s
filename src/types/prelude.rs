@@ -20,29 +20,68 @@ impl TypeEnv {
         let builtin = sources.add("<builtin>", "");
         let builtin = Span::new_empty(builtin);
 
-        env.with_poly("list", || func(list(any(0)), list(any(0))), builtin);
-        env.with_poly("tuple", || func(any(0), any(0)), builtin);
+        env.with_poly(
+            "list",
+            move || {
+                func(
+                    list(any(0, builtin), builtin),
+                    list(any(0, builtin), builtin),
+                    builtin,
+                )
+            },
+            builtin,
+        );
+        env.with_poly(
+            "tuple",
+            move || func(any(0, builtin), any(0, builtin), builtin),
+            builtin,
+        );
 
-        env.with_mono("+", func(list(number()), number()), builtin);
-        env.with_mono("-", func(list(number()), number()), builtin);
-        env.with_mono(">", func((number(), number()), bool()), builtin);
-        env.with_poly("print", || func(list(any(None)), number()), builtin);
+        env.with_mono(
+            "+",
+            func(list(number(builtin), builtin), number(builtin), builtin),
+            builtin,
+        );
+        env.with_mono(
+            "-",
+            func(list(number(builtin), builtin), number(builtin), builtin),
+            builtin,
+        );
+        env.with_mono(
+            ">",
+            func((number(builtin), number(builtin)), bool(builtin), builtin),
+            builtin,
+        );
+        env.with_poly(
+            "print",
+            move || func(list(any(None, builtin), builtin), number(builtin), builtin),
+            builtin,
+        );
 
         let empty_struct = Canonical::Record {
             fields: vec![],
             proto: None,
+            span: Some(builtin),
         };
-        let empty_struct_ref = reference(Some(empty_struct.clone()), Some(empty_struct));
+        let empty_struct_ref = reference(Some(empty_struct.clone()), Some(empty_struct), builtin);
 
         env.with_mono(
             "obj/insert",
-            func((empty_struct_ref, keyword(), any(None)), ()),
+            func(
+                (empty_struct_ref, keyword(builtin), any(None, builtin)),
+                (),
+                builtin,
+            ),
             builtin,
         );
         // TODO: that is not fully correct. We want to have type
         // (Con<T0>) -> T0
         //    | (T0) -> T0
-        env.with_mono("obj/construct-or", func((any(0),), any(0)), builtin);
+        env.with_mono(
+            "obj/construct-or",
+            func((any(0, builtin),), any(0, builtin), builtin),
+            builtin,
+        );
         env
     }
 

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::source::Span;
+
 use super::core;
 use super::core::Literal;
 use super::core::TypeNode;
@@ -11,45 +13,51 @@ pub struct CanonId(core::ID);
 #[derive(Debug, PartialEq, Clone)]
 pub enum Canonical {
     /// A type that is not yet implemented. Better than panic
-    Todo(String),
+    Todo(String, Option<Span>),
 
     /// "_" type
-    Wildcard,
+    Wildcard(Option<Span>),
     /// Any type. If there is integer it means it is generic type
     /// It allows us to express polymorphic functions like (T0) -> T0 where we
     /// have guarantee of "any type in the input is going to be used in the output"
-    Any(Option<usize>),
+    Any(Option<usize>, Option<Span>),
 
-    Literal(Literal),
+    Literal(Literal, Option<Span>),
 
     /// A new representation of recursive types.
-    As(usize, CanonId),
+    As(usize, CanonId, Option<Span>),
 
-    Or(Vec<CanonId>),
-    And(Vec<CanonId>),
-    Error,
-    Primitive(String),
+    Or(Vec<CanonId>, Option<Span>),
+    And(Vec<CanonId>, Option<Span>),
+    Error(Option<Span>),
+    Primitive(String, Option<Span>),
     Tuple {
         items: Vec<CanonId>,
+        span: Option<Span>,
     },
     List {
         item: CanonId,
+        span: Option<Span>,
     },
     Func {
         pattern: CanonId,
         ret: CanonId,
+        span: Option<Span>,
     },
     Record {
         fields: Vec<(String, CanonId)>,
         proto: Option<CanonId>,
+        span: Option<Span>,
     },
     Reference {
         read: Option<CanonId>,
         write: Option<CanonId>,
+        span: Option<Span>,
     },
     Applicable {
         args: Vec<CanonId>,
         ret: CanonId,
+        span: Option<Span>,
     }, // Applicable {
 
        // }
@@ -59,25 +67,37 @@ impl Canonical {
     #[cfg(test)]
     fn ids(&self) -> impl Iterator<Item = CanonId> {
         match self {
-            Canonical::Todo(_)
-            | Canonical::Any(_)
-            | Canonical::Wildcard
-            | Canonical::Error
-            | Canonical::Primitive(_)
-            | Canonical::Literal(_) => vec![].into_iter(),
-            Canonical::As(_, canon_id) => vec![*canon_id].into_iter(),
-            Canonical::Or(canon_ids) => canon_ids.clone().into_iter(),
-            Canonical::And(canon_ids) => canon_ids.clone().into_iter(),
-            Canonical::Tuple { items } => items.clone().into_iter(),
-            Canonical::List { item } => vec![*item].into_iter(),
-            Canonical::Func { pattern, ret } => vec![*pattern, *ret].into_iter(),
-            Canonical::Record { fields, proto } => fields
+            Canonical::Todo(_, _)
+            | Canonical::Any(_, _)
+            | Canonical::Wildcard(_)
+            | Canonical::Error(_)
+            | Canonical::Primitive(_, _)
+            | Canonical::Literal(_, _) => vec![].into_iter(),
+            Canonical::As(_, canon_id, _) => vec![*canon_id].into_iter(),
+            Canonical::Or(canon_ids, _) => canon_ids.clone().into_iter(),
+            Canonical::And(canon_ids, _) => canon_ids.clone().into_iter(),
+            Canonical::Tuple { items, span: _ } => items.clone().into_iter(),
+            Canonical::List { item, span: _ } => vec![*item].into_iter(),
+            Canonical::Func {
+                pattern,
+                ret,
+                span: _,
+            } => vec![*pattern, *ret].into_iter(),
+            Canonical::Record {
+                fields,
+                proto,
+                span: _,
+            } => fields
                 .iter()
                 .map(|(_, id)| *id)
                 .chain(*proto)
                 .collect::<Vec<_>>()
                 .into_iter(),
-            Canonical::Reference { read, write } => {
+            Canonical::Reference {
+                read,
+                write,
+                span: _,
+            } => {
                 let mut ids = Vec::new();
                 if let Some(read) = read {
                     ids.push(*read);
@@ -87,7 +107,7 @@ impl Canonical {
                 }
                 ids.into_iter()
             }
-            Canonical::Applicable { args, ret } => {
+            Canonical::Applicable { args, ret, span: _ } => {
                 let mut ids = Vec::new();
                 ids.extend(args.iter().copied());
                 ids.push(*ret);
@@ -181,9 +201,9 @@ impl Canonicalizer {
         ids.dedup();
 
         match &ids[..] {
-            [] => self.add_canon(Canonical::Any(None)),
+            [] => self.add_canon(Canonical::Any(None, None)),
             [id] => *id,
-            ids => self.add_canon(Canonical::Or(ids.to_vec())),
+            ids => self.add_canon(Canonical::Or(ids.to_vec(), None)),
         }
     }
 
@@ -201,7 +221,7 @@ impl Canonicalizer {
                 TypeNode::Var(_) => {
                     // Only if it is a var without predecessors.
                     if engine.predecessors(pred_id).count() == 0 {
-                        ids.push(self.add_canon(Canonical::Any(None)));
+                        ids.push(self.add_canon(Canonical::Any(None, None)));
                     }
                 }
                 _ => continue,
@@ -216,25 +236,31 @@ impl Canonicalizer {
         engine: &core::TypeCheckerCore,
     ) -> CanonId {
         match value {
-            core::VTypeHead::VError => self.add_canon(Canonical::Error),
-            core::VTypeHead::VLiteral(lit) => self.add_canon(Canonical::Literal(lit.clone())),
-            core::VTypeHead::VPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
+            core::VTypeHead::VError => self.add_canon(Canonical::Error(None)),
+            core::VTypeHead::VLiteral(lit) => self.add_canon(Canonical::Literal(lit.clone(), None)),
+            core::VTypeHead::VPrimitive(name) => {
+                self.add_canon(Canonical::Primitive(name.clone(), None))
+            }
             core::VTypeHead::VTuple { items } => {
                 let items = items
                     .iter()
                     .map(|item| self.canon_value(*item, engine))
                     .collect();
-                self.add_canon(Canonical::Tuple { items })
+                self.add_canon(Canonical::Tuple { items, span: None })
             }
             core::VTypeHead::VList { item } => {
                 let item = self.canon_value(*item, engine);
-                self.add_canon(Canonical::List { item })
+                self.add_canon(Canonical::List { item, span: None })
             }
             core::VTypeHead::VStruct { fields, proto } => {
                 let mut proto = proto
                     .map(|proto| self.canon_value(proto, engine))
                     .and_then(|proto| match self.builder.get(proto) {
-                        Canonical::Record { fields, proto: _ } => Some(fields.clone()),
+                        Canonical::Record {
+                            fields,
+                            proto: _,
+                            span: _,
+                        } => Some(fields.clone()),
                         _ => None,
                     })
                     .unwrap_or_default();
@@ -249,17 +275,26 @@ impl Canonicalizer {
                 self.add_canon(Canonical::Record {
                     fields: proto,
                     proto: None,
+                    span: None,
                 })
             }
             core::VTypeHead::VFunc { pattern, ret } => {
                 let pattern = self.canon_use(*pattern, engine);
                 let ret = self.canon_value(*ret, engine);
-                self.add_canon(Canonical::Func { pattern, ret })
+                self.add_canon(Canonical::Func {
+                    pattern,
+                    ret,
+                    span: None,
+                })
             }
             core::VTypeHead::VRef { read, write } => {
                 let read = read.map(|read| self.canon_value(read, engine));
                 let write = write.map(|write| self.canon_use(write, engine));
-                self.add_canon(Canonical::Reference { read, write })
+                self.add_canon(Canonical::Reference {
+                    read,
+                    write,
+                    span: None,
+                })
             }
         }
     }
@@ -278,20 +313,26 @@ impl Canonicalizer {
         engine: &core::TypeCheckerCore,
     ) -> CanonId {
         match use_ {
-            core::UTypeHead::UError => self.add_canon(Canonical::Error),
-            core::UTypeHead::ULiteral(lit) => self.add_canon(Canonical::Literal(lit.clone())),
-            core::UTypeHead::UPrimitive(name) => self.add_canon(Canonical::Primitive(name.clone())),
+            core::UTypeHead::UError => self.add_canon(Canonical::Error(None)),
+            core::UTypeHead::ULiteral(lit) => self.add_canon(Canonical::Literal(lit.clone(), None)),
+            core::UTypeHead::UPrimitive(name) => {
+                self.add_canon(Canonical::Primitive(name.clone(), None))
+            }
             core::UTypeHead::UTuple { items } => {
                 let items = items
                     .iter()
                     .map(|item| self.canon_use(*item, engine))
                     .collect();
-                self.add_canon(Canonical::Tuple { items })
+                self.add_canon(Canonical::Tuple { items, span: None })
             }
             core::UTypeHead::UFunc { pattern, ret } => {
                 let pattern = self.canon_value(*pattern, engine);
                 let ret = self.canon_use(*ret, engine);
-                self.add_canon(Canonical::Func { pattern, ret })
+                self.add_canon(Canonical::Func {
+                    pattern,
+                    ret,
+                    span: None,
+                })
             }
             core::UTypeHead::UList {
                 items,
@@ -299,7 +340,7 @@ impl Canonicalizer {
                 max_len: _,
             } => {
                 let item = self.canon_use(*items, engine);
-                self.add_canon(Canonical::List { item })
+                self.add_canon(Canonical::List { item, span: None })
             }
             core::UTypeHead::UStruct { fields } => {
                 let fields = fields
@@ -309,6 +350,7 @@ impl Canonicalizer {
                 self.add_canon(Canonical::Record {
                     fields,
                     proto: None,
+                    span: None,
                 })
             }
             core::UTypeHead::UApplication {
@@ -318,17 +360,29 @@ impl Canonicalizer {
             } => {
                 let args = self.canon_value(*args, engine);
                 let args = self.builder.get(args);
-                let Canonical::Tuple { items: args } = args else {
+                let Canonical::Tuple {
+                    items: args,
+                    span: _,
+                } = args
+                else {
                     panic!("Expected a tuple")
                 };
                 let args = args.clone();
                 let ret = self.canon_use(*ret, engine);
-                self.add_canon(Canonical::Applicable { args, ret })
+                self.add_canon(Canonical::Applicable {
+                    args,
+                    ret,
+                    span: None,
+                })
             }
             core::UTypeHead::URef { read, write } => {
                 let read = read.map(|read| self.canon_use(read, engine));
                 let write = write.map(|write| self.canon_value(write, engine));
-                self.add_canon(Canonical::Reference { read, write })
+                self.add_canon(Canonical::Reference {
+                    read,
+                    write,
+                    span: None,
+                })
             }
         }
     }
@@ -349,9 +403,9 @@ impl Canonicalizer {
         ids.sort_unstable();
         ids.dedup();
         match &ids[..] {
-            [] => self.add_canon(Canonical::Any(None)),
+            [] => self.add_canon(Canonical::Any(None, None)),
             [id] => *id,
-            ids => self.add_canon(Canonical::And(ids.to_vec())),
+            ids => self.add_canon(Canonical::And(ids.to_vec(), None)),
         }
     }
 
@@ -379,7 +433,7 @@ impl Canonicalizer {
         let result = f(self, id);
         self.visited.pop();
         if let Some(i) = self.is_recursive(id) {
-            return self.add_canon(Canonical::As(i, result));
+            return self.add_canon(Canonical::As(i, result, None));
         }
         result
     }
@@ -387,7 +441,7 @@ impl Canonicalizer {
     fn recursive(&mut self, id: impl WithID) -> CanonId {
         let i = self.recursive.len();
         self.recursive.insert(id.id(), i);
-        self.add_canon(Canonical::Any(Some(i)))
+        self.add_canon(Canonical::Any(Some(i), None))
         // self.add_canon(Canonical::Recursive(CanonId(id.id())))
     }
     fn add_canon(&mut self, canon: Canonical) -> CanonId {

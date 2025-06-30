@@ -7,6 +7,7 @@ use std::{
 use builder::canonical_pair;
 use canonical::{Canonical, CanonicalBuilder, Canonicalizer};
 use itertools::Itertools;
+use tree_sitter::Range;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -112,8 +113,9 @@ impl TypeEnv {
                 [] => self.engine.tuple(vec![], span),
                 [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
                     let mut builder = CanonicalBuilder::default();
+                    let _ty_span = Self::span_of(*ty, asts);
                     let _ty = Self::parse_type(asts, *ty, &mut builder, diagnostics);
-                    let (t_v, t_u) = canonical_pair(self, builder, _ty, span, diagnostics);
+                    let (t_v, t_u) = canonical_pair(self, builder, _ty, _ty_span, diagnostics);
                     let value = self.check(asts, *value, diagnostics);
                     self.engine.flow(value, t_u, diagnostics);
                     t_v
@@ -300,6 +302,22 @@ impl TypeEnv {
                 }
                 [callee, args @ ..] => {
                     let callee_type = self.check(asts, *callee, diagnostics);
+                    let args_range = args
+                        .iter()
+                        .map(|arg| Self::span_of(*arg, asts).range)
+                        .reduce(|a, b| Range {
+                            start_byte: a.start_byte.min(b.start_byte),
+                            start_point: a.start_point.min(b.start_point),
+                            end_byte: a.end_byte.max(b.end_byte),
+                            end_point: a.end_point.max(b.end_point),
+                        })
+                        .unwrap_or(span.range);
+
+                    let args_span = Span {
+                        range: args_range,
+                        source_id: span.source_id,
+                    };
+
                     let args_types = args
                         .iter()
                         .map(|arg| self.check(asts, *arg, diagnostics))
@@ -309,7 +327,7 @@ impl TypeEnv {
 
                     let bound = self
                         .engine
-                        .application_use(args_types, ret_bound, span, span);
+                        .application_use(args_types, ret_bound, args_span, span);
                     self.engine.flow(callee_type, bound, diagnostics);
                     ret_type
                 }
