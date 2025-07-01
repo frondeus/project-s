@@ -42,7 +42,6 @@ pub fn prelude() -> Env {
         .with_fn("deep-eager", deep_eager)
         .with_fn("has?", obj_has)
         .with_fn("import", import)
-        .with_try_macro("let*", let_star)
         .with_fn("list/enumerate", list_enumerate)
         .with_fn("list/map", list_map)
         .with_fn("list/find-or", list_find_or)

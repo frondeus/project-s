@@ -19,17 +19,6 @@ pub fn obj_record(
         .build_ast(rt, caller))
 }
 
-pub fn let_star(
-    rt: &mut ASTS,
-    caller: Span,
-    args: Vec<Spanned<SExpId>>,
-) -> Result<Spanned<SExpId>, String> {
-    match &args[..] {
-        &[pattern, value] => Ok(("let-rec", pattern, ("thunk", (), value)).build_ast(rt, caller)),
-        _ => Err("Expected two arguments".into()),
-    }
-}
-
 pub fn obj_put_thunk(key: String, value: impl ASTBuilder) -> impl ASTBuilder {
     let value = ("obj/construct-or", value);
     let value = ("thunk", (), value);

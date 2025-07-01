@@ -79,6 +79,21 @@ impl<'a> LambdaPass<'a> {
         result
     }
 
+    fn process_let_rec(
+        &mut self,
+        span: Span,
+        sexp_ids: Vec<SExpId>,
+        f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
+    ) -> Option<SExpId> {
+        let mut sexp_ids_ = sexp_ids.clone().into_iter();
+        while let Some(pat) = sexp_ids_.next() {
+            let pattern = Pattern::parse(pat, self.asts).ok()?;
+            self.process_pattern(pattern);
+            _ = sexp_ids_.next();
+        }
+        self.visit_mut_list(span, sexp_ids, f)
+    }
+
     fn process_let(
         &mut self,
         span: Span,
@@ -86,10 +101,9 @@ impl<'a> LambdaPass<'a> {
         f: impl FnMut(&mut Self, SExpId) -> Option<SExpId>,
     ) -> Option<SExpId> {
         // 0 - "let"
-        // 1 - name
-        // 2 - value
-        let name = self.asts.get(sexp_ids[1]).as_keyword()?;
-        self.envs.set(name);
+        // 1 - pattern        // 2 - value
+        let pattern = Pattern::parse(sexp_ids[1], self.asts).ok()?;
+        self.process_pattern(pattern);
 
         self.visit_mut_list(span, sexp_ids, f)
     }
@@ -166,7 +180,10 @@ impl<'a> LambdaPass<'a> {
             None
         } else if self.is_symbol(first_id, "do") {
             self.process_do(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
-        } else if self.is_one_of(first_id, &["let", "let-rec", "let*"]) {
+        } else if self.is_one_of(first_id, &["let-rec", "let*"]) {
+            let sexp_ids = sexp_ids.to_vec();
+            self.process_let_rec(span, sexp_ids, |pass, id| pass.pass_inner(id))
+        } else if self.is_one_of(first_id, &["let"]) {
             let sexp_ids = sexp_ids.to_vec();
             self.process_let(span, sexp_ids, |pass, id| pass.pass_inner(id))
         } else if self.is_symbol(first_id, "struct") {
@@ -382,7 +399,13 @@ impl<'a> LambdaPass<'a> {
                         pass.process_fn_decl_body(id, free_vars)
                     });
                 }
-                if self.is_one_of(first, &["let", "let-rec", "let*"]) {
+                if self.is_one_of(first, &["let-rec", "let*"]) {
+                    let sexp_ids = sexp_ids.to_vec();
+                    return self.process_let_rec(span, sexp_ids, move |pass, id| {
+                        pass.process_fn_decl_body(id, free_vars)
+                    });
+                }
+                if self.is_symbol(first, "let") {
                     let sexp_ids = sexp_ids.to_vec();
                     return self.process_let(span, sexp_ids, move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)

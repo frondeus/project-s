@@ -227,22 +227,32 @@ impl TypeEnv {
 
                     self.null(Self::span_of(*first, asts))
                 }
-                [first, pattern_id, value] if Self::is_symbol(asts, *first, "let-rec") => {
-                    let pattern = match Pattern::parse(*pattern_id, asts) {
-                        Ok(pattern) => pattern,
-                        Err(e) => {
-                            diagnostics.add_sexp(
-                                asts,
-                                *pattern_id,
-                                format!("Unreadable pattern: {}", e),
-                            );
-                            return self.engine.error(Self::span_of(*pattern_id, asts));
-                        }
-                    };
+                [first, bindings @ ..] if Self::is_symbols(asts, *first, &["let-rec", "let*"]) => {
+                    let mut patterns = vec![];
+                    let mut bindings = bindings.iter().copied();
 
-                    let value = *value;
+                    while let Some(pattern) = bindings.next() {
+                        let Some(value) = bindings.next() else {
+                            diagnostics.add_sexp(asts, pattern, "Missing value");
+                            return self.engine.error(span);
+                        };
 
-                    self.polymorphic_check_pattern(pattern, value, asts, true, diagnostics);
+                        let parsed_pattern = match Pattern::parse(pattern, asts) {
+                            Ok(p) => p,
+                            Err(e) => {
+                                diagnostics.add_sexp(
+                                    asts,
+                                    pattern,
+                                    format!("Invalid pattern: {}", e),
+                                );
+                                return self.engine.error(Self::span_of(pattern, asts));
+                            }
+                        };
+
+                        patterns.push((parsed_pattern, value));
+                    }
+
+                    self.poly_rec_check_patterns(patterns, asts, diagnostics);
 
                     self.null(Self::span_of(*first, asts))
                 }
@@ -341,6 +351,62 @@ impl TypeEnv {
     fn span_of(sexp: SExpId, asts: &ASTS) -> Span {
         let sexp = asts.get(sexp);
         sexp.span
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn poly_rec_check_patterns(
+        &mut self,
+        patterns: Vec<(Pattern, SExpId)>,
+        asts: &ASTS,
+        diagnostics: &mut Diagnostics,
+    ) {
+        let saved_patterns = patterns.clone();
+        let f: Rc<dyn Fn(&mut TypeEnv, &ASTS, &mut Diagnostics, usize) -> core::Value> = Rc::new(
+            move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics, idx: usize| {
+                let mut temp_vars = vec![];
+                for (pattern, _) in saved_patterns.iter() {
+                    match pattern {
+                        Pattern::Single(key, span, _id) => {
+                            let temp_var = this.engine.var(span);
+                            this.envs.set(key, core::Scheme::Monomorphic(temp_var.0));
+                            temp_vars.push(temp_var);
+                        }
+                        _ => todo!(),
+                    }
+                }
+                for ((_, expr), (_, bound)) in saved_patterns.iter().zip(temp_vars.iter().copied())
+                {
+                    let expr_type = this.check(asts, *expr, diagnostics);
+                    this.engine.flow(expr_type, bound, diagnostics);
+                }
+
+                temp_vars[idx].0
+            },
+        );
+
+        // f(self, asts, diagnostics, 0);
+
+        for (i, (pat, value)) in patterns.into_iter().enumerate() {
+            match pat {
+                _ if !Self::is_expression_value(value, asts) => {
+                    let value = f(self, asts, diagnostics, i);
+                    let bound = self.check_pattern(pat);
+                    self.engine.flow(value, bound, diagnostics);
+                }
+                Pattern::Single(key, _span, id) => {
+                    let f = f.clone();
+                    let value = f(self, asts, diagnostics, i);
+                    let scheme = core::Scheme::Polymorphic(Rc::new(
+                        move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics| {
+                            f(this, asts, diagnostics, i)
+                        },
+                    ));
+                    self.assign_expr(id, value);
+                    self.envs.set(&key, scheme);
+                }
+                _ => todo!(),
+            }
+        }
     }
 
     fn polymorphic_check_pattern(

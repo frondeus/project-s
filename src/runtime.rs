@@ -124,7 +124,9 @@ impl Runtime {
 
     fn _let_rec_pre_destruct(&mut self, pattern: Pattern) {
         match pattern {
-            Pattern::Single(key, _, _) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
+            Pattern::Single(key, _, _) => {
+                self.envs.set(&key, Value::Thunk(Thunk::new_for_let()));
+            }
             Pattern::List(patterns, _, _) => {
                 for pattern in patterns {
                     self._let_rec_pre_destruct(pattern);
@@ -151,15 +153,23 @@ impl Runtime {
     }
 
     fn _let_rec(&mut self, items: &[SExpId]) -> Result<Value, String> {
-        match items {
-            [ident, value] => {
-                let pattern = Pattern::parse(*ident, &self.asts)?;
-                self._let_rec_pre_destruct(pattern.clone());
-                let thunk = self.eval(*value);
-                self._let_rec_destruct(pattern, thunk)
-            }
-            _ => Err(format!("Expected 2 arguments, found: {}", items.len())),
+        let len = items.len();
+        let mut items = items.iter();
+        let mut patterns = vec![];
+        while let Some(pattern) = items.next() {
+            let value = items
+                .next()
+                .ok_or_else(|| format!("Expected odd number of arguments, found: {}", len))?;
+
+            let pattern = Pattern::parse(*pattern, &self.asts)?;
+            self._let_rec_pre_destruct(pattern.clone());
+            patterns.push((pattern, *value));
         }
+        for (pattern, value) in patterns {
+            let thunk = self.eval(value);
+            self._let_rec_destruct(pattern, thunk)?;
+        }
+        Ok(Value::List(vec![]))
     }
 
     fn do_(&mut self, items: &[SExpId]) -> Value {
@@ -358,7 +368,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "let" => {
                         self._let(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "let-rec" => {
+                    SExp::Symbol(tag) if tag == "let-rec" || tag == "let*" => {
                         self._let_rec(&items[1..]).unwrap_or_else(Value::Error)
                     }
                     SExp::Symbol(tag) if tag == "if" => {
