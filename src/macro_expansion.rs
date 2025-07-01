@@ -84,7 +84,7 @@ impl<'a> Visitor<'a> for MacroForbidden<'a, '_> {
                 let res = let_visitor.visit_sexp(value);
                 if let Some(macro_) = let_visitor.macro_def {
                     let pattern = parse_pattern(pat_id, self.helper.asts, self.diagnostics)?;
-                    let pattern = if let Pattern::Single(p, _span) = pattern {
+                    let pattern = if let Pattern::Single(p, _span, _) = pattern {
                         p
                     } else {
                         self.diagnostics
@@ -183,14 +183,14 @@ impl MacroEvaluator<'_, '_> {
         diag: &mut Diagnostics,
         span: Span,
     ) -> Option<Vec<String>> {
-        let Pattern::List(list, span) = pattern else {
+        let Pattern::List(list, span, _) = pattern else {
             diag.add(span, "Macro is using non-list pattern matching");
             return None;
         };
         let mut args = vec![];
 
         for el in list {
-            let Pattern::Single(el, _span) = el else {
+            let Pattern::Single(el, _span, _) = el else {
                 diag.add(span, "Macro is using nested pattern matching");
                 return None;
             };

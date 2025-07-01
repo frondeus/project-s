@@ -7,9 +7,9 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum Pattern {
-    Single(String, Span),
-    List(Vec<Pattern>, Span),
-    Object(HashMap<String, Pattern>, Span),
+    Single(String, Span, SExpId),
+    List(Vec<Pattern>, Span, SExpId),
+    Object(HashMap<String, Pattern>, Span, SExpId),
 }
 
 impl Pattern {
@@ -21,12 +21,12 @@ impl Pattern {
         ident == name
     }
 
-    pub fn parse(ident: SExpId, asts: &ASTS) -> Result<Self, String> {
-        let sexp = asts.get(ident).clone();
+    pub fn parse(id: SExpId, asts: &ASTS) -> Result<Self, String> {
+        let sexp = asts.get(id).clone();
         let span = sexp.span;
         match sexp.inner() {
-            SExp::Keyword(k) => Ok(Pattern::Single(k, span)),
-            SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![], span)),
+            SExp::Keyword(k) => Ok(Pattern::Single(k, span, id)),
+            SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![], span, id)),
             SExp::List(items) => {
                 let first = items[0];
                 if Self::is_special_case(asts, first, "obj/struct") {
@@ -39,13 +39,13 @@ impl Pattern {
                             return Err(format!("Expected keyword, found: {:?}", asts.fmt(item)));
                         };
 
-                        if let Some(next) = items.peek() {
-                            let next = asts.get(*next);
+                        if let Some(next_id) = items.peek() {
+                            let next = asts.get(*next_id);
                             match &**next {
                                 SExp::Symbol(renamed) => {
                                     patterns.insert(
                                         key.to_owned(),
-                                        Pattern::Single(renamed.to_owned(), next.span),
+                                        Pattern::Single(renamed.to_owned(), next.span, item),
                                     );
                                     items.next();
                                     continue;
@@ -58,10 +58,13 @@ impl Pattern {
                                 }
                             }
                         }
-                        patterns.insert(key.to_owned(), Pattern::Single(key.to_owned(), key_span));
+                        patterns.insert(
+                            key.to_owned(),
+                            Pattern::Single(key.to_owned(), key_span, item),
+                        );
                     }
 
-                    return Ok(Pattern::Object(patterns, span));
+                    return Ok(Pattern::Object(patterns, span, id));
                 }
 
                 let mut patterns = vec![];
@@ -69,7 +72,7 @@ impl Pattern {
                     let pattern = Self::parse(item, asts)?;
                     patterns.push(pattern);
                 }
-                Ok(Pattern::List(patterns, span))
+                Ok(Pattern::List(patterns, span, id))
             }
             ident => Err(format!("Expected keyword or list, found: {:?}", ident)),
         }

@@ -354,27 +354,28 @@ impl TypeEnv {
         let bound = match pattern {
             // If its not a value, we cant generalize it so we treat is as monomorphic scheme.
             _ if !Self::is_expression_value(value, asts) => self.check_pattern(pattern),
-            Pattern::Single(key, span) => {
+            Pattern::Single(key, span, id) => {
                 let inner_key = key.clone();
-                self.envs.set(
-                    &key,
-                    core::Scheme::Polymorphic(Rc::new(move |this, asts, diagnostics| {
-                        if !recursive {
-                            this.check(asts, value, diagnostics)
-                        } else {
-                            let (temp_type, temp_bound) = this.engine.var(span);
-                            this.envs
-                                .set(&inner_key, core::Scheme::Monomorphic(temp_type));
+                let f = move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics| {
+                    if !recursive {
+                        this.check(asts, value, diagnostics)
+                    } else {
+                        let (temp_type, temp_bound) = this.engine.var(span);
+                        this.envs
+                            .set(&inner_key, core::Scheme::Monomorphic(temp_type));
 
-                            let var_type = this.check(asts, value, diagnostics);
-                            this.engine.flow(var_type, temp_bound, diagnostics);
-                            temp_type
-                        }
-                    })),
-                );
+                        let var_type = this.check(asts, value, diagnostics);
+                        this.engine.flow(var_type, temp_bound, diagnostics);
+                        temp_type
+                    }
+                };
+                let value = f(self, asts, diagnostics);
+                self.assign_expr(id, value);
+
+                self.envs.set(&key, core::Scheme::Polymorphic(Rc::new(f)));
                 return;
             }
-            Pattern::List(patterns, span) => {
+            Pattern::List(patterns, span, _id) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
                     let bound = self.check_pattern(pattern);
@@ -383,7 +384,7 @@ impl TypeEnv {
 
                 self.engine.tuple_use(bounds, span)
             }
-            Pattern::Object(patterns, span) => {
+            Pattern::Object(patterns, span, _) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
                     let bound = self.check_pattern(pattern);
@@ -399,12 +400,13 @@ impl TypeEnv {
 
     fn check_pattern(&mut self, pattern: Pattern) -> core::Use {
         match pattern {
-            Pattern::Single(key, span) => {
+            Pattern::Single(key, span, id) => {
                 let (value, bound) = self.engine.var(span);
+                self.assign_expr(id, value);
                 self.envs.set(&key, core::Scheme::Monomorphic(value));
                 bound
             }
-            Pattern::List(patterns, span) => {
+            Pattern::List(patterns, span, _) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
                     let bound = self.check_pattern(pattern);
@@ -413,7 +415,7 @@ impl TypeEnv {
 
                 self.engine.tuple_use(bounds, span)
             }
-            Pattern::Object(patterns, span) => {
+            Pattern::Object(patterns, span, _) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
                     let bound = self.check_pattern(pattern);

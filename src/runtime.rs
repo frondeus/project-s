@@ -69,11 +69,11 @@ impl Runtime {
         with: &impl Fn(&mut Self, &str, Value),
     ) -> Result<Value, String> {
         match pattern {
-            Pattern::Single(key, _) => {
+            Pattern::Single(key, _, _) => {
                 with(self, &key, value.clone());
                 Ok(value)
             }
-            Pattern::List(patterns, _) => match value.eager_rec(self, true) {
+            Pattern::List(patterns, _, _) => match value.eager_rec(self, true) {
                 Value::List(items) => {
                     let mut result = vec![];
                     for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
@@ -84,7 +84,7 @@ impl Runtime {
                 }
                 value => Err(format!("Destructing. Expected list, found: {:?}", value)),
             },
-            Pattern::Object(patterns, _) => match value.eager_rec(self, true) {
+            Pattern::Object(patterns, _, _) => match value.eager_rec(self, true) {
                 Value::Object(mut map) => {
                     let mut result = BTreeMap::new();
                     for (key, pattern) in patterns {
@@ -124,13 +124,13 @@ impl Runtime {
 
     fn _let_rec_pre_destruct(&mut self, pattern: Pattern) {
         match pattern {
-            Pattern::Single(key, _) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
-            Pattern::List(patterns, _) => {
+            Pattern::Single(key, _, _) => self.envs.set(&key, Value::Thunk(Thunk::new_for_let())),
+            Pattern::List(patterns, _, _) => {
                 for pattern in patterns {
                     self._let_rec_pre_destruct(pattern);
                 }
             }
-            Pattern::Object(hash_map, _) => {
+            Pattern::Object(hash_map, _, _) => {
                 for (_key, pattern) in hash_map {
                     self._let_rec_pre_destruct(pattern);
                 }

@@ -237,15 +237,15 @@ impl<'a> LambdaPass<'a> {
 
     fn process_pattern(&mut self, pattern: Pattern) {
         match pattern {
-            Pattern::Single(key, _) => {
+            Pattern::Single(key, _, _) => {
                 self.envs.set(&key);
             }
-            Pattern::List(patterns, _) => {
+            Pattern::List(patterns, _, _) => {
                 for pattern in patterns {
                     self.process_pattern(pattern);
                 }
             }
-            Pattern::Object(patterns, _) => {
+            Pattern::Object(patterns, _, _) => {
                 for (_key, pattern) in patterns {
                     self.process_pattern(pattern);
                 }

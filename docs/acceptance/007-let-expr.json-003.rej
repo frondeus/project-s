@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
 +++ json-003
-@@ -56,13 +56,18 @@
+@@ -56,13 +56,27 @@
  (fix pkgs)
  ```
  
@@ -27,7 +27,16 @@
 -  "c": 7.0
 -}
 -```
-+`````json
++```````json
++Error: Undefined variable: obj/con
++    ╭─[ <input>:6:24 ]
++    │
++  6 │ ╭─▶ (let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
++    ┆ ┆   
++ 10 │ ├─▶ }))
++    │ │         
++    │ ╰───────── Used here
++────╯
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:6:24 ]
 +    │
@@ -38,7 +47,7 @@
 +    │ ╰───────── Used here
 +────╯
 +
-+`````
++```````
  
  # Typechecking
  
