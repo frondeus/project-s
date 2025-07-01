@@ -608,6 +608,7 @@ pub mod canon {
                     let ($($item,)*) = self;
                     $(
                         let $item = $item.build(canon, source);
+                        source.append(", ");
                     )*
                     source.append(")");
                     let to =source.point();

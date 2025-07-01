@@ -370,10 +370,54 @@ pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
     Ok(rt.eval(root))
 }
 
-pub fn lg(left: f64, right: f64) -> bool {
+// Eq
+pub fn eq(left: Value, right: Value) -> bool {
+    match (left, right) {
+        (Value::Number(l), Value::Number(r)) => l == r,
+        _ => false,
+    }
+}
+
+// Greater than
+pub fn gt(left: f64, right: f64) -> bool {
     left > right
+}
+
+// Less than or equal
+pub fn lte(left: f64, right: f64) -> bool {
+    left <= right
 }
 
 pub fn error(s: String) -> Value {
     Value::Error(s)
+}
+
+pub fn list_enumerate(list: Vec<Value>) -> Vec<(i32, Value)> {
+    list.into_iter()
+        .enumerate()
+        .map(|(index, value)| (index as i32, value))
+        .collect()
+}
+
+pub fn list_map(rt: &mut Runtime, list: Vec<Value>, map: Function) -> Vec<Value> {
+    let mut result = Vec::with_capacity(list.len());
+    for value in list {
+        // let value = rt.eval(value)?;
+        let value = rt.closure_call_inner(map.clone(), vec![value]);
+        result.push(value);
+    }
+    result
+}
+
+pub fn list_find_or(rt: &mut Runtime, list: Vec<Value>, f: Function, or: Value) -> Value {
+    for value in list {
+        let result = rt.closure_call_inner(f.clone(), vec![value.clone()]);
+        let Value::Bool(result) = result else {
+            return Value::Error("Expected boolean result from function".into());
+        };
+        if result {
+            return value;
+        }
+    }
+    or
 }

@@ -139,6 +139,29 @@ impl IntoValue for BTreeMap<String, Value> {
     }
 }
 
+impl FromValue for Vec<Value> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::List(list) => Ok(list.into_iter().collect()),
+            value => Err(format!("Expected list, got {:?}", value)),
+        }
+    }
+
+    fn is_matching(_: &mut Runtime, value: &Value) -> bool {
+        value.as_list().is_some()
+    }
+}
+
+impl<T: IntoValue> IntoValue for Vec<T> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
+        let list = self
+            .into_iter()
+            .map(|item| item.try_into_value(_rt))
+            .collect::<Result<Vec<Value>, String>>()?;
+        Ok(Value::List(list))
+    }
+}
+
 impl FromValue for Function {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
@@ -216,5 +239,18 @@ where
     fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
         let value = value.clone().eager_rec(rt, true);
         T::is_matching(rt, &value)
+    }
+}
+
+impl<T, U> IntoValue for (T, U)
+where
+    T: IntoValue,
+    U: IntoValue,
+{
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
+        let (first, second) = self;
+        let first = first.try_into_value(rt)?;
+        let second = second.try_into_value(rt)?;
+        Ok(Value::List(vec![first, second]))
     }
 }

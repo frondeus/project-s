@@ -23,7 +23,9 @@ impl TypeEnv {
         env.with_mono("+", func(list(number()), number()), &mut source);
         env.with_mono("*", func(list(number()), number()), &mut source);
         env.with_mono("-", func(list(number()), number()), &mut source);
+        env.with_poly("=", move || func((any(0), any(1)), bool()), builtin);
         env.with_mono(">", func((number(), number()), bool()), &mut source);
+        env.with_mono("<=", func((number(), number()), bool()), &mut source);
         env.with_poly("print", move || func(list(any(None)), number()), builtin);
         env.with_poly("debug", move || func(any(0), any(0)), builtin);
 
@@ -38,6 +40,23 @@ impl TypeEnv {
         // (Con<T0>) -> T0
         //    | (T0) -> T0
         env.with_mono("obj/construct-or", func((any(0),), any(0)), &mut source);
+
+        env.with_poly(
+            "list/enumerate",
+            move || func((list(any(0)),), list((number(), any(0)))),
+            builtin,
+        );
+
+        env.with_poly(
+            "list/map",
+            move || func((list(any(0)), func((any(0),), any(1))), list(any(1))),
+            builtin,
+        );
+        env.with_poly(
+            "list/find-or",
+            move || func((list(any(0)), func((any(0),), bool()), any(0)), any(0)),
+            builtin,
+        );
 
         env.with_mono("roll", func((string(),), number()), &mut source);
 

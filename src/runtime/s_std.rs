@@ -18,7 +18,9 @@ pub fn prelude() -> Env {
         .with_fn("-", sub)
         .with_fn("+", add)
         .with_fn("*", mul)
-        .with_fn(">", lg)
+        .with_fn(">", gt)
+        .with_fn("<=", lte)
+        .with_fn("=", eq)
         .with_fn("ref", new_ref)
         .with_fn("set", set)
         .with_fn("list", make_list)
@@ -41,6 +43,9 @@ pub fn prelude() -> Env {
         .with_fn("has?", obj_has)
         .with_fn("import", import)
         .with_try_macro("let*", let_star)
+        .with_fn("list/enumerate", list_enumerate)
+        .with_fn("list/map", list_map)
+        .with_fn("list/find-or", list_find_or)
         .with_fn("error", error)
         .with_fn("debug", |args: Rest<Value>| {
             tracing::info!("Debug: {:#?}", &*args);

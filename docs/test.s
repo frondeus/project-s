@@ -1,4 +1,3 @@
-(let :id (fn (:x) x))
 
 (let :fix-super (fn (:f :super) (do
     (let* :result (f result super))
@@ -24,65 +23,81 @@
     (to-record (extend base ext))
 )))
 
-
-(let :dwarf (id (obj/record
-    :ancestry "Dwarf"
-    :languages [ "Common" "Dwarvish" ]
-    :features (obj/plain
-        :stout "Stout"
-    )
-    :hp (+ (super :hp) 2) # Stout feature
-)))
-
-(let :fighter (fn (:self :super) (do
-    (obj/extend super
-        :weapons-proficiency [ "All weapons" ]
-        :armor-proficiency [ "All armor" "All shields" ]
-        :hp (+ (super :hp)
-            (* (super :lvl) (roll "1d8"))
+(let :mod (fn (:stat) (do
+    (let :stats [ 3 5 7 9 11 13 15 17 ])
+    (let (:result :val) (list/find-or
+        (list/map
+            (list/enumerate stats)
+            (fn ((:idx :val)) (tuple (- idx 4) val))
         )
-        :features (obj/extend
-            (super :features)
-            :hauler "Hauler"
-
+        (fn ((:idx :val)) (<= stat val))
+        (tuple 4 18)
         )
-
     )
+    result
 )))
-#(let :fighter (obj/record
-# ))
 
 (let :base (obj/plain
     :hp 0
     :lvl 1
 ))
 
-(let :stats  (obj/record
-    :stats (fix-record (obj/record
-        :str 6
-        :dex 11
-        :con 13
-        :int 11
-        :wis 7 # (thunk () (self :wis))
-        :cha 13
-    ))
+(let :dwarf (obj/record
+    :ancestry "Dwarf"
+    :languages [ "Common" "Dwarvish" ]
+    :features (obj/plain
+        :stout "Stout"
+    )
+    :hp (+ (super :hp) 2) # Stout feature
 ))
 
-# (let :result (extend! base stats dwarf fighter))
-
-(let :before-fighter
-    (extend
-        (extend
-            base
-            stats
-        )
-        dwarf
+(let :fighter  (obj/record
+    :weapons-proficiency [ "All weapons" ]
+    :armor-proficiency [ "All armor" "All shields" ]
+    :hp (+ (super :hp)
+        (* (super :lvl) (roll "1d8"))
     )
-)
+    :features (obj/extend
+        (super :features)
+        :hauler "Hauler"
+    )
+))
 
-(let :result (extend
-    before-fighter
+
+(let :result (extend (extend (extend
+    base (obj/record
+        :stats (fix-record (obj/record
+            :str 6
+            :dex 11
+            :con 13
+            :int 11
+            :wis 7
+            :cha 13
+            :str-mod (thunk () (mod (self :str)))
+            :dex-mod (thunk () (mod (self :dex)))
+            :con-mod (thunk () (mod (self :con)))
+            :int-mod (thunk () (mod (self :int)))
+            :wis-mod (thunk () (mod (self :wis)))
+            :cha-mod (thunk () (mod (self :cha)))
+        ))
+    ))
+    dwarf)
     fighter
 ))
 
 result
+
+
+# (let :stat 12)
+# (let :stats [ 3 5 7 9 11 13 15 17 ])
+# (let :enumerated-stats (list/enumerate stats ))
+# (let :mapped-stats (list/map
+#     enumerated-stats
+#     (fn ((:idx :val)) (tuple (- idx 4) val))
+# ))
+# (let :found-stats (list/find-or
+#     mapped-stats
+#     (fn ((:idx :el)) (<= stat el))
+#     (tuple 4 18)
+# ))
+# found-stats

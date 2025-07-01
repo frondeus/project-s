@@ -244,6 +244,13 @@ impl Value {
         }
     }
 
+    pub fn as_list(&self) -> Option<&Vec<Value>> {
+        match self {
+            Value::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
     pub fn as_function(&self) -> Option<&Function> {
         match self {
             Value::Function(function) => Some(function),
