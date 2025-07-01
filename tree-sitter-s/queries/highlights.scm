@@ -8,9 +8,10 @@
 (quasiquote _+) @macro
 
 (list (symbol) @keyword _+
-    (#any-of? @keyword 
+    (#any-of? @keyword
         "if"
         "let"
+        "let*"
         "do"
     )
 )
