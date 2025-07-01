@@ -10,12 +10,14 @@ impl Runtime {
         eager: bool,
         depth: usize,
     ) -> serde_json::Value {
-        tracing::trace!("To json");
+        tracing::trace!("To json {depth}");
         if depth == 0 {
             return serde_json::Value::String("...".to_string());
         }
         if eager {
+            tracing::trace!("Eager: {:?}", value);
             value = value.eager_rec(self, true);
+            tracing::trace!("Eager done");
         }
         match value {
             Value::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(n).unwrap()),

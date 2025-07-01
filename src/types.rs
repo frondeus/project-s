@@ -577,6 +577,32 @@ mod tests {
     use super::{canonical::Canonicalizer, *};
 
     #[test]
+    fn type_process() -> test_runner::Result {
+        unsafe { std::env::set_var("NO_COLOR", "1") }
+        test_runner::test_snapshots(
+            "docs/",
+            &["s", ""],
+            "type-process",
+            |input, _deps, _args| {
+                let mut asts = ASTS::new();
+                let (sources, source_id) = Sources::single("<input>", input);
+                let ast = asts
+                    .parse(source_id, sources.get(source_id))
+                    .expect("Failed to parse");
+
+                let root = ast.root_id().unwrap();
+
+                let mut diagnostics = Diagnostics::default();
+                let prelude = prelude();
+                let root = Spanned::new(root, ast.root().unwrap().span);
+                let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
+
+                format!("{:#}", asts.fmt(root.inner()))
+            },
+        )
+    }
+
+    #[test]
     fn type_() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", &["s", ""], "type", |input, _deps, _args| {

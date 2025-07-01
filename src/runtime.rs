@@ -254,6 +254,7 @@ impl Runtime {
     }
 
     pub fn to_eager(&mut self, value: Value, include_constructor: bool) -> Value {
+        tracing::trace!("ToEager");
         match value {
             Value::Thunk(thunk) => self.thunk_call(thunk),
             Value::Ref(rc) => {
@@ -400,6 +401,10 @@ impl Runtime {
 
     pub fn modules(&self) -> &dyn ModuleProvider {
         &*self.modules
+    }
+
+    pub fn modules_mut(&mut self) -> &mut dyn ModuleProvider {
+        &mut *self.modules
     }
 }
 

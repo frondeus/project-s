@@ -6,7 +6,7 @@ use std::{
 use crate::source::{Source, SourceId, Sources};
 
 pub trait ModuleProvider {
-    fn get_module(&self, path: &Path) -> Option<SourceId>;
+    fn get_module(&mut self, path: &Path) -> Option<SourceId>;
     fn get_source(&self, source_id: SourceId) -> Option<&Source>;
 }
 
@@ -17,7 +17,7 @@ pub struct MemoryModules {
 }
 
 impl ModuleProvider for MemoryModules {
-    fn get_module(&self, path: &Path) -> Option<SourceId> {
+    fn get_module(&mut self, path: &Path) -> Option<SourceId> {
         self.modules.get(path).cloned()
     }
 

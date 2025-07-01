@@ -1,4 +1,9 @@
-use crate::api::Rest;
+use crate::{
+    api::Rest,
+    ast::{ASTS, SExpId},
+    builder::ASTBuilder,
+    source::{Span, Spanned},
+};
 
 use super::{Env, Runtime, Value};
 
@@ -12,6 +17,7 @@ pub fn prelude() -> Env {
     Env::default()
         .with_fn("-", sub)
         .with_fn("+", add)
+        .with_fn("*", mul)
         .with_fn(">", lg)
         .with_fn("ref", new_ref)
         .with_fn("set", set)
@@ -49,6 +55,28 @@ pub fn prelude() -> Env {
 
             1.0
         })
+        .with_fn("roll", |formula: String| {
+            tracing::info!("Rolling {formula}");
+            1.0
+        })
+        .with_try_macro(
+            "extend!",
+            |asts: &mut ASTS, caller: Span, mut args: Vec<Spanned<SExpId>>| {
+                let last = args
+                    .pop()
+                    .ok_or("extend!: Expected at least one argument")?;
+                let mut args = args.into_iter();
+                let mut previous = args
+                    .next()
+                    .ok_or("extend!: Expected at least two arguments")?;
+                let ast = asts.new_ast_mut();
+                for arg in args {
+                    previous = ("extend-fn", previous, arg).assemble_id_with_span(ast, caller);
+                }
+                previous = ("extend", previous, last).assemble_id_with_span(ast, caller);
+                Ok(previous)
+            },
+        )
 }
 
 impl Runtime {

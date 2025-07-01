@@ -25,6 +25,13 @@ pub fn sub(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
         .unwrap_or(0.0)
 }
 
+pub fn mul(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
+    args.into_iter()
+        .map(|a| a.value)
+        .reduce(|a, b| a * b)
+        .unwrap_or(1.0)
+}
+
 #[tracing::instrument(skip_all)]
 fn add_numbers(
     first: EagerRec<f64, WithoutConstructor>,
@@ -343,7 +350,7 @@ pub fn make_tuple(args: Rest<Value>) -> Value {
 }
 
 pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
-    let modules = rt.modules();
+    let modules = rt.modules_mut();
     let path_buf = PathBuf::from(&path);
     let Some(source_id) = modules.get_module(&path_buf) else {
         return Err(format!("Module not found: {}", path_buf.display()));

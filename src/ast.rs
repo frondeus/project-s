@@ -32,6 +32,12 @@ impl ASTS {
         Some(self.get(id?))
     }
 
+    pub fn new_ast_mut(&mut self) -> &mut AST {
+        let ast = self.new_ast();
+        let id = self.add_ast(ast);
+        self.get_ast_by_generation(id)
+    }
+
     pub fn new_ast(&mut self) -> AST {
         let ast = AST::new(self.generation);
         self.generation += 1;

@@ -531,9 +531,9 @@ pub mod canon {
         primitive("bool")
     }
 
-    // pub fn string() -> impl CanonBuilder {
-    //     Canonical::String
-    // }
+    pub fn string() -> impl CanonBuilder {
+        primitive("string")
+    }
 
     // pub fn error() -> impl CanonBuilder {
     //     Canonical::Error

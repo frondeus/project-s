@@ -152,17 +152,26 @@ impl TypeCheckerCore {
                 },
             ) => {
                 let Some(field) = first_arg else {
-                    diagnostics.add(rhs_span, "Expected field name");
+                    diagnostics
+                        .add(rhs_span, "Expected field name")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
                     return;
                 };
 
                 let Some(field) = Self::find_value(nodes, r, field) else {
-                    diagnostics.add(rhs_span, "Expected keyword literal");
+                    diagnostics
+                        .add(rhs_span, "Expected keyword literal")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
                     return;
                 };
 
                 let Some(field) = field.as_keyword_literal() else {
-                    diagnostics.add(rhs_span, "Expected keyword literal");
+                    diagnostics
+                        .add(rhs_span, "Expected keyword literal")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
                     return;
                 };
 
@@ -172,7 +181,10 @@ impl TypeCheckerCore {
                 } else if let Some(proto) = proto {
                     out.push((*proto, Use(rhs_id)));
                 } else {
-                    diagnostics.add(rhs_span, format!("Undefined field: {}", field));
+                    diagnostics
+                        .add(rhs_span, format!("Undefined field: {}", field))
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Record defined here", Some(lhs_span));
                 }
             }
             (

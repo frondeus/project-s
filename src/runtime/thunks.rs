@@ -44,15 +44,20 @@ impl Runtime {
     }
 
     pub(crate) fn thunk_call(&mut self, thunk: Thunk) -> Value {
+        tracing::trace!("ThunkCall: {}", thunk.inner.as_ptr() as usize);
         let Thunk { inner } = thunk;
         {
             let inner_ref = inner.borrow();
             match &*inner_ref {
-                InnerThunk::Evaluated(val) => return val.clone(),
+                InnerThunk::Evaluated(val) => {
+                    tracing::trace!("Trunk is already evaluated");
+                    return val.clone();
+                }
                 InnerThunk::Evaluating => {
+                    tracing::error!("Thunk is already evaluating");
                     panic!("Thunk is already evaluating");
                 }
-                _ => (),
+                _ => tracing::trace!("To Evaluate"),
             }
         }
         let thunk = { std::mem::replace(&mut *inner.borrow_mut(), InnerThunk::Evaluating) };
