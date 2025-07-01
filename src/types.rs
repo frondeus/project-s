@@ -439,7 +439,7 @@ impl TypeEnv {
             | SExp::Error
             | SExp::Keyword(_) => true,
             SExp::List(sexp_ids) => match sexp_ids.as_slice() {
-                [first, ..] if Self::is_symbol(asts, *first, "fn") => true,
+                [first, ..] if Self::is_symbols(asts, *first, &["fn", "cl"]) => true,
                 [first, rest @ ..] if Self::is_symbols(asts, *first, &["do", "if", "let"]) => rest
                     .iter()
                     .all(|sexp_id| Self::is_expression_value(*sexp_id, asts)),
@@ -570,37 +570,12 @@ mod tests {
     use crate::{
         ast::ASTS,
         macro_expansion::MacroExpansionPass,
+        process_ast,
         s_std::prelude,
         source::{Sources, Spanned},
     };
 
     use super::{canonical::Canonicalizer, *};
-
-    #[test]
-    fn type_process() -> test_runner::Result {
-        unsafe { std::env::set_var("NO_COLOR", "1") }
-        test_runner::test_snapshots(
-            "docs/",
-            &["s", ""],
-            "type-process",
-            |input, _deps, _args| {
-                let mut asts = ASTS::new();
-                let (sources, source_id) = Sources::single("<input>", input);
-                let ast = asts
-                    .parse(source_id, sources.get(source_id))
-                    .expect("Failed to parse");
-
-                let root = ast.root_id().unwrap();
-
-                let mut diagnostics = Diagnostics::default();
-                let prelude = prelude();
-                let root = Spanned::new(root, ast.root().unwrap().span);
-                let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
-
-                format!("{:#}", asts.fmt(root.inner()))
-            },
-        )
-    }
 
     #[test]
     fn type_() -> test_runner::Result {
@@ -616,11 +591,9 @@ mod tests {
 
             let mut env = TypeEnv::default().with_prelude(&mut sources);
 
-            let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
-            let root = Spanned::new(root, ast.root().unwrap().span);
-            let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
-            let infered = env.check(&asts, root.inner(), &mut diagnostics);
+            let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+            let infered = env.check(&asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
                 return diagnostics.pretty_print(&sources);
             }

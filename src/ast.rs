@@ -155,6 +155,12 @@ impl AST {
         self.root
     }
 
+    pub fn spanned_root_id(&self) -> Option<Spanned<SExpId>> {
+        let span = self.root()?.span;
+        let id = self.root_id()?;
+        Some(Spanned::new(id, span))
+    }
+
     pub fn generation(&self) -> usize {
         self.generation
     }
