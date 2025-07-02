@@ -9,13 +9,17 @@ pub fn obj_record(
     caller: Span,
     args: Vec<Spanned<SExpId>>,
 ) -> Result<Spanned<SExpId>, String> {
-    Ok(("fn", (":self", ":super"), |ast: &mut AST, caller: Span| {
-        let mut items = args;
-        items.insert(0, "obj/extend".assemble_id_with_span(ast, caller));
-        items.insert(1, "super".assemble_id_with_span(ast, caller));
+    Ok((
+        "fn",
+        (":self", ":root", ":super"),
+        |ast: &mut AST, caller: Span| {
+            let mut items = args;
+            items.insert(0, "obj/extend".assemble_id_with_span(ast, caller));
+            items.insert(1, "super".assemble_id_with_span(ast, caller));
 
-        items.assemble(ast, caller)
-    })
+            items.assemble(ast, caller)
+        },
+    )
         .build_ast(rt, caller))
 }
 
