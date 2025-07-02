@@ -196,25 +196,31 @@ impl TypeCheckerCore {
                 },
             ) => {
                 if items.len() < min_len {
-                    diagnostics.add(
-                        lhs_span,
-                        format!(
-                            "Wrong number of arguments: {} expected {}",
-                            items.len(),
-                            min_len
-                        ),
-                    );
+                    diagnostics
+                        .add(
+                            lhs_span,
+                            format!(
+                                "Wrong number of arguments: {} expected minimum {}",
+                                items.len(),
+                                min_len
+                            ),
+                        )
+                        .add_extra(format!("Expected minimum {min_len}"), Some(rhs_span))
+                        .add_extra(format!("But found {}", items.len()), Some(lhs_span));
                 }
                 if let Some(max_len) = max_len {
                     if items.len() > max_len {
-                        diagnostics.add(
-                            lhs_span,
-                            format!(
-                                "Wrong number of arguments: {} expected {}",
-                                items.len(),
-                                max_len
-                            ),
-                        );
+                        diagnostics
+                            .add(
+                                lhs_span,
+                                format!(
+                                    "Wrong number of arguments: {} expected maximum {}",
+                                    items.len(),
+                                    max_len
+                                ),
+                            )
+                            .add_extra(format!("Expected maximum {max_len}"), Some(rhs_span))
+                            .add_extra(format!("But found {}", items.len()), Some(lhs_span));
                     }
                 }
                 for item in items {
@@ -242,14 +248,23 @@ impl TypeCheckerCore {
             }
             (VTuple { items }, UTuple { items: args }) => {
                 if items.len() != args.len() {
-                    diagnostics.add(
-                        lhs_span,
-                        format!(
-                            "Wrong number of arguments: {} expected {}",
-                            items.len(),
-                            args.len()
-                        ),
-                    );
+                    diagnostics
+                        .add(
+                            lhs_span,
+                            format!(
+                                "Wrong number of arguments: {} expected precisely {}",
+                                items.len(),
+                                args.len()
+                            ),
+                        )
+                        .add_extra(
+                            format!("Expected a tuple with {} elements", args.len()),
+                            Some(rhs_span),
+                        )
+                        .add_extra(
+                            format!("But found a tuple with {} elements", items.len()),
+                            Some(lhs_span),
+                        );
                 }
 
                 for (item, arg) in items.iter().zip(args) {
