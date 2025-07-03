@@ -1,6 +1,7 @@
 use core::{Literal, WithID};
 use std::{
     collections::{BTreeMap, HashMap},
+    path::PathBuf,
     rc::Rc,
 };
 
@@ -12,6 +13,7 @@ use tree_sitter::Range;
 use crate::{
     ast::{ASTS, SExp, SExpId},
     diagnostics::{Diagnostics, SExpDiag},
+    modules::ModuleProvider,
     patterns::Pattern,
     source::{Span, WithSpan},
 };
@@ -24,14 +26,27 @@ mod prelude;
 mod printing;
 mod reachability;
 
-#[derive(Default, Debug)]
 pub struct TypeEnv {
     engine: core::TypeCheckerCore,
     envs: Envs,
     exprs: HashMap<SExpId, core::Value>,
+    modules: Box<dyn ModuleProvider>,
 }
 
 impl TypeEnv {
+    pub fn new(module: impl ModuleProvider) -> Self {
+        Self {
+            engine: core::TypeCheckerCore::default(),
+            envs: Envs::default(),
+            exprs: HashMap::default(),
+            modules: Box::new(module),
+        }
+    }
+
+    pub fn finish(self) -> Box<dyn ModuleProvider> {
+        self.modules
+    }
+
     fn null(&mut self, span: Span) -> core::Value {
         self.engine.tuple(vec![], span)
     }
@@ -45,7 +60,12 @@ impl TypeEnv {
         self.exprs.entry(sexp_id).or_insert(id);
     }
 
-    pub fn check(&mut self, asts: &ASTS, id: SExpId, diagnostics: &mut Diagnostics) -> core::Value {
+    pub fn check(
+        &mut self,
+        asts: &mut ASTS,
+        id: SExpId,
+        diagnostics: &mut Diagnostics,
+    ) -> core::Value {
         let type_ = self.check_inner(asts, id, diagnostics);
         self.assign_expr(id, type_);
         type_
@@ -61,10 +81,10 @@ impl TypeEnv {
         Some(canonical.get(id).clone())
     }
 
-    #[allow(clippy::result_large_err)]
+    #[allow(clippy::result_large_err, clippy::unnecessary_to_owned)]
     fn check_inner(
         &mut self,
-        asts: &ASTS,
+        asts: &mut ASTS,
         id: SExpId,
         diagnostics: &mut Diagnostics,
     ) -> core::Value {
@@ -122,33 +142,75 @@ impl TypeEnv {
                     self.engine.flow(value, t_u, diagnostics);
                     t_v
                 }
-                [first, condition, then_branch] if Self::is_symbol(asts, *first, "if") => {
-                    let cond_type = self.check(asts, *condition, diagnostics);
-                    let bool_span = Self::span_of(*condition, asts);
+                &[first, path_id] if Self::is_symbol(asts, first, "import") => {
+                    let path = self.check(asts, path_id, diagnostics);
+                    let path_span = Self::span_of(path_id, asts);
+                    let Some(path) = self.engine.find_value(path) else {
+                        diagnostics
+                            .add(span, "Importing a module requires a literal string")
+                            .add_extra("Got", Some(path_span));
+                        return self.engine.error(span);
+                    };
+                    let Some(path) = path.as_string_literal() else {
+                        diagnostics
+                            .add(span, "Importing a module requires a literal string")
+                            .add_extra("Got", Some(path_span));
+                        return self.engine.error(span);
+                    };
+                    let path = PathBuf::from(path);
+                    let Some(module) = self.modules.get_module(&path) else {
+                        diagnostics
+                            .add(span, format!("Module not found: {}", path.display()))
+                            .add_extra("Importing here", Some(span));
+                        return self.engine.error(span);
+                    };
+                    let Some(source) = self.modules.get_source(module) else {
+                        diagnostics
+                            .add(span, format!("Module not found: {}", path.display()))
+                            .add_extra("Importing here", Some(span));
+                        return self.engine.error(span);
+                    };
+                    let Ok(root) = asts.parse(module, source) else {
+                        diagnostics
+                            .add(span, format!("Failed to parse module: {}", path.display()))
+                            .add_extra("Parsing here", Some(span));
+                        return self.engine.error(span);
+                    };
+                    let Some(root) = root.root_id() else {
+                        diagnostics
+                            .add(span, format!("Failed to parse module: {}", path.display()))
+                            .add_extra("Parsing here", Some(span));
+                        return self.engine.error(span);
+                    };
+                    self.check(asts, root, diagnostics)
+                }
+                &[first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
+                    let cond_type = self.check(asts, condition, diagnostics);
+                    let bool_span = Self::span_of(condition, asts);
                     let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
-                    let then_type = self.check(asts, *then_branch, diagnostics);
+                    let then_type = self.check(asts, then_branch, diagnostics);
                     let else_type = self.null(span);
 
-                    let (merged, merged_bound) = self.engine.var(Self::span_of(*then_branch, asts));
+                    let (merged, merged_bound) = self.engine.var(Self::span_of(then_branch, asts));
                     self.engine.flow(then_type, merged_bound, diagnostics);
                     self.engine.flow(else_type, merged_bound, diagnostics);
 
                     merged
                 }
-                [first, condition, then_branch, else_branch]
-                    if Self::is_symbol(asts, *first, "if") =>
+                &[first, condition, then_branch, else_branch]
+                    if Self::is_symbol(asts, first, "if") =>
                 {
-                    let cond_type = self.check(asts, *condition, diagnostics);
-                    let bool_span = Self::span_of(*condition, asts);
+                    let cond_type = self.check(asts, condition, diagnostics);
+                    let bool_span = Self::span_of(condition, asts);
                     let bound = self.engine.bool_use(bool_span);
                     self.engine.flow(cond_type, bound, diagnostics);
 
-                    let then_type = self.check(asts, *then_branch, diagnostics);
-                    let else_type = self.check(asts, *else_branch, diagnostics);
+                    let then_type = self.check(asts, then_branch, diagnostics);
+                    let else_type = self.check(asts, else_branch, diagnostics);
 
-                    let (merged, merged_bound) = self.engine.var(Self::span_of(*then_branch, asts));
+                    let (merged, merged_bound) = self.engine.var(Self::span_of(then_branch, asts));
                     self.engine.flow(then_type, merged_bound, diagnostics);
                     self.engine.flow(else_type, merged_bound, diagnostics);
 
@@ -199,12 +261,19 @@ impl TypeEnv {
 
                     self.engine.func(pattern_bound, body_type, span)
                 }
+                [first, last] if Self::is_symbol(asts, *first, "do") => {
+                    self.envs.push();
+                    let body_type = self.check(asts, *last, diagnostics);
+                    self.envs.pop();
+                    body_type
+                }
                 [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
                     self.envs.push();
-                    for arg in args {
-                        self.check(asts, *arg, diagnostics);
+                    let last = *last;
+                    for arg in args.to_vec() {
+                        self.check(asts, arg, diagnostics);
                     }
-                    let last_type = self.check(asts, *last, diagnostics);
+                    let last_type = self.check(asts, last, diagnostics);
                     self.envs.pop();
                     last_type
                 }
@@ -221,15 +290,16 @@ impl TypeEnv {
                         }
                     };
 
+                    let first = *first;
                     let value = *value;
 
                     self.polymorphic_check_pattern(pattern, value, asts, false, diagnostics);
 
-                    self.null(Self::span_of(*first, asts))
+                    self.null(Self::span_of(first, asts))
                 }
                 [first, bindings @ ..] if Self::is_symbols(asts, *first, &["let-rec", "let*"]) => {
                     let mut patterns = vec![];
-                    let mut bindings = bindings.iter().copied();
+                    let mut bindings = bindings.to_vec().into_iter();
 
                     while let Some(pattern) = bindings.next() {
                         let Some(value) = bindings.next() else {
@@ -251,10 +321,11 @@ impl TypeEnv {
 
                         patterns.push((parsed_pattern, value));
                     }
+                    let first = *first;
 
                     self.poly_rec_check_patterns(patterns, asts, diagnostics);
 
-                    self.null(Self::span_of(*first, asts))
+                    self.null(Self::span_of(first, asts))
                 }
                 [first, _err] if Self::is_symbol(asts, *first, "error") => self.engine.error(span),
                 [first, _captured, rest] if Self::is_symbol(asts, *first, "thunk") => {
@@ -272,47 +343,49 @@ impl TypeEnv {
                 }
                 [first, args @ ..] if Self::is_symbol(asts, *first, "obj/plain") => {
                     let mut fields = Vec::new();
-                    for (key, value) in args.iter().tuples() {
-                        let key = match Self::as_keyword(asts, *key) {
+                    for (key, value) in args.to_vec().into_iter().tuples() {
+                        let key = match Self::as_keyword(asts, key) {
                             Some(key) => key,
                             None => {
-                                diagnostics.add_sexp(asts, *key, "Expected keyword");
-                                return self.engine.error(Self::span_of(*key, asts));
+                                diagnostics.add_sexp(asts, key, "Expected keyword");
+                                return self.engine.error(Self::span_of(key, asts));
                             }
-                        };
-                        let value = self.check(asts, *value, diagnostics);
-                        fields.push((key.to_string(), value));
+                        }
+                        .to_string();
+                        let value = self.check(asts, value, diagnostics);
+                        fields.push((key, value));
                     }
                     self.engine.obj(fields, None, span)
                 }
                 [first, proto, args @ ..] if Self::is_symbol(asts, *first, "obj/extend") => {
+                    let args = args.to_vec();
                     let proto = self.check(asts, *proto, diagnostics);
                     let mut fields = Vec::new();
-                    for (key, value) in args.iter().tuples() {
-                        let key = match Self::as_keyword(asts, *key) {
+                    for (key, value) in args.into_iter().tuples() {
+                        let key = match Self::as_keyword(asts, key) {
                             Some(key) => key,
                             None => {
-                                diagnostics.add_sexp(asts, *key, "Expected keyword");
-                                return self.engine.error(Self::span_of(*key, asts));
+                                diagnostics.add_sexp(asts, key, "Expected keyword");
+                                return self.engine.error(Self::span_of(key, asts));
                             }
-                        };
-                        let value = self.check(asts, *value, diagnostics);
-                        fields.push((key.to_string(), value));
+                        }
+                        .to_string();
+                        let value = self.check(asts, value, diagnostics);
+                        fields.push((key, value));
                     }
                     self.engine.obj(fields, Some(proto), span)
                 }
-                [first, ref_mut, value_id] if Self::is_symbol(asts, *first, "set") => {
-                    let ref_mut = self.check(asts, *ref_mut, diagnostics);
-                    let value = self.check(asts, *value_id, diagnostics);
-                    let bound = self.engine.reference_use(
-                        Some(value),
-                        None,
-                        Self::span_of(*value_id, asts),
-                    );
+                &[first, ref_mut, value_id] if Self::is_symbol(asts, first, "set") => {
+                    let ref_mut = self.check(asts, ref_mut, diagnostics);
+                    let value = self.check(asts, value_id, diagnostics);
+                    let bound =
+                        self.engine
+                            .reference_use(Some(value), None, Self::span_of(value_id, asts));
                     self.engine.flow(ref_mut, bound, diagnostics);
                     value
                 }
                 [callee, args @ ..] => {
+                    let args = args.to_vec();
                     let callee_type = self.check(asts, *callee, diagnostics);
                     let args_range = args
                         .iter()
@@ -357,32 +430,37 @@ impl TypeEnv {
     fn poly_rec_check_patterns(
         &mut self,
         patterns: Vec<(Pattern, SExpId)>,
-        asts: &ASTS,
+        asts: &mut ASTS,
         diagnostics: &mut Diagnostics,
     ) {
         let saved_patterns = patterns.clone();
-        let f: Rc<dyn Fn(&mut TypeEnv, &ASTS, &mut Diagnostics, usize) -> core::Value> = Rc::new(
-            move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics, idx: usize| {
-                let mut temp_vars = vec![];
-                for (pattern, _) in saved_patterns.iter() {
-                    match pattern {
-                        Pattern::Single(key, span, _id) => {
-                            let temp_var = this.engine.var(span);
-                            this.envs.set(key, core::Scheme::Monomorphic(temp_var.0));
-                            temp_vars.push(temp_var);
+        let f: Rc<dyn Fn(&mut TypeEnv, &mut ASTS, &mut Diagnostics, usize) -> core::Value> =
+            Rc::new(
+                move |this: &mut TypeEnv,
+                      asts: &mut ASTS,
+                      diagnostics: &mut Diagnostics,
+                      idx: usize| {
+                    let mut temp_vars = vec![];
+                    for (pattern, _) in saved_patterns.iter() {
+                        match pattern {
+                            Pattern::Single(key, span, _id) => {
+                                let temp_var = this.engine.var(span);
+                                this.envs.set(key, core::Scheme::Monomorphic(temp_var.0));
+                                temp_vars.push(temp_var);
+                            }
+                            _ => todo!(),
                         }
-                        _ => todo!(),
                     }
-                }
-                for ((_, expr), (_, bound)) in saved_patterns.iter().zip(temp_vars.iter().copied())
-                {
-                    let expr_type = this.check(asts, *expr, diagnostics);
-                    this.engine.flow(expr_type, bound, diagnostics);
-                }
+                    for ((_, expr), (_, bound)) in
+                        saved_patterns.iter().zip(temp_vars.iter().copied())
+                    {
+                        let expr_type = this.check(asts, *expr, diagnostics);
+                        this.engine.flow(expr_type, bound, diagnostics);
+                    }
 
-                temp_vars[idx].0
-            },
-        );
+                    temp_vars[idx].0
+                },
+            );
 
         // f(self, asts, diagnostics, 0);
 
@@ -397,7 +475,9 @@ impl TypeEnv {
                     let f = f.clone();
                     let value = f(self, asts, diagnostics, i);
                     let scheme = core::Scheme::Polymorphic(Rc::new(
-                        move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics| {
+                        move |this: &mut TypeEnv,
+                              asts: &mut ASTS,
+                              diagnostics: &mut Diagnostics| {
                             f(this, asts, diagnostics, i)
                         },
                     ));
@@ -413,7 +493,7 @@ impl TypeEnv {
         &mut self,
         pattern: Pattern,
         value: SExpId,
-        asts: &ASTS,
+        asts: &mut ASTS,
         recursive: bool,
         diagnostics: &mut Diagnostics,
     ) {
@@ -422,19 +502,20 @@ impl TypeEnv {
             _ if !Self::is_expression_value(value, asts) => self.check_pattern(pattern),
             Pattern::Single(key, span, id) => {
                 let inner_key = key.clone();
-                let f = move |this: &mut TypeEnv, asts: &ASTS, diagnostics: &mut Diagnostics| {
-                    if !recursive {
-                        this.check(asts, value, diagnostics)
-                    } else {
-                        let (temp_type, temp_bound) = this.engine.var(span);
-                        this.envs
-                            .set(&inner_key, core::Scheme::Monomorphic(temp_type));
+                let f =
+                    move |this: &mut TypeEnv, asts: &mut ASTS, diagnostics: &mut Diagnostics| {
+                        if !recursive {
+                            this.check(asts, value, diagnostics)
+                        } else {
+                            let (temp_type, temp_bound) = this.engine.var(span);
+                            this.envs
+                                .set(&inner_key, core::Scheme::Monomorphic(temp_type));
 
-                        let var_type = this.check(asts, value, diagnostics);
-                        this.engine.flow(var_type, temp_bound, diagnostics);
-                        temp_type
-                    }
-                };
+                            let var_type = this.check(asts, value, diagnostics);
+                            this.engine.flow(var_type, temp_bound, diagnostics);
+                            temp_type
+                        }
+                    };
                 let value = f(self, asts, diagnostics);
                 self.assign_expr(id, value);
 
@@ -636,11 +717,8 @@ impl Envs {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ast::ASTS,
-        macro_expansion::MacroExpansionPass,
-        process_ast,
-        s_std::prelude,
-        source::{Sources, Spanned},
+        ast::ASTS, macro_expansion::MacroExpansionPass, modules::MemoryModules, process_ast,
+        s_std::prelude, source::Spanned,
     };
 
     use super::{canonical::Canonicalizer, *};
@@ -650,20 +728,21 @@ mod tests {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", &["s", ""], "type", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let (mut sources, source_id) = Sources::single("<input>", input);
+            let (modules, source_id) = MemoryModules::from_deps(input, _deps);
             let ast = asts
-                .parse(source_id, sources.get(source_id))
+                .parse(source_id, modules.sources().get(source_id))
                 .expect("Failed to parse");
 
             let root = ast.root_id().unwrap();
 
-            let mut env = TypeEnv::default().with_prelude(&mut sources);
+            let mut env = TypeEnv::new(modules).with_prelude();
 
             let prelude = prelude();
             let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-            let infered = env.check(&asts, root, &mut diagnostics);
+            let infered = env.check(&mut asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
-                return diagnostics.pretty_print(&sources);
+                let modules = env.finish();
+                return diagnostics.pretty_print(modules.sources());
             }
 
             env.to_string(infered)
@@ -672,21 +751,21 @@ mod tests {
 
     #[test]
     fn type_dot() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", &["", "s"], "graphviz", |input, _deps, args| {
+        test_runner::test_snapshots("docs/", &["", "s"], "graphviz", |input, deps, args| {
             let mut asts = ASTS::new();
-            let (mut sources, source_id) = Sources::single("<input>", input);
+            let (modules, source_id) = MemoryModules::from_deps(input, deps);
             let ast = asts
-                .parse(source_id, sources.get(source_id))
+                .parse(source_id, modules.sources().get(source_id))
                 .expect("Failed to parse");
             let root = ast.root_id().unwrap();
-            let mut env = TypeEnv::default().with_prelude(&mut sources);
+            let mut env = TypeEnv::new(modules).with_prelude();
 
             let mut diagnostics = Diagnostics::default();
             let prelude = prelude();
 
             let root = Spanned::new(root, ast.root().unwrap().span);
             let root = MacroExpansionPass::pass(&mut asts, root, &mut diagnostics, &[prelude]);
-            let root = env.check(&asts, root.inner(), &mut diagnostics);
+            let root = env.check(&mut asts, root.inner(), &mut diagnostics);
 
             if args.contains(&"canon") {
                 let (canon_id, canonical) =

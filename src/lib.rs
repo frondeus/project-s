@@ -4,6 +4,7 @@ use ast::{ASTS, SExpId};
 use diagnostics::Diagnostics;
 use lambda_lifting::LambdaPass;
 use macro_expansion::MacroExpansionPass;
+use modules::ModuleProvider;
 use runtime::Env;
 
 pub mod cst;
@@ -29,7 +30,7 @@ pub mod api;
 pub mod runtime;
 pub use runtime::s_std;
 
-use crate::source::{Sources, Spanned};
+use crate::source::Spanned;
 
 pub mod lsp;
 
@@ -45,15 +46,16 @@ pub fn process_ast(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diag
 }
 
 pub fn process_with_typechk(
-    sources: &mut Sources,
+    modules: impl ModuleProvider,
     asts: &mut ASTS,
     root: SExpId,
     envs: &[Env],
-) -> (SExpId, Diagnostics) {
+) -> (SExpId, Diagnostics, Box<dyn ModuleProvider>) {
     let (root, mut diagnostics) = process_ast(asts, root, envs);
-    let mut type_env = types::TypeEnv::default().with_prelude(sources);
+    let mut type_env = types::TypeEnv::new(modules).with_prelude();
     type_env.check(asts, root, &mut diagnostics);
-    (root, diagnostics)
+    let modules = type_env.finish();
+    (root, diagnostics, modules)
 }
 
 #[cfg(test)]

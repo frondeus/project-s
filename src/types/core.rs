@@ -42,7 +42,7 @@ impl WithID for Value {
     }
 }
 
-pub type PolyFunc = Rc<dyn Fn(&mut super::TypeEnv, &ASTS, &mut Diagnostics) -> Value>;
+pub type PolyFunc = Rc<dyn Fn(&mut super::TypeEnv, &mut ASTS, &mut Diagnostics) -> Value>;
 
 #[derive(Clone)]
 pub enum Scheme {
@@ -164,16 +164,23 @@ impl VTypeHead {
         ids.into_iter()
     }
 
-    fn as_number_literal(&self) -> Option<f64> {
+    pub fn as_number_literal(&self) -> Option<f64> {
         match self {
             Self::VLiteral(Literal::Number(n)) => Some(*n),
             _ => None,
         }
     }
 
-    fn as_keyword_literal(&self) -> Option<String> {
+    pub fn as_keyword_literal(&self) -> Option<String> {
         match self {
             Self::VLiteral(Literal::Keyword(k)) => Some(k.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_string_literal(&self) -> Option<String> {
+        match self {
+            Self::VLiteral(Literal::String(s)) => Some(s.clone()),
             _ => None,
         }
     }

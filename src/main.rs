@@ -1,11 +1,12 @@
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    path::PathBuf,
-};
-
 use project_s::{
-    ast::ASTS, lsp::Backend, modules::ModuleProvider, process_ast, runtime::Runtime,
-    s_std::prelude, source::Sources, types::TypeEnv,
+    ast::ASTS,
+    lsp::Backend,
+    modules::{FileModules, ModuleProvider},
+    process_ast,
+    runtime::Runtime,
+    s_std::prelude,
+    source::Sources,
+    types::TypeEnv,
 };
 use tower_lsp_server::{LspService, Server};
 
@@ -24,11 +25,12 @@ async fn main() {
 fn run(filename: &str) {
     let document = std::fs::read_to_string(filename).unwrap();
 
-    let (mut sources, source_id) = Sources::single(filename, &document);
+    let (sources, source_id) = Sources::single(filename, &document);
     let mut asts = ASTS::new();
+    let modules = FileModules::from(sources);
 
     eprintln!("Parsing..");
-    let Ok(ast) = asts.parse(source_id, sources.get(source_id)) else {
+    let Ok(ast) = asts.parse(source_id, modules.sources().get(source_id)) else {
         eprintln!("Could not parse file: {filename}");
         return;
     };
@@ -40,17 +42,17 @@ fn run(filename: &str) {
     let envs = &[prelude];
     eprintln!("Processing..");
     let (root, mut diagnostics) = process_ast(&mut asts, root, envs);
-    let mut type_env = TypeEnv::default().with_prelude(&mut sources);
+    let mut type_env = TypeEnv::new(modules).with_prelude();
     eprintln!("Type checking..");
-    type_env.check(&asts, root, &mut diagnostics);
+    type_env.check(&mut asts, root, &mut diagnostics);
+    let modules = type_env.finish();
     if diagnostics.has_errors() {
         eprintln!("Errors occurred during type checking");
-        let err = diagnostics.pretty_print(&sources);
+        let err = diagnostics.pretty_print(modules.sources());
         eprintln!("{err}");
         return;
     }
-    let modules = FileModules::from(sources);
-    let mut runtime = Runtime::new(asts, Box::new(modules));
+    let mut runtime = Runtime::new(asts, modules);
     runtime.with_prelude();
     eprintln!("Evaluating...");
     let value = runtime.eval(root);
@@ -59,48 +61,6 @@ fn run(filename: &str) {
     let json = runtime.to_json(value, true);
     let json = serde_json::to_string_pretty(&json).unwrap();
     print!("{json}")
-}
-
-struct FileModules {
-    sources: Sources,
-    path_to_id: HashMap<PathBuf, project_s::source::SourceId>,
-}
-impl From<Sources> for FileModules {
-    fn from(sources: Sources) -> Self {
-        let path_to_id = sources
-            .iter_with_id()
-            .map(|(id, src)| {
-                let path = PathBuf::from(&*src.filename);
-                (path, id)
-            })
-            .collect();
-        Self {
-            sources,
-            path_to_id,
-        }
-    }
-}
-impl ModuleProvider for FileModules {
-    fn get_module(&mut self, path: &std::path::Path) -> Option<project_s::source::SourceId> {
-        let pathb = path.to_path_buf();
-        match self.path_to_id.entry(pathb) {
-            Entry::Occupied(entry) => Some(*entry.get()),
-            Entry::Vacant(entry) => {
-                let source = std::fs::read_to_string(path).ok()?;
-                let path = path.display().to_string();
-                let source_id = self.sources.add(&path, &source);
-                entry.insert(source_id);
-                Some(source_id)
-            }
-        }
-    }
-
-    fn get_source(
-        &self,
-        source_id: project_s::source::SourceId,
-    ) -> Option<&project_s::source::Source> {
-        Some(self.sources.get(source_id))
-    }
 }
 
 async fn lsp() {

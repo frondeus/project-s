@@ -8,6 +8,7 @@ use crate::source::{Source, SourceId, Span, Spanned};
 pub struct ASTS {
     asts: HashMap<usize, AST>,
     generation: usize,
+    source_to_ast: HashMap<SourceId, SExpId>,
 }
 
 impl ASTS {
@@ -26,6 +27,10 @@ impl ASTS {
     pub fn get(&self, id: SExpId) -> &Spanned<SExp> {
         let ast = self.get_ast(id);
         ast.get(id)
+    }
+
+    pub fn get_by_source(&self, source_id: SourceId) -> Option<SExpId> {
+        self.source_to_ast.get(&source_id).copied()
     }
 
     pub fn maybe_get(&self, id: Option<SExpId>) -> Option<&Spanned<SExp>> {
@@ -59,9 +64,13 @@ impl ASTS {
     }
 
     pub fn parse(&mut self, source_id: SourceId, source: &Source) -> Result<&AST, ParseError> {
+        if self.source_to_ast.contains_key(&source_id) {
+            return Ok(self.get_ast(self.source_to_ast[&source_id]));
+        }
         let parser = SExpParser::new(self, source_id, source)?;
         let ast = parser.parse()?;
         let root = ast.root_id().unwrap();
+        self.source_to_ast.insert(source_id, root);
         self.add_ast(ast);
         Ok(self.get_ast(root))
     }

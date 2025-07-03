@@ -427,13 +427,8 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::{HashMap, HashSet},
-        io::Read,
-        path::PathBuf,
-    };
+    use std::{collections::HashSet, io::Read};
 
-    use test_runner::CowStr;
     use tracing_subscriber::{Layer, layer::SubscriberExt};
 
     use crate::{
@@ -446,8 +441,8 @@ mod tests {
 
     fn eval_to_value(
         source_id: SourceId,
-        mut modules: MemoryModules,
-    ) -> Result<(Runtime, Value), (Diagnostics, MemoryModules)> {
+        modules: MemoryModules,
+    ) -> Result<(Runtime, Value), (Diagnostics, Box<dyn ModuleProvider>)> {
         let mut asts = ASTS::new();
         let source = modules.sources.get(source_id);
         let ast = asts.parse(source_id, source).unwrap();
@@ -455,8 +450,8 @@ mod tests {
         tracing::trace!("Before process");
         let prelude = prelude();
         let envs = [prelude];
-        let (root_id, diag) =
-            crate::process_with_typechk(&mut modules.sources, &mut asts, root_id, &envs);
+        let (root_id, diag, modules) =
+            crate::process_with_typechk(modules, &mut asts, root_id, &envs);
 
         if diag.has_errors() {
             return Err((diag, modules));
@@ -464,7 +459,6 @@ mod tests {
 
         let [prelude] = envs;
 
-        let modules = Box::new(modules);
         let mut runtime = Runtime::new(asts, modules);
         runtime.with_env(prelude);
         tracing::trace!("Before eval");
@@ -476,7 +470,7 @@ mod tests {
         let (mut runtime, value) = match eval_to_value(source_id, modules) {
             Ok((runtime, value)) => (runtime, value),
             Err((diag, modules)) => {
-                return diag.pretty_print(&modules.sources);
+                return diag.pretty_print(modules.sources());
             }
         };
         tracing::trace!("Value: {value:?}");
@@ -484,29 +478,12 @@ mod tests {
         serde_json::to_string_pretty(&value).unwrap()
     }
 
-    fn deps_to_modules(input: &str, deps: &HashMap<CowStr<'_>, &str>) -> (MemoryModules, SourceId) {
-        let mut sources: Sources = Default::default();
-        let input_id = sources.add("<input>", input);
-        let modules = deps
-            .iter()
-            .filter(|(name, _value)| name.ends_with(".s"))
-            .map(|(name, value)| {
-                (
-                    PathBuf::from(name.to_string()),
-                    sources.add(name.to_string().as_str(), value),
-                )
-            })
-            .collect::<HashMap<_, _>>();
-        // tracing::info!("Modules: {:#?}", modules);
-        (MemoryModules { modules, sources }, input_id)
-    }
-
     #[test]
     fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s", ""], "json", |input, deps, args| {
             let lazy = args.contains("lazy");
             tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
-                let (deps, source_id) = deps_to_modules(input, deps);
+                let (deps, source_id) = MemoryModules::from_deps(input, deps);
                 eval_to_json(source_id, deps, !lazy)
             })
         })
@@ -559,7 +536,7 @@ mod tests {
                     .with(file_layer.with_filter(level));
 
                 tracing::subscriber::with_default(subscriber, move || {
-                    let (deps, source_id) = deps_to_modules(input, deps);
+                    let (deps, source_id) = MemoryModules::from_deps(input, deps);
                     // let (mut runtime, value) = eval_to_value(input, modules);
                     // runtime.to_json(value, true);
                     eval_to_json(source_id, deps, true)

@@ -31,7 +31,11 @@ impl TypeCheckerCore {
         assert!(pending_edges.is_empty() && type_pairs_to_check.is_empty());
     }
 
-    fn find_value<'a>(
+    pub fn find_value(&self, val: Value) -> Option<&VTypeHead> {
+        Self::find_value_inner(&self.types, &self.r, val)
+    }
+
+    fn find_value_inner<'a>(
         nodes: &'a [TypeNode],
         r: &Reachability,
         val: Value,
@@ -112,7 +116,7 @@ impl TypeCheckerCore {
                     diagnostics.add(lhs_span, "Expected int literal to access tuple element");
                     return;
                 };
-                let Some(first_arg) = Self::find_value(nodes, r, first_arg) else {
+                let Some(first_arg) = Self::find_value_inner(nodes, r, first_arg) else {
                     diagnostics.add(lhs_span, "Expected int literal to access tuple element");
                     return;
                 };
@@ -159,7 +163,7 @@ impl TypeCheckerCore {
                     return;
                 };
 
-                let Some(field) = Self::find_value(nodes, r, field) else {
+                let Some(field) = Self::find_value_inner(nodes, r, field) else {
                     diagnostics
                         .add(rhs_span, "Expected keyword literal")
                         .add_extra("Used here", Some(rhs_span))

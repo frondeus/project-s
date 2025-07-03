@@ -50,6 +50,7 @@ fn ts_range_to_range(range: tree_sitter::Range) -> tower_lsp_server::lsp_types::
 
 use crate::{
     ast::ASTS,
+    modules::FileModules,
     process_ast,
     s_std::prelude,
     source::{SourceId, Sources},
@@ -265,7 +266,7 @@ impl LanguageServer for Backend {
             return Ok(None);
         };
 
-        let (mut sources, source_id) = Sources::single(&filename, &document);
+        let (sources, source_id) = Sources::single(&filename, &document);
         let mut asts = ASTS::new();
         let Ok(ast) = asts.parse(source_id, sources.get(source_id)) else {
             self.client
@@ -296,12 +297,13 @@ impl LanguageServer for Backend {
         };
         // let mut env = TypeEnv::default().with_prelude(&mut sources);
         let type_ = {
-            let sources: &mut Sources = &mut sources;
+            let modules: FileModules = sources.into();
+            // let sources: &mut Sources = &mut sources;
             let asts: &mut ASTS = &mut asts;
             let prelude = prelude();
             let envs = &[prelude];
             let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::default().with_prelude(sources);
+            let mut type_env = TypeEnv::new(modules).with_prelude();
             type_env.check(asts, root, &mut diagnostics);
             // let type_ = type_env.check(asts, selected, &mut diagnostics);
             let Some(type_) = type_env.get_ty_id(selected) else {
@@ -311,10 +313,11 @@ impl LanguageServer for Backend {
             // for diag in diagnostics.print(sources) {}
 
             let ty_ = type_env.to_string(type_);
+            let modules = type_env.finish();
             if !diagnostics.has_errors() {
                 ty_
             } else {
-                let errs = diagnostics.pretty_print(sources);
+                let errs = diagnostics.pretty_print(modules.sources());
                 format!("{ty_}\n# Errors:\n```\n{errs}\n```")
             }
         };
@@ -383,7 +386,7 @@ impl Backend {
             return None;
         };
 
-        let (mut sources, source_id) = Sources::single(&filename, &document);
+        let (sources, source_id) = Sources::single(&filename, &document);
         let mut asts = ASTS::new();
         let Ok(ast) = asts.parse(source_id, sources.get(source_id)) else {
             self.client
@@ -403,19 +406,21 @@ impl Backend {
                 .await;
             return None;
         };
-        let diag = {
-            let sources: &mut Sources = &mut sources;
+
+        let (modules, diag) = {
+            let modules: FileModules = sources.into();
             let asts: &mut ASTS = &mut asts;
             let prelude = prelude();
             let envs = &[prelude];
             let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::default().with_prelude(sources);
+            let mut type_env = TypeEnv::new(modules).with_prelude();
             type_env.check(asts, root, &mut diagnostics);
-            diagnostics
+            let modules = type_env.finish();
+            (modules, diagnostics)
         };
         let diag = diag
             .into_iter()
-            .map(|d| from_diag(d, &sources, source_id))
+            .map(|d| from_diag(d, modules.sources(), source_id))
             .collect();
         self.client
             .log_message(MessageType::INFO, format!("On Diag: {:#?}", diag))
