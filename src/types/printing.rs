@@ -1,3 +1,5 @@
+use crate::types::canonical::CanonicalScheme;
+
 use super::TypeEnv;
 use super::canonical::CanonId;
 use super::canonical::Canonical;
@@ -180,6 +182,24 @@ impl Formatter<'_> {
                 span: _,
             } => {
                 unreachable!()
+            }
+            Canonical::Module { members, span: _ } => {
+                self.f.push_str("module { ");
+                for (idx, (name, value, scheme)) in members.iter().enumerate() {
+                    if idx > 0 {
+                        self.f.push_str(", ");
+                    }
+                    self.f.push_str(name);
+                    self.f.push_str(": ");
+                    match scheme {
+                        CanonicalScheme::Monomorphic => {}
+                        CanonicalScheme::Polymorphic => {
+                            self.f.push_str("for_all");
+                        }
+                    }
+                    self.print_canon(*value, canonical);
+                }
+                self.f.push('}');
             }
         }
     }

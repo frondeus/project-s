@@ -142,6 +142,13 @@ impl TypeEnv {
                     self.engine.flow(value, t_u, diagnostics);
                     t_v
                 }
+                &[first] if Self::is_symbol(asts, first, "module") => {
+                    let Some(env) = self.envs.pop() else {
+                        diagnostics.add(span, "No environment to create a module");
+                        return self.engine.error(span);
+                    };
+                    self.engine.module(env, span)
+                }
                 &[first, path_id] if Self::is_symbol(asts, first, "import") => {
                     let path = self.check(asts, path_id, diagnostics);
                     let path_span = Self::span_of(path_id, asts);
@@ -182,7 +189,15 @@ impl TypeEnv {
                             .add_extra("Parsing here", Some(span));
                         return self.engine.error(span);
                     };
-                    self.check(asts, root, diagnostics)
+                    let savepoint = self.envs.push();
+                    let val = self.check(asts, root, diagnostics);
+                    // We are not using here `envs.pop()` because
+                    // when creating `(module)` it may already did the `pop()` operation.
+                    // So instead we use restore() operation that works like a pop() if no pop operation
+                    // was performed.
+                    self.envs.restore(savepoint);
+
+                    val
                 }
                 &[first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
                     let cond_type = self.check(asts, condition, diagnostics);
@@ -678,6 +693,8 @@ impl Default for Envs {
     }
 }
 
+pub struct EnvSavePoint(usize);
+
 impl Envs {
     pub fn new() -> Self {
         Self {
@@ -697,12 +714,18 @@ impl Envs {
         self.envs.iter().rev().find_map(|env| env.vars.get(name))
     }
 
-    pub fn push(&mut self) {
+    pub fn push(&mut self) -> EnvSavePoint {
+        let point = EnvSavePoint(self.envs.len());
         self.envs.push(Env::default());
+        point
     }
 
     pub fn pop(&mut self) -> Option<BTreeMap<String, core::Scheme>> {
         self.envs.pop().map(|env| env.vars)
+    }
+
+    pub fn restore(&mut self, point: EnvSavePoint) {
+        self.envs.truncate(point.0);
     }
 
     // pub fn with<T>(&mut self, f: impl FnOnce() -> T) -> T {

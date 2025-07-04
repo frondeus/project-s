@@ -28,7 +28,7 @@
 +   │          ─┬─┬───  
 +   │           ╰─────── But got 1
 +   │             │     
-+   │             ╰───── Expected function
++   │             ╰───── Expected applicable type
 +───╯
 +
  ```

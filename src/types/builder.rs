@@ -196,6 +196,7 @@ fn canonical_pair_inner(
                 env.engine.reference_use(write_value, read_use, span),
             )
         }
+        Canonical::Module { .. } => todo!(),
     }
 }
 
@@ -295,6 +296,9 @@ pub fn canonical_value(
         } => {
             todo!()
         }
+        Canonical::Module { .. } => {
+            todo!()
+        }
     }
 }
 
@@ -384,6 +388,9 @@ pub fn canonical_use(
             // let args = canonical_value(env, canon, vars, *args, span);
             let ret = canonical_use(env, canon, vars, *ret, span);
             env.engine.application_use(args, ret, span, span)
+        }
+        Canonical::Module { .. } => {
+            todo!()
         }
     }
 }

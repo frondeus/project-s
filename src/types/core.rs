@@ -89,7 +89,7 @@ impl std::fmt::Display for Literal {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 #[allow(clippy::enum_variant_names)]
 pub enum VTypeHead {
     VError,
@@ -113,6 +113,9 @@ pub enum VTypeHead {
         write: Option<Use>,
         read: Option<Value>,
     },
+    VModule {
+        members: BTreeMap<String, Scheme>,
+    },
 }
 
 impl std::fmt::Display for VTypeHead {
@@ -127,6 +130,7 @@ impl std::fmt::Display for VTypeHead {
             VTypeHead::VStruct { .. } => write!(f, "struct"),
             VTypeHead::VFunc { .. } => write!(f, "function"),
             VTypeHead::VRef { .. } => write!(f, "ref"),
+            VTypeHead::VModule { .. } => write!(f, "module"),
         }
     }
 }
@@ -160,6 +164,7 @@ impl VTypeHead {
                     ids.push(read.id());
                 }
             }
+            VTypeHead::VModule { .. } => (),
         }
         ids.into_iter()
     }
@@ -236,7 +241,7 @@ impl std::fmt::Display for UTypeHead {
             } => write!(f, "list"),
             UTypeHead::UFunc { pattern, ret } => write!(f, "function"),
             UTypeHead::UStruct { fields } => write!(f, "object"),
-            UTypeHead::UApplication { .. } => write!(f, "function"),
+            UTypeHead::UApplication { .. } => write!(f, "applicable type"),
             UTypeHead::URef { write, read } => write!(f, "ref"),
         }
     }
@@ -526,5 +531,9 @@ impl TypeCheckerCore {
         span: impl WithSpan,
     ) -> Use {
         self.new_use(UTypeHead::URef { write, read }, span)
+    }
+
+    pub fn module(&mut self, members: BTreeMap<String, Scheme>, span: impl WithSpan) -> Value {
+        self.new_val(VTypeHead::VModule { members }, span)
     }
 }

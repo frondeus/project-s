@@ -58,9 +58,17 @@ pub enum Canonical {
         args: Vec<CanonId>,
         ret: CanonId,
         span: Option<Span>,
-    }, // Applicable {
+    },
+    Module {
+        members: Vec<(String, CanonId, CanonicalScheme)>,
+        span: Option<Span>,
+    },
+}
 
-       // }
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum CanonicalScheme {
+    Monomorphic,
+    Polymorphic,
 }
 
 impl Canonical {
@@ -80,6 +88,7 @@ impl Canonical {
             | Canonical::Func { span, .. }
             | Canonical::Record { span, .. }
             | Canonical::Reference { span, .. }
+            | Canonical::Module { span, .. }
             | Canonical::Applicable { span, .. } => *span,
         }
     }
@@ -131,6 +140,13 @@ impl Canonical {
                 let mut ids = Vec::new();
                 ids.extend(args.iter().copied());
                 ids.push(*ret);
+                ids.into_iter()
+            }
+            Canonical::Module { members, span: _ } => {
+                let mut ids = Vec::new();
+                for (_, id, _scheme) in members {
+                    ids.push(*id);
+                }
                 ids.into_iter()
             }
         }
@@ -313,6 +329,25 @@ impl Canonicalizer {
                 self.add_canon(Canonical::Reference {
                     read,
                     write,
+                    span: None,
+                })
+            }
+            core::VTypeHead::VModule { members } => {
+                let mut result = vec![];
+                for (key, member) in members {
+                    match member {
+                        core::Scheme::Monomorphic(value) => {
+                            let value = self.canon_value(*value, engine);
+                            result.push((key.clone(), value, CanonicalScheme::Monomorphic));
+                        }
+                        core::Scheme::Polymorphic(_poly_func) => {
+                            // for now lets ignore it
+                            // let value = (poly_func)(engine, asts, diagnostics);
+                        }
+                    }
+                }
+                self.add_canon(Canonical::Module {
+                    members: result,
                     span: None,
                 })
             }

@@ -60,7 +60,7 @@
 +    │
 + 12 │ (((+ {:d 1 } x) :value) :a)
 +    │  ───────────┬──────────  
-+    │             ╰──────────── Expected function
++    │             ╰──────────── Expected applicable type
 +    │
 +    ├─[ <builtin>:1:18 ]
 +    │

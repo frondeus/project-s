@@ -192,6 +192,59 @@ impl TypeCheckerCore {
                 }
             }
             (
+                VModule { members },
+                &UApplication {
+                    args,
+                    ret,
+                    first_arg,
+                },
+            ) => {
+                let Some(field) = first_arg else {
+                    diagnostics
+                        .add(rhs_span, "Expected module member name")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
+                    return;
+                };
+
+                let Some(field) = Self::find_value_inner(nodes, r, field) else {
+                    diagnostics
+                        .add(rhs_span, "Expected keyword literal")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
+                    return;
+                };
+
+                let Some(field) = field.as_keyword_literal() else {
+                    diagnostics
+                        .add(rhs_span, "Expected keyword literal")
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Expected here", Some(lhs_span));
+                    return;
+                };
+
+                if let Some(member_ty) = members.get(&field) {
+                    // out.push((args, field_use));
+                    match member_ty {
+                        Scheme::Monomorphic(value) => {
+                            out.push((*value, ret));
+                        }
+                        Scheme::Polymorphic(poly_fn) => {
+                            // todo!("Polymorphic function in a module access")
+                            diagnostics
+                                .add(rhs_span, format!("Polymorphic module member: {}", field))
+                                .add_extra("Used here", Some(rhs_span))
+                                .add_extra("Module defined here", Some(lhs_span));
+                        }
+                    }
+                } else {
+                    diagnostics
+                        .add(rhs_span, format!("Undefined module member: {}", field))
+                        .add_extra("Used here", Some(rhs_span))
+                        .add_extra("Module defined here", Some(lhs_span));
+                }
+            }
+            (
                 VTuple { items },
                 &UList {
                     items: args,

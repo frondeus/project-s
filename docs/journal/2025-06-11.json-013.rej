@@ -37,7 +37,7 @@
 +   │       ─┬─┬───  
 +   │        ╰─────── But got 3
 +   │          │     
-+   │          ╰───── Expected function
++   │          ╰───── Expected applicable type
 +───╯
 +
  ```

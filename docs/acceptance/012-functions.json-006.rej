@@ -41,7 +41,7 @@
 +   ┆ ┆   
 + 7 │ ├─▶ }) :a))
 +   │ │            
-+   │ ╰──────────── Expected function
++   │ ╰──────────── Expected applicable type
 +   │
 +   ├─[ <builtin>:1:18 ]
 +   │
