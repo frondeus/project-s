@@ -19,6 +19,7 @@ pub mod lambda_lifting;
 pub mod macro_expansion;
 
 pub mod patterns;
+pub mod simple_types;
 pub mod types;
 
 pub mod diagnostics;
@@ -56,6 +57,26 @@ pub fn process_with_typechk(
     type_env.check(asts, root, &mut diagnostics);
     let modules = type_env.finish();
     (root, diagnostics, modules)
+}
+
+#[cfg(test)]
+pub fn level_from_args(
+    args: &std::collections::HashSet<&str>,
+) -> tracing::level_filters::LevelFilter {
+    const LEVELS: &[(&str, tracing::level_filters::LevelFilter)] = &[
+        ("trace", tracing::level_filters::LevelFilter::TRACE),
+        ("debug", tracing::level_filters::LevelFilter::DEBUG),
+        ("info", tracing::level_filters::LevelFilter::INFO),
+        ("warn", tracing::level_filters::LevelFilter::WARN),
+        ("error", tracing::level_filters::LevelFilter::ERROR),
+    ];
+
+    for (name, level) in LEVELS {
+        if args.contains(name) {
+            return *level;
+        }
+    }
+    tracing::level_filters::LevelFilter::INFO
 }
 
 #[cfg(test)]

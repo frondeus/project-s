@@ -1,0 +1,450 @@
+#![allow(dead_code, clippy::unnecessary_to_owned)]
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+
+use itertools::Itertools;
+use levels::WithLevel;
+use tree_sitter::Range;
+
+use crate::{
+    ast::{ASTS, SExp, SExpId},
+    diagnostics::{Diagnostics, SExpDiag as _},
+    patterns::Pattern,
+    source::Span,
+};
+
+mod coalesce;
+mod constrain;
+mod constructors;
+mod extrude;
+mod format;
+mod freshen_above;
+mod levels;
+mod type_term;
+mod utils;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct InferedTypeId(usize);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VarId(usize);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TypeId(usize);
+
+#[derive(Debug)]
+pub enum Type {
+    /// ⊤ - Any type
+    Top,
+    /// ⊥ - Never type
+    Bottom,
+    /// v - | type
+    Union {
+        items: Vec<TypeId>,
+    },
+    /// ∧ - & type
+    Intersection {
+        items: Vec<TypeId>,
+    },
+    /// a -> b
+    Function {
+        lhs: TypeId,
+        rhs: TypeId,
+    },
+    /// { :foo type }
+    Record {
+        fields: Vec<(String, TypeId)>,
+    },
+    /// type as 'a
+    Recursive {
+        name: String,
+        body: TypeId,
+    },
+    /// 'a
+    Variable {
+        name: String,
+    },
+    /// 5
+    Literal {
+        value: Literal,
+    },
+    /// number
+    Primitive {
+        name: String,
+    },
+    /// The same as Never type
+    Error,
+    /// function application, tuple indexing, record selection
+    Applicative {
+        arg: TypeId,
+        ret: TypeId,
+        first_arg: Option<TypeId>,
+    },
+    Tuple {
+        items: Vec<TypeId>,
+    },
+    List {
+        item: TypeId,
+    },
+    Ref {
+        write: Option<TypeId>,
+        read: Option<TypeId>,
+    },
+}
+
+#[derive(Debug)]
+pub enum InferedType {
+    Error {
+        span: Span,
+    },
+    Variable {
+        id: VarId,
+        span: Span,
+    },
+    Primitive {
+        name: String,
+        span: Span,
+    },
+    Literal {
+        value: Literal,
+        span: Span,
+    },
+    Function {
+        lhs: InferedTypeId,
+        rhs: InferedTypeId,
+        span: Span,
+    },
+    /// A type that can apply arguments to.
+    /// Function, Record (field selection), Tuple
+    // Array, List
+    Applicative {
+        arg: InferedTypeId,
+        ret: InferedTypeId,
+        first_arg: Option<InferedTypeId>,
+        span: Span,
+    },
+    Tuple {
+        items: Vec<InferedTypeId>,
+        span: Span,
+    },
+    Record {
+        fields: Vec<(String, InferedTypeId)>,
+        proto: Option<InferedTypeId>,
+        span: Span,
+    },
+    List {
+        item: InferedTypeId,
+        span: Span,
+    },
+    Ref {
+        write: Option<InferedTypeId>,
+        read: Option<InferedTypeId>,
+        span: Span,
+    },
+    // Module {
+    //     members: BTreeMap<String, InferedTypeId>,
+    // }
+}
+
+impl InferedType {
+    pub fn span(&self) -> Span {
+        match *self {
+            InferedType::Error { span } => span,
+            InferedType::Variable { span, .. } => span,
+            InferedType::Primitive { span, .. } => span,
+            InferedType::Literal { span, .. } => span,
+            InferedType::Function { span, .. } => span,
+            InferedType::Record { span, .. } => span,
+            InferedType::Tuple { span, .. } => span,
+            InferedType::Applicative { span, .. } => span,
+            InferedType::List { span, .. } => span,
+            InferedType::Ref { span, .. } => span,
+            // InferedType::Module { span, .. } => span,
+        }
+    }
+}
+
+impl std::fmt::Display for InferedType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InferedType::Error { .. } => write!(f, "error"),
+            InferedType::Variable { .. } => write!(f, "variable"),
+            InferedType::Primitive { name, .. } => write!(f, "{}", name),
+            InferedType::Literal { value, .. } => write!(f, "{}", value),
+            InferedType::Function { .. } => write!(f, "function"),
+            InferedType::Record { .. } => write!(f, "record"),
+            InferedType::Tuple { .. } => write!(f, "tuple"),
+            InferedType::Applicative { .. } => write!(f, "applicative"),
+            InferedType::List { .. } => write!(f, "list"),
+            InferedType::Ref { .. } => write!(f, "ref"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal {
+    Bool(bool),
+    Number(f64),
+    String(String),
+    Keyword(String),
+}
+type LitValue = Literal;
+
+impl std::fmt::Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Literal::Bool(value) => write!(f, "{}", value),
+            Literal::Number(value) => write!(f, "{}", value),
+            Literal::String(value) => write!(f, "\"{}\"", value),
+            Literal::Keyword(value) => write!(f, ":{}", value),
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Polarity {
+    Positive,
+    Negative,
+}
+
+impl Polarity {
+    pub fn negate(self) -> Self {
+        match self {
+            Polarity::Positive => Polarity::Negative,
+            Polarity::Negative => Polarity::Positive,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Copy, Hash, Eq)]
+pub struct PolarVariable {
+    polarity: Polarity,
+    id: VarId,
+}
+
+#[derive(Default)]
+pub struct TypeEnv {
+    infered: Vec<InferedType>,
+    vars: Vec<VarState>,
+    sexps: HashMap<SExpId, InferedTypeId>,
+    envs: Envs,
+    constraint_cache: HashSet<(InferedTypeId, InferedTypeId)>,
+    types: Vec<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct VarState {
+    level: usize,
+    lower_bounds: Vec<InferedTypeId>,
+    upper_bounds: Vec<InferedTypeId>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum TypeScheme {
+    Monomorphic(InferedTypeId),
+    Polymorphic(PolymorphicType),
+}
+
+#[derive(Clone, Copy, Debug)]
+
+enum TypeSchemeKind {
+    Monomorphic,
+    Polymorphic,
+}
+
+impl TypeScheme {
+    fn instantiate(&self, type_env: &mut TypeEnv, level: usize) -> InferedTypeId {
+        match self {
+            TypeScheme::Monomorphic(id) => *id,
+            TypeScheme::Polymorphic(poly) => poly.freshen_above(type_env, level),
+        }
+    }
+}
+impl WithLevel for TypeScheme {
+    fn level(&self, type_env: &TypeEnv) -> usize {
+        match self {
+            TypeScheme::Monomorphic(id) => id.level(type_env),
+            TypeScheme::Polymorphic(poly) => poly.level,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+struct PolymorphicType {
+    level: usize,
+    body: InferedTypeId,
+}
+
+impl TypeEnv {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[derive(Default, Debug)]
+struct Env {
+    vars: BTreeMap<String, TypeScheme>,
+}
+
+#[derive(Debug)]
+struct Envs {
+    envs: Vec<Env>,
+}
+
+impl Default for Envs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct EnvSavePoint(usize);
+
+impl Envs {
+    pub fn new() -> Self {
+        Self {
+            envs: vec![Env::default()],
+        }
+    }
+
+    pub fn set(&mut self, name: &str, value: TypeScheme) {
+        self.envs
+            .last_mut()
+            .unwrap()
+            .vars
+            .insert(name.to_string(), value);
+    }
+
+    pub fn get(&self, name: &str) -> Option<&TypeScheme> {
+        self.envs.iter().rev().find_map(|env| env.vars.get(name))
+    }
+
+    pub fn push(&mut self) -> EnvSavePoint {
+        let point = EnvSavePoint(self.envs.len());
+        self.envs.push(Env::default());
+        point
+    }
+
+    pub fn pop(&mut self) -> Option<BTreeMap<String, TypeScheme>> {
+        self.envs.pop().map(|env| env.vars)
+    }
+
+    pub fn restore(&mut self, point: EnvSavePoint) {
+        self.envs.truncate(point.0);
+    }
+
+    // pub fn with<T>(&mut self, f: impl FnOnce() -> T) -> T {
+    //     self.push();
+    //     let result = f();
+    //     self.pop();
+    //     result
+    // }
+}
+
+#[cfg(test)]
+mod tests {
+    use tracing_subscriber::{Layer, layer::SubscriberExt};
+
+    use crate::{
+        level_from_args,
+        modules::{MemoryModules, ModuleProvider},
+        process_ast,
+        s_std::prelude,
+    };
+
+    use super::*;
+
+    #[test]
+    fn simple_type_traces() -> test_runner::Result {
+        use std::io::Read;
+        unsafe { std::env::set_var("NO_COLOR", "1") }
+        test_runner::test_snapshots(
+            "docs/",
+            &["s", ""],
+            "simple-type-traces",
+            |input, _deps, args| {
+                let mut reader = tempfile::NamedTempFile::new().unwrap();
+
+                let writer = reader.reopen().unwrap();
+                {
+                    let level = level_from_args(args);
+                    let (writer, _guard) = tracing_appender::non_blocking(writer);
+
+                    let file_layer = tracing_subscriber::fmt::Layer::new()
+                        // .compact()
+                        .with_file(args.contains("file"))
+                        .with_line_number(args.contains("line"))
+                        .with_writer(writer)
+                        .without_time()
+                        .with_ansi(false);
+
+                    let console_layer = tracing_subscriber::fmt::Layer::new()
+                        // .compact()
+                        .with_file(args.contains("file"))
+                        .with_line_number(args.contains("line"))
+                        .with_ansi(true);
+
+                    let subscriber = tracing_subscriber::registry()
+                        .with(console_layer.with_filter(level))
+                        .with(file_layer.with_filter(level));
+
+                    tracing::subscriber::with_default(subscriber, move || {
+                        let mut asts = ASTS::new();
+                        let (modules, source_id) = MemoryModules::from_deps(input, _deps);
+                        let ast = asts
+                            .parse(source_id, modules.sources().get(source_id))
+                            .expect("Failed to parse");
+
+                        let root = ast.root_id().unwrap();
+
+                        let mut env = TypeEnv::new();
+                        // let mut env = TypeEnv::new(modules).with_prelude();
+
+                        let prelude = prelude();
+                        let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+                        let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+
+                        env.coalesce(infered);
+                    });
+                }
+
+                let mut buf = String::new();
+                reader.read_to_string(&mut buf).unwrap();
+                buf
+                // env.to_string(infered)
+            },
+        )
+    }
+
+    #[test]
+    fn simple_type() -> test_runner::Result {
+        unsafe { std::env::set_var("NO_COLOR", "1") }
+        test_runner::test_snapshots("docs/", &["s", ""], "simple-type", |input, _deps, _args| {
+            let mut asts = ASTS::new();
+            let (modules, source_id) = MemoryModules::from_deps(input, _deps);
+            let ast = asts
+                .parse(source_id, modules.sources().get(source_id))
+                .expect("Failed to parse");
+
+            let root = ast.root_id().unwrap();
+
+            let mut env = TypeEnv::new();
+            // let mut env = TypeEnv::new(modules).with_prelude();
+
+            let prelude = prelude();
+            let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+            let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+
+            // let infered = env.check(&mut asts, root, &mut diagnostics);
+            if diagnostics.has_errors() {
+                // let modules = env.finish();
+                return diagnostics.pretty_print(modules.sources());
+            }
+
+            let ty = env.coalesce(infered);
+            let mut out = String::new();
+            env.fmt(ty, &mut out).expect("Failed to format type");
+            out
+
+            // env.to_string(infered)
+        })
+    }
+}

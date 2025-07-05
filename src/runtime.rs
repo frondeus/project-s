@@ -427,12 +427,13 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, io::Read};
+    use std::io::Read;
 
     use tracing_subscriber::{Layer, layer::SubscriberExt};
 
     use crate::{
         diagnostics::Diagnostics,
+        level_from_args,
         modules::MemoryModules,
         source::{SourceId, Sources},
     };
@@ -487,23 +488,6 @@ mod tests {
                 eval_to_json(source_id, deps, !lazy)
             })
         })
-    }
-
-    fn level_from_args(args: &HashSet<&str>) -> tracing::level_filters::LevelFilter {
-        const LEVELS: &[(&str, tracing::level_filters::LevelFilter)] = &[
-            ("trace", tracing::level_filters::LevelFilter::TRACE),
-            ("debug", tracing::level_filters::LevelFilter::DEBUG),
-            ("info", tracing::level_filters::LevelFilter::INFO),
-            ("warn", tracing::level_filters::LevelFilter::WARN),
-            ("error", tracing::level_filters::LevelFilter::ERROR),
-        ];
-
-        for (name, level) in LEVELS {
-            if args.contains(name) {
-                return *level;
-            }
-        }
-        tracing::level_filters::LevelFilter::INFO
     }
 
     #[test]
