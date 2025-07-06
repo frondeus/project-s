@@ -35,6 +35,8 @@ use crate::source::Spanned;
 
 pub mod lsp;
 
+pub mod graph;
+
 pub fn process_ast(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diagnostics) {
     let mut diagnostics = Diagnostics::default();
     // root = ThunkPass::pass(asts, root);
