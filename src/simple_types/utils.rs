@@ -70,6 +70,7 @@ impl TypeEnv {
             upper_bounds: Vec::new(),
             level,
         });
+        tracing::trace!("Adding fresh variable {id} with level {level}");
         self.add_infered(InferedType::Variable {
             id: VarId(id),
             span,
@@ -78,12 +79,14 @@ impl TypeEnv {
 
     pub(crate) fn add_infered(&mut self, infered: InferedType) -> InferedTypeId {
         let id = self.infered.len();
+        tracing::trace!("Adding infered {infered} as {id}: {infered:?}");
         self.infered.push(infered);
         InferedTypeId(id)
     }
 
     pub(crate) fn add_type(&mut self, ty: Type) -> TypeId {
         let id = self.types.len();
+        tracing::trace!("Adding {ty:?} as {id}");
         self.types.push(ty);
         TypeId(id)
     }

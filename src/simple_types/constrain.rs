@@ -48,9 +48,14 @@ impl TypeEnv {
                     tracing::trace!("Left LVL: {lhs_lvl} RIGHT LVL: {rhs_lvl}");
                     if rhs_lvl <= lhs_lvl {
                         let lhs_vars = &mut self.vars[lhs_var_id.0];
-                        tracing::trace!("Pushing {} to upper bounds of LHS", rhs_id.0);
+                        tracing::trace!("Pushing {} to upper bounds of LHS {}", rhs_id.0, lhs_id.0);
                         lhs_vars.upper_bounds.push(rhs_id);
                         lhs_vars.lower_bounds.iter().copied().for_each(|lb| {
+                            tracing::trace!(
+                                "Constraint by extension of lower bound: {} :< {}",
+                                lb.0,
+                                rhs_id.0
+                            );
                             queue.push_back((lb, rhs_id));
                         });
                         continue;
@@ -75,9 +80,18 @@ impl TypeEnv {
 
                     if lhs_lvl <= rhs_lvl {
                         let rhs_vars = &mut self.vars[rhs_var_id.0];
-                        tracing::trace!("Pushing {} to lower bounds of RHS", lhs_id.0);
+                        tracing::trace!(
+                            "Pushing {} to lower bounds of RHS: {}",
+                            lhs_id.0,
+                            rhs_id.0
+                        );
                         rhs_vars.lower_bounds.push(lhs_id);
                         rhs_vars.upper_bounds.iter().copied().for_each(|ub| {
+                            tracing::trace!(
+                                "Constraint by extension of upper bound: {} :< {}",
+                                lhs_id.0,
+                                ub.0,
+                            );
                             queue.push_back((lhs_id, ub));
                         });
                         continue;
@@ -125,16 +139,20 @@ impl TypeEnv {
                     _ => (),
                 },
                 (
-                    &Function { lhs, rhs, span: _ },
+                    &Function {
+                        lhs: pattern,
+                        rhs: ret,
+                        span: _,
+                    },
                     &Applicative {
-                        arg,
-                        ret,
+                        arg: args,
+                        ret: ret_use,
                         first_arg: _,
                         span: _,
                     },
                 ) => {
-                    queue.push_back((arg, lhs));
-                    queue.push_back((rhs, ret));
+                    queue.push_back((args, pattern));
+                    queue.push_back((ret, ret_use));
                     continue;
                 }
                 (

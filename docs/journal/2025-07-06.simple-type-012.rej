@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:646
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:798
 ```s
 (let :id (fn (:x) x))
 
@@ -10,8 +10,8 @@ mono
 ```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
-+++ simple-type-011
-@@ -654,7 +654,7 @@
++++ simple-type-012
+@@ -806,7 +806,7 @@
  ```
  
  ```simple-type

@@ -32,10 +32,17 @@ Like vertical stack
 * [x] LSP
   * [x] LSP highlights
 * [/] Type checker!
+  * [ ] Simplification
+  * [ ] Simple type
+    * [ ] Import
+    * [ ] Module
+    * [ ] Ascription
+    * [ ] Let*
   * [ ] + operator
   * [x] let-rec and let*
   * [x] Structs
   * [ ] Objects with self/super
+  * [ ] ifs in records
   * [ ] has?
   * [x] macro expansion
   * [ ] Symbols

@@ -42,7 +42,7 @@ impl TypeEnv {
         vars: &mut VarGenerator,
     ) -> TypeId {
         let ty = &self.infered[ty_id.0];
-        tracing::trace!("Coalesce({}): {:?}", ty_id.0, ty);
+        tracing::trace!("Coalesce({} ; {:?}): {:?}", ty_id.0, polarity, ty);
         match ty {
             InferedType::Error { span: _ } => self.add_type(Type::Error),
             &InferedType::Variable { id, span: _ } => {
