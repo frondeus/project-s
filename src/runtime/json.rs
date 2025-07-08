@@ -38,14 +38,14 @@ impl Runtime {
                 serde_json::Value::Array(arr)
             }
             Value::Function(function) => {
-                serde_json::Value::String(format!("<Function: {:?}>", function))
+                serde_json::Value::String(format!("<Function: {function:?}>"))
             }
             Value::Constructor(constructor) => {
-                serde_json::Value::String(format!("<Constructor: {:?}>", constructor))
+                serde_json::Value::String(format!("<Constructor: {constructor:?}>"))
             }
-            Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {:?}>", rc)),
-            Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {:?}>", thunk)),
-            Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {:?}>", macro_)),
+            Value::Ref(rc) => serde_json::Value::String(format!("<Ref: {rc:?}>")),
+            Value::Thunk(thunk) => serde_json::Value::String(format!("<Thunk: {thunk:?}>")),
+            Value::Macro(macro_) => serde_json::Value::String(format!("<Macro: {macro_:?}>")),
             Value::Error(e) => serde_json::Value::String(format!("<Error: {e}>")),
             Value::SExp(id) => {
                 let ast = self.asts.get_ast(id);

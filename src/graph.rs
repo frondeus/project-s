@@ -21,6 +21,10 @@ struct Graph<Node> {
     nodes: Vec<Node>,
 }
 
+struct InnerGraph<Node> {
+    nodes: Vec<Node>,
+}
+
 struct Ref<'a, Node> {
     graph: &'a Graph<Node>,
     id: NodeId<Node>,

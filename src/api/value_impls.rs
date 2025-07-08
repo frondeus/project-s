@@ -31,7 +31,7 @@ impl FromValue for f64 {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Number(n) => Ok(n),
-            value => Err(format!("Expected number, got {:?}", value)),
+            value => Err(format!("Expected number, got {value:?}")),
         }
     }
     fn is_matching(_rt: &mut Runtime, value: &Value) -> bool {
@@ -49,7 +49,7 @@ impl FromValue for i32 {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Number(n) => Ok(n as i32),
-            value => Err(format!("Expected number, got {:?}", value)),
+            value => Err(format!("Expected number, got {value:?}")),
         }
     }
 
@@ -68,7 +68,7 @@ impl FromValue for bool {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Bool(b) => Ok(b),
-            value => Err(format!("Expected bool, got {:?}", value)),
+            value => Err(format!("Expected bool, got {value:?}")),
         }
     }
 
@@ -87,7 +87,7 @@ impl FromValue for String {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::String(s) => Ok(s),
-            value => Err(format!("Expected string, got {:?}", value)),
+            value => Err(format!("Expected string, got {value:?}")),
         }
     }
 
@@ -106,7 +106,7 @@ impl FromValue for Ref {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Ref(r) => Ok(r),
-            value => Err(format!("Expected ref, got {:?}", value)),
+            value => Err(format!("Expected ref, got {value:?}")),
         }
     }
 
@@ -124,7 +124,7 @@ impl FromValue for BTreeMap<String, Value> {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Object(map) => Ok(map),
-            value => Err(format!("Expected object, got {:?}", value)),
+            value => Err(format!("Expected object, got {value:?}")),
         }
     }
 
@@ -143,7 +143,7 @@ impl FromValue for Vec<Value> {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::List(list) => Ok(list.into_iter().collect()),
-            value => Err(format!("Expected list, got {:?}", value)),
+            value => Err(format!("Expected list, got {value:?}")),
         }
     }
 
@@ -166,7 +166,7 @@ impl FromValue for Function {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Function(f) => Ok(f),
-            value => Err(format!("Expected function, got {:?}", value)),
+            value => Err(format!("Expected function, got {value:?}")),
         }
     }
 

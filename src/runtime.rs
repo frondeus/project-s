@@ -82,7 +82,7 @@ impl Runtime {
                     }
                     Ok(Value::List(result))
                 }
-                value => Err(format!("Destructing. Expected list, found: {:?}", value)),
+                value => Err(format!("Destructing. Expected list, found: {value:?}")),
             },
             Pattern::Object(patterns, _, _) => match value.eager_rec(self, true) {
                 Value::Object(mut map) => {
@@ -98,7 +98,7 @@ impl Runtime {
 
                     Ok(Value::Object(result))
                 }
-                value => Err(format!("Destructing. Expected object, found: {:?}", value)),
+                value => Err(format!("Destructing. Expected object, found: {value:?}")),
             },
         }
     }
@@ -159,7 +159,7 @@ impl Runtime {
         while let Some(pattern) = items.next() {
             let value = items
                 .next()
-                .ok_or_else(|| format!("Expected odd number of arguments, found: {}", len))?;
+                .ok_or_else(|| format!("Expected odd number of arguments, found: {len}"))?;
 
             let pattern = Pattern::parse(*pattern, &self.asts)?;
             self._let_rec_pre_destruct(pattern.clone());
@@ -317,13 +317,13 @@ impl Runtime {
             SExp::Bool(b) => Value::Bool(b),
             SExp::Keyword(_s) => Value::SExp(id),
             SExp::Symbol(s) if s.starts_with(":") => {
-                panic!("This should be a keyword: {}", s);
+                panic!("This should be a keyword: {s}");
             }
             SExp::Symbol(s) => self
                 .envs
                 .get(s.as_str())
                 .cloned()
-                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {}", s))),
+                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {s}"))),
             SExp::List(items) => {
                 let first_id = items.first().copied();
                 let first = self.asts.maybe_get(first_id);
@@ -387,20 +387,19 @@ impl Runtime {
                                 try_err!(key);
                                 let Some(key) = self.as_symbol_or_keyword(&key) else {
                                     return Value::Error(format!(
-                                        "Access field: Expected symbol or keyword. Found: {:?}",
-                                        key
+                                        "Access field: Expected symbol or keyword. Found: {key:?}"
                                     ));
                                 };
 
                                 map.get(key).cloned().unwrap_or_else(|| {
-                                    Value::Error(format!("Undefined key: {} in {:?}", key, map))
+                                    Value::Error(format!("Undefined key: {key} in {map:?}"))
                                 })
                             }
                             Value::Constructor(constructor) => {
                                 self.constructor_call(constructor, None)
                             }
                             Value::Function(function) => self.closure_call(function, &items[1..]),
-                            _ => Value::Error(format!("Invalid caller: {:?}", first)),
+                            _ => Value::Error(format!("Invalid caller: {first:?}")),
                         }
                     }
                 }

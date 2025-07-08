@@ -271,9 +271,9 @@ impl std::fmt::Display for SExpFmtList<'_> {
             let item = self.asts.get(*item).fmt(self.asts);
             if f.alternate() {
                 // let width = width + 2;
-                write!(f, "{:#width$}", item, width = width)?;
+                write!(f, "{item:#width$}")?;
             } else {
-                write!(f, "{}", item)?;
+                write!(f, "{item}")?;
             }
         }
         write!(f, ")")
@@ -317,11 +317,11 @@ impl std::fmt::Display for SExpFmt<'_> {
         // write!(f, "{}", " ".repeat(width))?;
 
         match self.expr {
-            SExp::Number(n) => write!(f, "{}", n),
-            SExp::String(s) => write!(f, "\"{}\"", s),
-            SExp::Symbol(s) => write!(f, "{}", s),
-            SExp::Keyword(s) => write!(f, ":{}", s),
-            SExp::Bool(b) => write!(f, "{}", b),
+            SExp::Number(n) => write!(f, "{n}"),
+            SExp::String(s) => write!(f, "\"{s}\""),
+            SExp::Symbol(s) => write!(f, "{s}"),
+            SExp::Keyword(s) => write!(f, ":{s}"),
+            SExp::Bool(b) => write!(f, "{b}"),
             SExp::Error => write!(f, "<Error>"),
             SExp::List(items) => {
                 if f.alternate() {
@@ -489,8 +489,7 @@ impl SExpParser {
             "splice" => self.shortcut(span, node, "splice"),
 
             kind => Err(ParseError::UnexpectedNode(format!(
-                "Unexpected node kind: {}",
-                kind
+                "Unexpected node kind: {kind}",
             ))),
         }
     }
@@ -624,7 +623,7 @@ mod tests {
             let root_id = ast.root_id().unwrap();
             let result = asts.get(root_id);
             let result = result.fmt(&asts);
-            format!("{}", result)
+            format!("{result}")
         })
     }
 }

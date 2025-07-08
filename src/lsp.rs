@@ -213,7 +213,7 @@ impl LanguageServer for Backend {
         self.client
             .log_message(
                 MessageType::INFO,
-                format!("semantic tokens full: {:?}", document),
+                format!("semantic tokens full: {document:?}"),
             )
             .await;
 
@@ -223,7 +223,7 @@ impl LanguageServer for Backend {
 
         let highlights = highlights::highlights(&document);
         self.client
-            .log_message(MessageType::INFO, format!("highlights: {:#?}", highlights))
+            .log_message(MessageType::INFO, format!("highlights: {highlights:#?}"))
             .await;
 
         Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
@@ -362,7 +362,7 @@ impl LanguageServer for Backend {
 impl Backend {
     async fn diagnostics_inner(&self, params: DocumentDiagnosticParams) -> Option<Vec<Diagnostic>> {
         self.client
-            .log_message(MessageType::INFO, format!("On Diagnostic: {:?}", params))
+            .log_message(MessageType::INFO, format!("On Diagnostic: {params:?}"))
             .await;
 
         let Some(document) = params.text_document.uri.to_file_path() else {
@@ -423,7 +423,7 @@ impl Backend {
             .map(|d| from_diag(d, modules.sources(), source_id))
             .collect();
         self.client
-            .log_message(MessageType::INFO, format!("On Diag: {:#?}", diag))
+            .log_message(MessageType::INFO, format!("On Diag: {diag:#?}"))
             .await;
         Some(diag)
     }

@@ -74,7 +74,7 @@ impl Pattern {
                 }
                 Ok(Pattern::List(patterns, span, id))
             }
-            ident => Err(format!("Expected keyword or list, found: {:?}", ident)),
+            ident => Err(format!("Expected keyword or list, found: {ident:?}")),
         }
     }
 

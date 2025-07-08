@@ -41,7 +41,7 @@ impl Formatter<'_> {
 
     pub fn print_canon(&mut self, id: CanonId, canonical: &Canonicalized) {
         match canonical.get(id) {
-            Canonical::Todo(todo, _) => self.f.push_str(&format!("TODO: {}", todo)),
+            Canonical::Todo(todo, _) => self.f.push_str(&format!("TODO: {todo}",)),
             Canonical::Any(None, _) => self.f.push_str("Any"),
             Canonical::Literal(lit, _) => self.f.push_str(&format!("{lit}")),
             Canonical::Any(Some(i), _) => self.f.push_str(&variable_letters(*i)),

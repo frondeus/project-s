@@ -63,8 +63,7 @@ where
             return f2.call(rt, values);
         }
         Value::Error(format!(
-            "{name}: Calling with no matching signature: {:?}",
-            values
+            "{name}: Calling with no matching signature: {values:?}"
         ))
     }
 }

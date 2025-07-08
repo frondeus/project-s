@@ -126,7 +126,7 @@ impl TypeEnv {
                 },
                 None => {
                     diagnostics
-                        .add_sexp(asts, id, format!("Undefined variable: {}", symbol))
+                        .add_sexp(asts, id, format!("Undefined variable: {symbol}",))
                         .add_extra("Used here", Some(span));
                     self.engine.error(sexp)
                 }
@@ -238,7 +238,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 *pattern_id,
-                                format!("Unreadable pattern: {}", e),
+                                format!("Unreadable pattern: {e}",),
                             );
                             return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
@@ -261,7 +261,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 *pattern_id,
-                                format!("Unreadable pattern: {}", e),
+                                format!("Unreadable pattern: {e}"),
                             );
                             return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
@@ -299,7 +299,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 *pattern_id,
-                                format!("Unreadable pattern: {}", e),
+                                format!("Unreadable pattern: {e}"),
                             );
                             return self.engine.error(Self::span_of(*pattern_id, asts));
                         }
@@ -328,7 +328,7 @@ impl TypeEnv {
                                 diagnostics.add_sexp(
                                     asts,
                                     pattern,
-                                    format!("Invalid pattern: {}", e),
+                                    format!("Invalid pattern: {e}"),
                                 );
                                 return self.engine.error(Self::span_of(pattern, asts));
                             }
@@ -653,12 +653,12 @@ impl TypeEnv {
                 core::TypeNode::Var(_) => (),
                 core::TypeNode::Value(vtype_head, _) => {
                     for to in vtype_head.ids() {
-                        writeln!(buffer, "N{} -> N{} [color=blue, style=dotted];", id, to).unwrap();
+                        writeln!(buffer, "N{id} -> N{to} [color=blue, style=dotted];").unwrap();
                     }
                 }
                 core::TypeNode::Use(utype_head, _) => {
                     for to in utype_head.ids() {
-                        writeln!(buffer, "N{} -> N{} [color=red, style=dotted];", id, to).unwrap();
+                        writeln!(buffer, "N{id} -> N{to} [color=red, style=dotted];").unwrap();
                     }
                 }
             }
@@ -667,7 +667,7 @@ impl TypeEnv {
         let graph = self.engine.reachability();
         for (id, _) in self.engine.iter() {
             for succ in graph.successors(id) {
-                writeln!(buffer, "N{} -> N{};", id, succ).unwrap();
+                writeln!(buffer, "N{id} -> N{succ};").unwrap();
             }
         }
 

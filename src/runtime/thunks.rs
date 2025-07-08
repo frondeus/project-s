@@ -26,7 +26,7 @@ impl Runtime {
             .map(|s| {
                 let name = self.asts.get(s);
                 let name = name.as_symbol().map(|s| s.to_string()).unwrap_or_else(|| {
-                    panic!("Expected symbol, got {:?}", name);
+                    panic!("Expected symbol, got {name:?}");
                 });
                 tracing::trace!("name: {name}");
                 let val = self.eval(s);

@@ -9,6 +9,10 @@
 
   # https://devenv.sh/languages/
   languages.rust.enable = true;
+  languages.rust.channel = "stable";
+  languages.rust.version = "1.88.0";
+  languages.rust.toolchain.clippy = null;
+
   languages.typescript.enable = true;
   languages.c.enable = true;
 

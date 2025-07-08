@@ -220,8 +220,8 @@ impl TypeEnv {
 
             diagnostics
                 .add(lhs_span, "Type mismatch")
-                .add_extra(format!("Expected {}", rhs), Some(rhs_span))
-                .add_extra(format!("But found {}", lhs), Some(lhs_span));
+                .add_extra(format!("Expected {rhs}"), Some(rhs_span))
+                .add_extra(format!("But found {lhs}"), Some(lhs_span));
         }
     }
 }

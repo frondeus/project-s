@@ -37,7 +37,7 @@ impl TypeEnv {
                     if i > 0 {
                         write!(buf, ", ")?;
                     }
-                    write!(buf, "{}: ", name)?;
+                    write!(buf, "{name}: ")?;
                     self.fmt(*ty, buf)?;
                 }
                 write!(buf, "}}")?;
@@ -46,12 +46,12 @@ impl TypeEnv {
             Type::Recursive { name, body } => {
                 self.fmt(*body, buf)?;
                 write!(buf, " as ")?;
-                write!(buf, "{}", name)?;
+                write!(buf, "{name}")?;
                 Ok(())
             }
-            Type::Variable { name } => write!(buf, "{}", name),
-            Type::Literal { value } => write!(buf, "{}", value),
-            Type::Primitive { name } => write!(buf, "{}", name),
+            Type::Variable { name } => write!(buf, "{name}",),
+            Type::Literal { value } => write!(buf, "{value}",),
+            Type::Primitive { name } => write!(buf, "{name}",),
             Type::Error => write!(buf, "error"),
             Type::Applicative {
                 arg,

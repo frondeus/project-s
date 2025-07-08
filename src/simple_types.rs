@@ -168,8 +168,8 @@ impl std::fmt::Display for InferedType {
         match self {
             InferedType::Error { .. } => write!(f, "error"),
             InferedType::Variable { .. } => write!(f, "variable"),
-            InferedType::Primitive { name, .. } => write!(f, "{}", name),
-            InferedType::Literal { value, .. } => write!(f, "{}", value),
+            InferedType::Primitive { name, .. } => write!(f, "{name}"),
+            InferedType::Literal { value, .. } => write!(f, "{value}"),
             InferedType::Function { .. } => write!(f, "function"),
             InferedType::Record { .. } => write!(f, "record"),
             InferedType::Tuple { .. } => write!(f, "tuple"),
@@ -192,10 +192,10 @@ type LitValue = Literal;
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::Bool(value) => write!(f, "{}", value),
-            Literal::Number(value) => write!(f, "{}", value),
-            Literal::String(value) => write!(f, "\"{}\"", value),
-            Literal::Keyword(value) => write!(f, ":{}", value),
+            Literal::Bool(value) => write!(f, "{value}"),
+            Literal::Number(value) => write!(f, "{value}"),
+            Literal::String(value) => write!(f, "\"{value}\""),
+            Literal::Keyword(value) => write!(f, ":{value}"),
         }
     }
 }

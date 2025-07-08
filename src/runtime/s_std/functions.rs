@@ -60,7 +60,7 @@ impl FromValue for ObjectOrConstructor {
         match value {
             Value::Object(left) => Ok(ObjectOrConstructor::Object(left)),
             Value::Constructor(left) => Ok(ObjectOrConstructor::Constructor(left)),
-            _ => Err(format!("Expected object or constructor, got {:?}", value)),
+            _ => Err(format!("Expected object or constructor, got {value:?}")),
         }
     }
 }

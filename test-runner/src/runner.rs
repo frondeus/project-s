@@ -169,7 +169,7 @@ where
                 successes += 1;
             }
             Err(e) => {
-                eprintln!("Error: {}", e);
+                eprintln!("Error: {e}");
                 failed += 1;
             }
         }
@@ -196,16 +196,16 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
             let count = slice.chars().filter(|c| *c == '`').count();
 
             let backticks = "`".repeat(count + 3);
-            (format!("{}{}", backticks, code), backticks)
+            (format!("{backticks}{code}"), backticks)
         };
-        format!("{fin}\n{}\n{fout}", slice)
+        format!("{fin}\n{slice}\n{fout}")
     };
     let fenced_without_code =
         |slice: &str| -> String { fenced_with_code(slice, CowStr::from(source_name)) };
     let fenced = |slice: &str| -> String { fenced_with_code(slice, expected.name) };
 
     let expected_name = if count > 1 {
-        format!("{}-{:0>3}", name, count)
+        format!("{name}-{count:0>3}")
     } else {
         name.to_string()
     };

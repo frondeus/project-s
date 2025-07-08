@@ -63,7 +63,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 *key,
-                                format!("Expected keyword, got {:?}", key),
+                                format!("Expected keyword, got {key:?}"),
                             );
                             continue;
                         };
@@ -84,7 +84,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 *key,
-                                format!("Expected keyword, got {:?}", key),
+                                format!("Expected keyword, got {key:?}",),
                             );
                             continue;
                         };
@@ -167,7 +167,7 @@ impl TypeEnv {
                             match vars.entry(symbol.to_string()) {
                                 Entry::Occupied(_occupied_entry) => {
                                     diagnostics
-                                        .add(span, format!("Symbol {} is already used", symbol));
+                                        .add(span, format!("Symbol {symbol} is already used",));
                                     None
                                 }
                                 Entry::Vacant(vacant_entry) => {

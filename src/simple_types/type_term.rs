@@ -51,7 +51,7 @@ impl TypeEnv {
                 Some(ty) => ty.instantiate(self, level),
                 None => {
                     diagnostics
-                        .add_sexp(asts, id, format!("Undefined variable: {}", s))
+                        .add_sexp(asts, id, format!("Undefined variable: {s}"))
                         .add_extra("Used here", Some(span));
                     self.error(span)
                 }
@@ -63,16 +63,16 @@ impl TypeEnv {
                 self.constrain(lit, keyword, diagnostics);
                 lit
             }
-            SExp::List(sexp_ids) => match sexp_ids.as_slice() {
-                &[] => self.unit(span),
-                [first, ty, value] if Self::is_symbol(asts, *first, ":") => {
+            SExp::List(sexp_ids) => match *sexp_ids.as_slice() {
+                [] => self.unit(span),
+                [first, ty, value] if Self::is_symbol(asts, first, ":") => {
                     todo!(": {ty:?} {value:?}")
                 }
-                &[first] if Self::is_symbol(asts, first, "module") => todo!("module"),
-                &[first, path_id] if Self::is_symbol(asts, first, "import") => {
+                [first] if Self::is_symbol(asts, first, "module") => todo!("module"),
+                [first, path_id] if Self::is_symbol(asts, first, "import") => {
                     todo!("import {path_id:?}")
                 }
-                &[first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
+                [first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
                     tracing::trace!("Infering if expression");
                     let cond = self.type_term(asts, condition, diagnostics, level);
                     let boolean = self.primitive("bool", Self::span_of(condition, asts));
@@ -87,7 +87,7 @@ impl TypeEnv {
 
                     merged
                 }
-                &[first, condition, then_branch, else_branch]
+                [first, condition, then_branch, else_branch]
                     if Self::is_symbol(asts, first, "if") =>
                 {
                     tracing::trace!("Infering if expression");
@@ -105,7 +105,7 @@ impl TypeEnv {
 
                     merged
                 }
-                &[first, pattern_id, body] if Self::is_symbol(asts, first, "fn") => {
+                [first, pattern_id, body] if Self::is_symbol(asts, first, "fn") => {
                     tracing::trace!("Infering function expression");
                     let pattern = match Pattern::parse(pattern_id, asts) {
                         Ok(pattern) => pattern,
@@ -126,7 +126,7 @@ impl TypeEnv {
 
                     self.function(pattern, body, span)
                 }
-                &[first, pattern_id, _captured, body] if Self::is_symbol(asts, first, "cl") => {
+                [first, pattern_id, _captured, body] if Self::is_symbol(asts, first, "cl") => {
                     tracing::trace!("Infering closure expression");
 
                     // For now lets ignore captured
@@ -136,7 +136,7 @@ impl TypeEnv {
                             diagnostics.add_sexp(
                                 asts,
                                 pattern_id,
-                                format!("Unreadable pattern: {}", e),
+                                format!("Unreadable pattern: {e}"),
                             );
                             return self.error(Self::span_of(pattern_id, asts));
                         }
@@ -150,7 +150,7 @@ impl TypeEnv {
 
                     self.function(pattern, body, span)
                 }
-                &[first, last] if Self::is_symbol(asts, first, "do") => {
+                [first, last] if Self::is_symbol(asts, first, "do") => {
                     tracing::trace!("Infering do expression");
 
                     self.envs.push();
@@ -158,11 +158,10 @@ impl TypeEnv {
                     self.envs.pop();
                     body
                 }
-                [first, args @ .., last] if Self::is_symbol(asts, *first, "do") => {
+                [first, ref args @ .., last] if Self::is_symbol(asts, first, "do") => {
                     tracing::trace!("Infering do expression");
 
                     self.envs.push();
-                    let last = *last;
                     for arg in args.to_vec() {
                         self.type_term(asts, arg, diagnostics, level);
                     }
@@ -170,7 +169,7 @@ impl TypeEnv {
                     self.envs.pop();
                     last
                 }
-                &[first, pattern_id, value] if Self::is_symbol(asts, first, "let") => {
+                [first, pattern_id, value] if Self::is_symbol(asts, first, "let") => {
                     tracing::trace!("Infering let expression");
                     let pattern = match Pattern::parse(pattern_id, asts) {
                         Ok(pattern) => pattern,
@@ -193,15 +192,26 @@ impl TypeEnv {
                     self.constrain(rhs_ty, bound, diagnostics);
                     self.unit(span)
                 }
-                [first, bindings @ ..] if Self::is_symbols(asts, *first, &["let-rec", "let*"]) => {
+                [first, ref bindings @ ..]
+                    if Self::is_symbols(asts, first, &["let-rec", "let*"]) =>
+                {
+                    // let mut patterns = vec![];
+                    // let mut bindings = bindings.to_vec().into_iter();
+                    // l
+
+                    // while let Some(pattern) = bindings.next() {
+                    //     let Some(value) = bindings.next() else {
+
+                    //     }
+                    // }
                     todo!("let* {bindings:?}")
                 }
-                &[first, _err] if Self::is_symbol(asts, first, "error") => self.error(span),
-                &[first, _captured, rest] if Self::is_symbol(asts, first, "thunk") => {
+                [first, _err] if Self::is_symbol(asts, first, "error") => self.error(span),
+                [first, _captured, rest] if Self::is_symbol(asts, first, "thunk") => {
                     tracing::trace!("Infering thunk expression");
                     self.type_term(asts, rest, diagnostics, level)
                 }
-                &[first, value] if Self::is_symbol(asts, first, "ref") => {
+                [first, value] if Self::is_symbol(asts, first, "ref") => {
                     tracing::trace!("Infering reference expression");
                     let value_type = self.type_term(asts, value, diagnostics, level);
                     // let var = self.fresh_var(span, level);
@@ -210,7 +220,7 @@ impl TypeEnv {
                     // self.reference(Some(var), Some(var), span)
                     self.reference(Some(value_type), Some(value_type), span)
                 }
-                [first, args @ ..] if Self::is_symbol(asts, *first, "obj/plain") => {
+                [first, ref args @ ..] if Self::is_symbol(asts, first, "obj/plain") => {
                     tracing::trace!("Infering record expression");
                     let mut fields = Vec::new();
                     for (key, value) in args.to_vec().into_iter().tuples() {
@@ -225,12 +235,12 @@ impl TypeEnv {
 
                     self.record(fields, None, span)
                 }
-                [first, proto, args @ ..] if Self::is_symbol(asts, *first, "obj/extend") => {
+                [first, proto, ref args @ ..] if Self::is_symbol(asts, first, "obj/extend") => {
                     tracing::trace!("Infering record extension expression");
 
                     let mut fields = Vec::new();
                     let args = args.to_vec();
-                    let proto = self.type_term(asts, *proto, diagnostics, level);
+                    let proto = self.type_term(asts, proto, diagnostics, level);
                     for (key, value) in args.into_iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, key) else {
                             diagnostics.add_sexp(asts, key, "Expected keyword");
@@ -243,7 +253,7 @@ impl TypeEnv {
 
                     self.record(fields, Some(proto), span)
                 }
-                &[first, ref_mut, value_id] if Self::is_symbol(asts, first, "set") => {
+                [first, ref_mut, value_id] if Self::is_symbol(asts, first, "set") => {
                     tracing::trace!("Infering set reference");
                     let ref_mut = self.type_term(asts, ref_mut, diagnostics, level);
                     let value = self.type_term(asts, value_id, diagnostics, level);
@@ -252,10 +262,10 @@ impl TypeEnv {
                     value
                 }
 
-                [callee, args @ ..] => {
+                [callee, ref args @ ..] => {
                     tracing::trace!("Infering application call");
                     let args = args.to_vec();
-                    let callee_type = self.type_term(asts, *callee, diagnostics, level);
+                    let callee_type = self.type_term(asts, callee, diagnostics, level);
 
                     let args_range = args
                         .iter()

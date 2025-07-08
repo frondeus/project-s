@@ -42,13 +42,10 @@ impl TypeCheckerCore {
     ) -> Option<&'a VTypeHead> {
         let node = &nodes[val.0];
         match node {
-            TypeNode::Var(_) => {
-                let v = r.predecessors(val.0).find_map(|id| match &nodes[id] {
-                    TypeNode::Value(head, _) => Some(head),
-                    _ => None,
-                });
-                v
-            }
+            TypeNode::Var(_) => r.predecessors(val.0).find_map(|id| match &nodes[id] {
+                TypeNode::Value(head, _) => Some(head),
+                _ => None,
+            }),
             TypeNode::Value(head, _) => Some(head),
             TypeNode::Use(_, _) => None,
         }
@@ -83,7 +80,7 @@ impl TypeCheckerCore {
                         out.push((*proto, Use(rhs_id)));
                     } else {
                         diagnostics
-                            .add(lhs_span, format!("Object has no field: {}", field_name))
+                            .add(lhs_span, format!("Object has no field: {field_name}",))
                             .add_extra("Defined here", Some(lhs_span))
                             .add_extra("Used here", Some(rhs_span));
                     }
@@ -186,7 +183,7 @@ impl TypeCheckerCore {
                     out.push((*proto, Use(rhs_id)));
                 } else {
                     diagnostics
-                        .add(rhs_span, format!("Undefined field: {}", field))
+                        .add(rhs_span, format!("Undefined field: {field}",))
                         .add_extra("Used here", Some(rhs_span))
                         .add_extra("Record defined here", Some(lhs_span));
                 }
@@ -232,14 +229,14 @@ impl TypeCheckerCore {
                         Scheme::Polymorphic(poly_fn) => {
                             // todo!("Polymorphic function in a module access")
                             diagnostics
-                                .add(rhs_span, format!("Polymorphic module member: {}", field))
+                                .add(rhs_span, format!("Polymorphic module member: {field}",))
                                 .add_extra("Used here", Some(rhs_span))
                                 .add_extra("Module defined here", Some(lhs_span));
                         }
                     }
                 } else {
                     diagnostics
-                        .add(rhs_span, format!("Undefined module member: {}", field))
+                        .add(rhs_span, format!("Undefined module member: {field}",))
                         .add_extra("Used here", Some(rhs_span))
                         .add_extra("Module defined here", Some(lhs_span));
                 }

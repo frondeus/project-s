@@ -56,7 +56,7 @@ fn run(filename: &str) {
     runtime.with_prelude();
     eprintln!("Evaluating...");
     let value = runtime.eval(root);
-    eprintln!("{:?}", value);
+    eprintln!("{value:?}");
     eprintln!("Marshalling...");
     let json = runtime.to_json(value, true);
     let json = serde_json::to_string_pretty(&json).unwrap();
