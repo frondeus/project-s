@@ -77,6 +77,12 @@ impl TypeEnv {
         })
     }
 
+    pub(crate) fn add_sexp(&mut self, sexp: SExpId, infered: InferedTypeId) -> InferedTypeId {
+        tracing::trace!("Adding sexp {sexp:?} with infered {infered}");
+        self.sexps.insert(sexp, infered);
+        infered
+    }
+
     pub(crate) fn add_infered(&mut self, infered: InferedType) -> InferedTypeId {
         let id = self.infered.len();
         tracing::trace!("Adding infered {infered} as {id}: {infered:?}");
@@ -89,5 +95,50 @@ impl TypeEnv {
         tracing::trace!("Adding {ty:?} as {id}");
         self.types.push(ty);
         TypeId(id)
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (InferedTypeId, &InferedType)> {
+        self.infered
+            .iter()
+            .enumerate()
+            .map(|(idx, ty)| (InferedTypeId(idx), ty))
+    }
+
+    pub(crate) fn predecessors(
+        &self,
+        id: InferedTypeId,
+        var: VarId,
+    ) -> impl Iterator<Item = InferedTypeId> {
+        let ub = self.vars[var.0].upper_bounds.iter().copied();
+
+        let lb = self
+            .vars
+            .iter()
+            .enumerate()
+            .filter_map(|(from_var, var)| {
+                let from_var = VarId(from_var);
+                if var.lower_bounds.contains(&id) {
+                    Some(from_var)
+                } else {
+                    None
+                }
+            })
+            .collect::<HashSet<_>>();
+
+        let lb = self.iter().filter_map(move |(id, ty)| match ty {
+            InferedType::Variable {
+                id: var_id,
+                span: _,
+            } => {
+                if lb.contains(var_id) {
+                    Some(id)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        });
+
+        ub.chain(lb)
     }
 }

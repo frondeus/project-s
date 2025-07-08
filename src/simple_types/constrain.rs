@@ -3,10 +3,12 @@ use super::*;
 impl TypeEnv {
     fn find_non_var(&self, id: InferedTypeId) -> Option<&InferedType> {
         match self.get(id) {
-            InferedType::Variable { id, span: _ } => self.vars[id.0]
-                .upper_bounds
-                .iter()
-                .find_map(|bound| self.find_non_var(*bound)),
+            InferedType::Variable {
+                id: var_id,
+                span: _,
+            } => self
+                .predecessors(id, *var_id)
+                .find_map(|bound| self.find_non_var(bound)),
             t => Some(t),
         }
     }

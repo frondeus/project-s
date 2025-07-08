@@ -182,7 +182,7 @@ impl TypeEnv {
                             return self.error(Self::span_of(pattern_id, asts));
                         }
                     };
-                    let rhs_ty = self.type_term_inner(asts, value, diagnostics, level + 1);
+                    let rhs_ty = self.type_term(asts, value, diagnostics, level + 1);
                     let scheme = if Self::is_expression_value(value, asts) {
                         TypeSchemeKind::Polymorphic
                     } else {
@@ -355,9 +355,9 @@ impl TypeEnv {
             scheme
         );
         match pattern {
-            Pattern::Single(key, span, _id) => {
+            Pattern::Single(key, span, id) => {
                 let var = self.fresh_var(span, level);
-                // self.assign_expr(id, value);
+                self.add_sexp(id, var);
                 // self.envs.set(&key, core::Scheme::Monomorphic(value));
                 let scheme = match scheme {
                     TypeSchemeKind::Monomorphic => TypeScheme::Monomorphic(var),
@@ -368,23 +368,25 @@ impl TypeEnv {
                 self.envs.set(&key, scheme);
                 var
             }
-            Pattern::List(patterns, span, _) => {
+            Pattern::List(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
                     let bound = self.type_pattern(pattern, level, scheme);
                     bounds.push(bound);
                 }
 
-                self.tuple(bounds, span)
+                let tuple = self.tuple(bounds, span);
+                self.add_sexp(id, tuple)
             }
-            Pattern::Object(patterns, span, _) => {
+            Pattern::Object(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
                     let bound = self.type_pattern(pattern, level, scheme);
                     bounds.push((key, bound));
                 }
 
-                self.record(bounds, None, span)
+                let record = self.record(bounds, None, span);
+                self.add_sexp(id, record)
             }
         }
     }

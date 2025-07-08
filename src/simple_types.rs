@@ -15,6 +15,7 @@ use crate::{
 mod coalesce;
 mod constrain;
 mod constructors;
+mod debug;
 mod extrude;
 mod format;
 mod freshen_above;
@@ -91,7 +92,6 @@ pub enum Type {
     },
 }
 
-#[derive(Debug)]
 pub enum InferedType {
     Error {
         span: Span,
@@ -145,6 +145,59 @@ pub enum InferedType {
     // }
 }
 
+impl std::fmt::Debug for InferedType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Error { span: _ } => f.debug_struct("Error").finish(),
+            Self::Variable { id, span: _ } => f.debug_struct("Variable").field("id", id).finish(),
+            Self::Primitive { name, span: _ } => {
+                f.debug_struct("Primitive").field("name", name).finish()
+            }
+            Self::Literal { value, span: _ } => {
+                f.debug_struct("Literal").field("value", value).finish()
+            }
+            Self::Function { lhs, rhs, span: _ } => f
+                .debug_struct("Function")
+                .field("lhs", lhs)
+                .field("rhs", rhs)
+                .finish(),
+            Self::Applicative {
+                arg,
+                ret,
+                first_arg,
+                span: _,
+            } => f
+                .debug_struct("Applicative")
+                .field("arg", arg)
+                .field("ret", ret)
+                .field("first_arg", first_arg)
+                .finish(),
+            Self::Tuple { items, span: _ } => {
+                f.debug_struct("Tuple").field("items", items).finish()
+            }
+            Self::Record {
+                fields,
+                proto,
+                span: _,
+            } => f
+                .debug_struct("Record")
+                .field("fields", fields)
+                .field("proto", proto)
+                .finish(),
+            Self::List { item, span: _ } => f.debug_struct("List").field("item", item).finish(),
+            Self::Ref {
+                write,
+                read,
+                span: _,
+            } => f
+                .debug_struct("Ref")
+                .field("write", write)
+                .field("read", read)
+                .finish(),
+        }
+    }
+}
+
 impl InferedType {
     pub fn span(&self) -> Span {
         match *self {
@@ -170,6 +223,56 @@ impl InferedType {
             } => Some(name),
             _ => None,
         }
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = InferedTypeId> {
+        let mut ids = vec![];
+
+        match self {
+            InferedType::Error { .. } => (),
+            InferedType::Variable { .. } => {}
+            InferedType::Primitive { .. } => (),
+            InferedType::Literal { .. } => (),
+            InferedType::Function { lhs, rhs, span: _ } => {
+                ids.push(*lhs);
+                ids.push(*rhs);
+            }
+            InferedType::Applicative {
+                arg,
+                ret,
+                first_arg: _,
+                span: _,
+            } => {
+                ids.push(*arg);
+                ids.push(*ret);
+            }
+            InferedType::Tuple { items, span: _ } => {
+                ids.extend(items.iter().copied());
+            }
+            InferedType::Record {
+                fields,
+                proto,
+                span: _,
+            } => {
+                for (_, field) in fields {
+                    ids.push(*field);
+                }
+                ids.extend(proto);
+            }
+            InferedType::List { item, span: _ } => {
+                ids.push(*item);
+            }
+            InferedType::Ref {
+                write,
+                read,
+                span: _,
+            } => {
+                ids.extend(*write);
+                ids.extend(*read);
+            }
+        }
+
+        ids.into_iter()
     }
 }
 
@@ -489,5 +592,33 @@ mod tests {
 
             // env.to_string(infered)
         })
+    }
+
+    #[test]
+    fn simple_type_dot() -> test_runner::Result {
+        unsafe { std::env::set_var("NO_COLOR", "1") }
+        test_runner::test_snapshots(
+            "docs/",
+            &["s", ""],
+            "simple-type-dot",
+            |input, _deps, _args| {
+                let mut asts = ASTS::new();
+                let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
+                let ast = asts
+                    .parse(source_id, modules.sources().get(source_id))
+                    .expect("Failed to parse");
+
+                let root = ast.root_id().unwrap();
+
+                let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
+                // let mut env = TypeEnv::new(modules).with_prelude();
+
+                let prelude = prelude();
+                let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+                let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+
+                env.debug_dot(&asts, infered)
+            },
+        )
     }
 }
