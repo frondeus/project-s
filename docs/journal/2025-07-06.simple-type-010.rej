@@ -1,0 +1,20 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:614
+```s
+(let :f (fn (:x) x))
+
+(f 4)
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-010
+@@ -621,7 +621,7 @@
+ 
+ 
+ ```simple-type
+-('a) → 'a
++('a) → 4
+ ```
+ 
+ ```simple-type-traces trace

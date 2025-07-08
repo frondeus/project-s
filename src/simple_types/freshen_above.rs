@@ -9,7 +9,7 @@ impl PolymorphicType {
             level,
             self.body.0
         );
-        let res = Self::freshen(type_env, self.body, level, self.level, &mut freshened);
+        let res = Self::freshen(type_env, self.body, self.level, level, &mut freshened);
         tracing::trace!("Freshened: {} -> {}", self.body.0, res.0);
 
         res

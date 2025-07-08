@@ -1,0 +1,20 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:848
+```s
+(let :poly (fn (:x) x))
+
+(poly 4)
+
+poly
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-011
+@@ -854,7 +854,7 @@
+ ```
+ 
+ ```simple-type
+-('a) → 'a
++('a) → 4
+ ```
+ 
+ Shit, its getting harder and harder to debug it.

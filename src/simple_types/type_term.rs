@@ -24,7 +24,7 @@ impl TypeEnv {
     ) -> InferedTypeId {
         let sexp = asts.get(id);
         let span = sexp.span;
-        tracing::trace!("Infering {:?} level {}", &**sexp, level);
+        tracing::trace!("Infering `{}` level {}", asts.fmt(id), level);
         match &**sexp {
             &SExp::Number(n) => {
                 let lit = self.literal(Literal::Number(n), span);
@@ -188,14 +188,14 @@ impl TypeEnv {
                     } else {
                         TypeSchemeKind::Monomorphic
                     };
-                    let bound = self.type_pattern(pattern, level + 1, scheme);
+                    let bound = self.type_pattern(pattern, level, scheme);
                     self.constrain(rhs_ty, bound, diagnostics);
                     self.unit(span)
                 }
                 [first, ref bindings @ ..]
                     if Self::is_symbols(asts, first, &["let-rec", "let*"]) =>
                 {
-                    let mut bounds = vec![];
+                    let mut patterns = vec![];
                     let (bindings, remainder) = bindings.as_chunks::<2>();
                     if !remainder.is_empty() {
                         let first = remainder[0];
@@ -213,15 +213,12 @@ impl TypeEnv {
                                 continue;
                             }
                         };
-                        let bound = self.type_pattern(
-                            pattern.clone(),
-                            level + 1,
-                            TypeSchemeKind::Monomorphic,
-                        );
-                        bounds.push((bound, value));
+                        self.type_pattern(pattern.clone(), level + 1, TypeSchemeKind::Monomorphic);
+                        patterns.push((pattern, value));
                     }
-                    for (bound, value) in bounds {
+                    for (pattern, value) in patterns {
                         let value = self.type_term(asts, value, diagnostics, level + 1);
+                        let bound = self.type_pattern(pattern, level, TypeSchemeKind::Polymorphic);
                         self.constrain(value, bound, diagnostics);
                     }
                     self.unit(span)
