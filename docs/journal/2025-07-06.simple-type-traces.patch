@@ -1,0 +1,298 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:50
+```s
+(let :r (ref 1))
+(let :f
+  (fn (:y)
+    (do
+      (set r y)
+      ()
+)))
+
+(let :a (f 1))       # y: int → sets r : ref int
+(let :b (f true))    # oops! this must be rejected: r’s α was fixed to int
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-traces
+@@ -68,279 +68,31 @@
+ 
+ ```simple-type-traces trace
+ TRACE project_s::lambda_lifting: free var: r
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 33, generation: 0 }, SExpId { id: 5, generation: 0 }, SExpId { id: 4, generation: 2 }, SExpId { id: 25, generation: 0 }, SExpId { id: 31, generation: 0 }, SExpId { id: 32, generation: 0 }]) level 0
+ TRACE project_s::simple_types::type_term: Infering do expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 0, generation: 0 }, SExpId { id: 1, generation: 0 }, SExpId { id: 4, generation: 0 }]) level 0
+ TRACE project_s::simple_types::type_term: Infering let expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 2, generation: 0 }, SExpId { id: 3, generation: 0 }]) level 1
+ TRACE project_s::simple_types::type_term: Infering reference expression
+-TRACE project_s::simple_types::type_term: Infering Number(1.0) level 1
+-TRACE project_s::simple_types::utils: Adding infered 1 as 0: Literal { value: Number(1.0), span: Span { range: Range { start_byte: 13, end_byte: 14, start_point: Point { row: 0, column: 13 }, end_point: Point { row: 0, column: 14 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered number as 1: Primitive { name: "number", span: Span { range: Range { start_byte: 13, end_byte: 14, start_point: Point { row: 0, column: 13 }, end_point: Point { row: 0, column: 14 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (0 <: 1): 1 <: number
+-TRACE project_s::simple_types::type_term: Infered ty 0 : 1
+-TRACE project_s::simple_types::utils: Adding infered ref as 2: Ref { write: Some(InferedTypeId(0)), read: Some(InferedTypeId(0)), span: Span { range: Range { start_byte: 8, end_byte: 15, start_point: Point { row: 0, column: 8 }, end_point: Point { row: 0, column: 15 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infering pattern: Single("r", Span { range: Range { start_byte: 5, end_byte: 7, start_point: Point { row: 0, column: 5 }, end_point: Point { row: 0, column: 7 } }, source_id: SourceId(0) }, SExpId { id: 1, generation: 0 }) - 1 lvl Monomorphic
+-TRACE project_s::simple_types::utils: Adding fresh variable 0 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 3: Variable { id: VarId(0), span: Span { range: Range { start_byte: 5, end_byte: 7, start_point: Point { row: 0, column: 5 }, end_point: Point { row: 0, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (2 <: 3): ref <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 2 to lower bounds of RHS: 3
+-TRACE project_s::simple_types::utils: Adding infered tuple as 4: Tuple { items: [], span: Span { range: Range { start_byte: 0, end_byte: 16, start_point: Point { row: 0, column: 0 }, end_point: Point { row: 0, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infered ty 4 : tuple
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 6, generation: 0 }, SExpId { id: 7, generation: 0 }, SExpId { id: 3, generation: 2 }]) level 0
+ TRACE project_s::simple_types::type_term: Infering let expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 0, generation: 2 }, SExpId { id: 10, generation: 0 }, SExpId { id: 2, generation: 2 }, SExpId { id: 17, generation: 0 }]) level 1
+ TRACE project_s::simple_types::type_term: Infering closure expression
+-TRACE project_s::simple_types::type_term: Infering pattern: List([Single("y", Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) }, SExpId { id: 9, generation: 0 })], Span { range: Range { start_byte: 31, end_byte: 35, start_point: Point { row: 2, column: 6 }, end_point: Point { row: 2, column: 10 } }, source_id: SourceId(0) }, SExpId { id: 10, generation: 0 }) - 1 lvl Monomorphic
+-TRACE project_s::simple_types::type_term: Infering pattern: Single("y", Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) }, SExpId { id: 9, generation: 0 }) - 1 lvl Monomorphic
+-TRACE project_s::simple_types::utils: Adding fresh variable 1 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 5: Variable { id: VarId(1), span: Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered tuple as 6: Tuple { items: [InferedTypeId(5)], span: Span { range: Range { start_byte: 31, end_byte: 35, start_point: Point { row: 2, column: 6 }, end_point: Point { row: 2, column: 10 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 11, generation: 0 }, SExpId { id: 15, generation: 0 }, SExpId { id: 16, generation: 0 }]) level 1
+ TRACE project_s::simple_types::type_term: Infering do expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 12, generation: 0 }, SExpId { id: 13, generation: 0 }, SExpId { id: 14, generation: 0 }]) level 1
+ TRACE project_s::simple_types::type_term: Infering set reference
+-TRACE project_s::simple_types::type_term: Infering Symbol("r") level 1
+-TRACE project_s::simple_types::type_term: Infered ty 3 : variable
+-TRACE project_s::simple_types::type_term: Infering Symbol("y") level 1
+-TRACE project_s::simple_types::type_term: Infered ty 5 : variable
+-TRACE project_s::simple_types::utils: Adding infered ref as 7: Ref { write: None, read: Some(InferedTypeId(5)), span: Span { range: Range { start_byte: 57, end_byte: 58, start_point: Point { row: 4, column: 13 }, end_point: Point { row: 4, column: 14 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (3 <: 7): variable <: ref
+-TRACE project_s::simple_types::constrain: Left LVL: 1 RIGHT LVL: 1
+-TRACE project_s::simple_types::constrain: Pushing 7 to upper bounds of LHS 3
+-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 2 :< 7
+-TRACE project_s::simple_types::constrain: Constraining (2 <: 7): ref <: ref
+-TRACE project_s::simple_types::constrain: Constraining (0 <: 5): 1 <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 0 to lower bounds of RHS: 5
+-TRACE project_s::simple_types::type_term: Infered ty 5 : variable
+-TRACE project_s::simple_types::type_term: Infering List([]) level 1
+-TRACE project_s::simple_types::utils: Adding infered tuple as 8: Tuple { items: [], span: Span { range: Range { start_byte: 66, end_byte: 68, start_point: Point { row: 5, column: 6 }, end_point: Point { row: 5, column: 8 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infered ty 8 : tuple
+-TRACE project_s::simple_types::type_term: Infered ty 8 : tuple
+-TRACE project_s::simple_types::utils: Adding infered function as 9: Function { lhs: InferedTypeId(6), rhs: InferedTypeId(8), span: Span { range: Range { start_byte: 27, end_byte: 71, start_point: Point { row: 2, column: 2 }, end_point: Point { row: 6, column: 2 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infering pattern: Single("f", Span { range: Range { start_byte: 22, end_byte: 24, start_point: Point { row: 1, column: 5 }, end_point: Point { row: 1, column: 7 } }, source_id: SourceId(0) }, SExpId { id: 7, generation: 0 }) - 1 lvl Polymorphic
+-TRACE project_s::simple_types::utils: Adding fresh variable 2 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 10: Variable { id: VarId(2), span: Span { range: Range { start_byte: 22, end_byte: 24, start_point: Point { row: 1, column: 5 }, end_point: Point { row: 1, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (9 <: 10): function <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 1 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 9 to lower bounds of RHS: 10
+-TRACE project_s::simple_types::utils: Adding infered tuple as 11: Tuple { items: [], span: Span { range: Range { start_byte: 17, end_byte: 72, start_point: Point { row: 1, column: 0 }, end_point: Point { row: 6, column: 3 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infered ty 11 : tuple
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 20, generation: 0 }, SExpId { id: 21, generation: 0 }, SExpId { id: 24, generation: 0 }]) level 0
+ TRACE project_s::simple_types::type_term: Infering let expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 22, generation: 0 }, SExpId { id: 23, generation: 0 }]) level 1
+-TRACE project_s::simple_types::type_term: Infering application call
+-TRACE project_s::simple_types::type_term: Infering Symbol("f") level 1
+-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 1; level: 1; body: 10
+-TRACE project_s::simple_types::freshen_above: Freshening 10 - 1 with limit 1, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 1 lower or equal than limit 1
+-TRACE project_s::simple_types::freshen_above: Freshened: 10 -> 10
+-TRACE project_s::simple_types::type_term: Infered ty 10 : variable
+-TRACE project_s::simple_types::type_term: Infering Number(1.0) level 1
+-TRACE project_s::simple_types::utils: Adding infered 1 as 12: Literal { value: Number(1.0), span: Span { range: Range { start_byte: 85, end_byte: 86, start_point: Point { row: 8, column: 11 }, end_point: Point { row: 8, column: 12 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered number as 13: Primitive { name: "number", span: Span { range: Range { start_byte: 85, end_byte: 86, start_point: Point { row: 8, column: 11 }, end_point: Point { row: 8, column: 12 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (12 <: 13): 1 <: number
+-TRACE project_s::simple_types::type_term: Infered ty 12 : 1
+-TRACE project_s::simple_types::utils: Adding fresh variable 3 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 14: Variable { id: VarId(3), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered tuple as 15: Tuple { items: [InferedTypeId(12)], span: Span { range: Range { start_byte: 85, end_byte: 86, start_point: Point { row: 8, column: 11 }, end_point: Point { row: 8, column: 12 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered applicative as 16: Applicative { arg: InferedTypeId(15), ret: InferedTypeId(14), first_arg: Some(InferedTypeId(12)), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (10 <: 16): variable <: applicative
+-TRACE project_s::simple_types::constrain: Left LVL: 1 RIGHT LVL: 1
+-TRACE project_s::simple_types::constrain: Pushing 16 to upper bounds of LHS 10
+-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 9 :< 16
+-TRACE project_s::simple_types::constrain: Constraining (9 <: 16): function <: applicative
+-TRACE project_s::simple_types::constrain: Constraining (15 <: 6): tuple <: tuple
+-TRACE project_s::simple_types::constrain: Constraining (8 <: 14): tuple <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 8 to lower bounds of RHS: 14
+-TRACE project_s::simple_types::constrain: Constraining (12 <: 5): 1 <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 12 to lower bounds of RHS: 5
+-TRACE project_s::simple_types::type_term: Infering pattern: Single("a", Span { range: Range { start_byte: 79, end_byte: 81, start_point: Point { row: 8, column: 5 }, end_point: Point { row: 8, column: 7 } }, source_id: SourceId(0) }, SExpId { id: 21, generation: 0 }) - 1 lvl Monomorphic
+-TRACE project_s::simple_types::utils: Adding fresh variable 4 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 17: Variable { id: VarId(4), span: Span { range: Range { start_byte: 79, end_byte: 81, start_point: Point { row: 8, column: 5 }, end_point: Point { row: 8, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (14 <: 17): variable <: variable
+-TRACE project_s::simple_types::constrain: Left LVL: 1 RIGHT LVL: 1
+-TRACE project_s::simple_types::constrain: Pushing 17 to upper bounds of LHS 14
+-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 8 :< 17
+-TRACE project_s::simple_types::constrain: Constraining (8 <: 17): tuple <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 8 to lower bounds of RHS: 17
+-TRACE project_s::simple_types::utils: Adding infered tuple as 18: Tuple { items: [], span: Span { range: Range { start_byte: 74, end_byte: 88, start_point: Point { row: 8, column: 0 }, end_point: Point { row: 8, column: 14 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infered ty 18 : tuple
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 26, generation: 0 }, SExpId { id: 27, generation: 0 }, SExpId { id: 30, generation: 0 }]) level 0
+ TRACE project_s::simple_types::type_term: Infering let expression
+-TRACE project_s::simple_types::type_term: Infering List([SExpId { id: 28, generation: 0 }, SExpId { id: 29, generation: 0 }]) level 1
+-TRACE project_s::simple_types::type_term: Infering application call
+-TRACE project_s::simple_types::type_term: Infering Symbol("f") level 1
+-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 1; level: 1; body: 10
+-TRACE project_s::simple_types::freshen_above: Freshening 10 - 1 with limit 1, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 1 lower or equal than limit 1
+-TRACE project_s::simple_types::freshen_above: Freshened: 10 -> 10
+-TRACE project_s::simple_types::type_term: Infered ty 10 : variable
+-TRACE project_s::simple_types::type_term: Infering Bool(true) level 1
+-TRACE project_s::simple_types::utils: Adding infered true as 19: Literal { value: Bool(true), span: Span { range: Range { start_byte: 136, end_byte: 140, start_point: Point { row: 9, column: 11 }, end_point: Point { row: 9, column: 15 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered bool as 20: Primitive { name: "bool", span: Span { range: Range { start_byte: 136, end_byte: 140, start_point: Point { row: 9, column: 11 }, end_point: Point { row: 9, column: 15 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (19 <: 20): true <: bool
+-TRACE project_s::simple_types::type_term: Infered ty 19 : true
+-TRACE project_s::simple_types::utils: Adding fresh variable 5 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 21: Variable { id: VarId(5), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered tuple as 22: Tuple { items: [InferedTypeId(19)], span: Span { range: Range { start_byte: 136, end_byte: 140, start_point: Point { row: 9, column: 11 }, end_point: Point { row: 9, column: 15 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding infered applicative as 23: Applicative { arg: InferedTypeId(22), ret: InferedTypeId(21), first_arg: Some(InferedTypeId(19)), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (10 <: 23): variable <: applicative
+-TRACE project_s::simple_types::constrain: Left LVL: 1 RIGHT LVL: 1
+-TRACE project_s::simple_types::constrain: Pushing 23 to upper bounds of LHS 10
+-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 9 :< 23
+-TRACE project_s::simple_types::constrain: Constraining (9 <: 23): function <: applicative
+-TRACE project_s::simple_types::constrain: Constraining (22 <: 6): tuple <: tuple
+-TRACE project_s::simple_types::constrain: Constraining (8 <: 21): tuple <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 8 to lower bounds of RHS: 21
+-TRACE project_s::simple_types::constrain: Constraining (19 <: 5): true <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 19 to lower bounds of RHS: 5
+-TRACE project_s::simple_types::type_term: Infering pattern: Single("b", Span { range: Range { start_byte: 130, end_byte: 132, start_point: Point { row: 9, column: 5 }, end_point: Point { row: 9, column: 7 } }, source_id: SourceId(0) }, SExpId { id: 27, generation: 0 }) - 1 lvl Monomorphic
+-TRACE project_s::simple_types::utils: Adding fresh variable 6 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 24: Variable { id: VarId(6), span: Span { range: Range { start_byte: 130, end_byte: 132, start_point: Point { row: 9, column: 5 }, end_point: Point { row: 9, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::constrain: Constraining (21 <: 24): variable <: variable
+-TRACE project_s::simple_types::constrain: Left LVL: 1 RIGHT LVL: 1
+-TRACE project_s::simple_types::constrain: Pushing 24 to upper bounds of LHS 21
+-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 8 :< 24
+-TRACE project_s::simple_types::constrain: Constraining (8 <: 24): tuple <: variable
+-TRACE project_s::simple_types::constrain: RHS VAR: 0 ? 1
+-TRACE project_s::simple_types::constrain: Pushing 8 to lower bounds of RHS: 24
+-TRACE project_s::simple_types::utils: Adding infered tuple as 25: Tuple { items: [], span: Span { range: Range { start_byte: 125, end_byte: 142, start_point: Point { row: 9, column: 0 }, end_point: Point { row: 9, column: 17 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::type_term: Infered ty 25 : tuple
+-TRACE project_s::simple_types::type_term: Infering Symbol("f") level 0
+-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 1; level: 0; body: 10
+-TRACE project_s::simple_types::freshen_above: Freshening 10 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(2), span: Span { range: Range { start_byte: 22, end_byte: 24, start_point: Point { row: 1, column: 5 }, end_point: Point { row: 1, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 7 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 26: Variable { id: VarId(7), span: Span { range: Range { start_byte: 22, end_byte: 24, start_point: Point { row: 1, column: 5 }, end_point: Point { row: 1, column: 7 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 26
+-TRACE project_s::simple_types::freshen_above: Freshening 9 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Function { lhs: InferedTypeId(6), rhs: InferedTypeId(8), span: Span { range: Range { start_byte: 27, end_byte: 71, start_point: Point { row: 2, column: 2 }, end_point: Point { row: 6, column: 2 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 6 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Tuple { items: [InferedTypeId(5)], span: Span { range: Range { start_byte: 31, end_byte: 35, start_point: Point { row: 2, column: 6 }, end_point: Point { row: 2, column: 10 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 5 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(1), span: Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 8 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 27: Variable { id: VarId(8), span: Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 27
+-TRACE project_s::simple_types::freshen_above: Freshening 0 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 12 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 19 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::utils: Adding infered tuple as 28: Tuple { items: [InferedTypeId(27)], span: Span { range: Range { start_byte: 31, end_byte: 35, start_point: Point { row: 2, column: 6 }, end_point: Point { row: 2, column: 10 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 8 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::utils: Adding infered function as 29: Function { lhs: InferedTypeId(28), rhs: InferedTypeId(8), span: Span { range: Range { start_byte: 27, end_byte: 71, start_point: Point { row: 2, column: 2 }, end_point: Point { row: 6, column: 2 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 16 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Applicative { arg: InferedTypeId(15), ret: InferedTypeId(14), first_arg: Some(InferedTypeId(12)), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 15 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 14 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(3), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 9 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 30: Variable { id: VarId(9), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 30
+-TRACE project_s::simple_types::freshen_above: Freshening 8 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 17 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(4), span: Span { range: Range { start_byte: 79, end_byte: 81, start_point: Point { row: 8, column: 5 }, end_point: Point { row: 8, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 10 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 31: Variable { id: VarId(10), span: Span { range: Range { start_byte: 79, end_byte: 81, start_point: Point { row: 8, column: 5 }, end_point: Point { row: 8, column: 7 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 31
+-TRACE project_s::simple_types::freshen_above: Freshening 8 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 12 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::utils: Adding infered applicative as 32: Applicative { arg: InferedTypeId(15), ret: InferedTypeId(30), first_arg: Some(InferedTypeId(12)), span: Span { range: Range { start_byte: 82, end_byte: 87, start_point: Point { row: 8, column: 8 }, end_point: Point { row: 8, column: 13 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 23 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Applicative { arg: InferedTypeId(22), ret: InferedTypeId(21), first_arg: Some(InferedTypeId(19)), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshening 22 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 21 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(5), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 11 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 33: Variable { id: VarId(11), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 33
+-TRACE project_s::simple_types::freshen_above: Freshening 8 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 24 - 1 with limit 0, level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(6), span: Span { range: Range { start_byte: 130, end_byte: 132, start_point: Point { row: 9, column: 5 }, end_point: Point { row: 9, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding fresh variable 12 with level 1
+-TRACE project_s::simple_types::utils: Adding infered variable as 34: Variable { id: VarId(12), span: Span { range: Range { start_byte: 130, end_byte: 132, start_point: Point { row: 9, column: 5 }, end_point: Point { row: 9, column: 7 } }, source_id: SourceId(0) } }
+ TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 34
+-TRACE project_s::simple_types::freshen_above: Freshening 8 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::freshen_above: Freshening 19 - 0 with limit 0, level 1
+-TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
+-TRACE project_s::simple_types::utils: Adding infered applicative as 35: Applicative { arg: InferedTypeId(22), ret: InferedTypeId(33), first_arg: Some(InferedTypeId(19)), span: Span { range: Range { start_byte: 133, end_byte: 141, start_point: Point { row: 9, column: 8 }, end_point: Point { row: 9, column: 16 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::freshen_above: Freshened: 10 -> 26
+-TRACE project_s::simple_types::type_term: Infered ty 26 : variable
+-TRACE project_s::simple_types::type_term: Infered ty 26 : variable
+-TRACE project_s::simple_types::coalesce: Coalesce(26 ; Positive): Variable { id: VarId(7), span: Span { range: Range { start_byte: 22, end_byte: 24, start_point: Point { row: 1, column: 5 }, end_point: Point { row: 1, column: 7 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+-    level: 1,
+-    lower_bounds: [
+-        InferedTypeId(
+-            29,
+-        ),
+-    ],
+-    upper_bounds: [
+-        InferedTypeId(
+-            32,
+-        ),
+-        InferedTypeId(
+-            35,
+-        ),
+-    ],
+-}
+-TRACE project_s::simple_types::coalesce: Polarity positive. Using lower bounds
+-TRACE project_s::simple_types::coalesce: Bounds: [
+-    InferedTypeId(
+-        29,
+-    ),
+-]
+-TRACE project_s::simple_types::coalesce: Coalesce(29 ; Positive): Function { lhs: InferedTypeId(28), rhs: InferedTypeId(8), span: Span { range: Range { start_byte: 27, end_byte: 71, start_point: Point { row: 2, column: 2 }, end_point: Point { row: 6, column: 2 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::coalesce: Coalesce(28 ; Negative): Tuple { items: [InferedTypeId(27)], span: Span { range: Range { start_byte: 31, end_byte: 35, start_point: Point { row: 2, column: 6 }, end_point: Point { row: 2, column: 10 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::coalesce: Coalesce(27 ; Negative): Variable { id: VarId(8), span: Span { range: Range { start_byte: 32, end_byte: 34, start_point: Point { row: 2, column: 7 }, end_point: Point { row: 2, column: 9 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+-    level: 1,
+-    lower_bounds: [
+-        InferedTypeId(
+-            0,
+-        ),
+-        InferedTypeId(
+-            12,
+-        ),
+-        InferedTypeId(
+-            19,
+-        ),
+-    ],
+-    upper_bounds: [],
+-}
+-TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+-TRACE project_s::simple_types::coalesce: Bounds: []
+-TRACE project_s::simple_types::coalesce: Bound types: []
+-TRACE project_s::simple_types::coalesce: Bounds are empty. PolarVariable { polarity: Negative, id: VarId(8) }
+-TRACE project_s::simple_types::coalesce: Creating new type var: 'a
+-TRACE project_s::simple_types::utils: Adding Variable { name: "'a" } as 0
+-TRACE project_s::simple_types::utils: Adding Tuple { items: [TypeId(0)] } as 1
+-TRACE project_s::simple_types::coalesce: Coalesce(8 ; Positive): Tuple { items: [], span: Span { range: Range { start_byte: 66, end_byte: 68, start_point: Point { row: 5, column: 6 }, end_point: Point { row: 5, column: 8 } }, source_id: SourceId(0) } }
+-TRACE project_s::simple_types::utils: Adding Tuple { items: [] } as 2
+-TRACE project_s::simple_types::utils: Adding Function { lhs: TypeId(1), rhs: TypeId(2) } as 3
+-TRACE project_s::simple_types::coalesce: Bound types: [
+-    TypeId(
+-        3,
+-    ),
+-]
+ 
+ ```
+ 

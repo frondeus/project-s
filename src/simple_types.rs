@@ -9,7 +9,7 @@ use crate::{
     ast::{ASTS, SExp, SExpId},
     diagnostics::{Diagnostics, SExpDiag as _},
     patterns::Pattern,
-    source::Span,
+    source::{Sources, Span},
 };
 
 mod coalesce;
@@ -161,6 +161,16 @@ impl InferedType {
             // InferedType::Module { span, .. } => span,
         }
     }
+
+    pub fn as_keyword_literal(&self) -> Option<&str> {
+        match self {
+            InferedType::Literal {
+                value: Literal::Keyword(name),
+                ..
+            } => Some(name),
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for InferedType {
@@ -277,6 +287,39 @@ struct PolymorphicType {
 impl TypeEnv {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub const NUMBER: &str = "number";
+    pub const STRING: &str = "string";
+    pub const BOOLEAN: &str = "bool";
+    pub const KEYWORD: &str = "keyword";
+
+    pub fn with_prelude(mut self, sources: &mut Sources) -> Self {
+        let builtin = sources.add("<builtin>", "");
+        let span = Span::new_empty(builtin);
+        {
+            // "-"
+            let lhs = self.primitive(Self::NUMBER, span);
+            let rhs = self.primitive(Self::NUMBER, span);
+            let args = self.tuple(vec![lhs, rhs], span);
+            let rhs = self.primitive(Self::NUMBER, span);
+            let ty = self.function(args, rhs, span);
+            self.envs.set("-", TypeScheme::Monomorphic(ty));
+        }
+        {
+            // "="
+            let lhs = self.fresh_var(span, 1);
+            let rhs = self.fresh_var(span, 1);
+            let args = self.tuple(vec![lhs, rhs], span);
+            let rhs = self.primitive(Self::BOOLEAN, span);
+            let ty = self.function(args, rhs, span);
+            self.envs.set(
+                "=",
+                TypeScheme::Polymorphic(PolymorphicType { level: 1, body: ty }),
+            );
+        }
+
+        self
     }
 }
 
@@ -419,14 +462,14 @@ mod tests {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", &["s", ""], "simple-type", |input, _deps, _args| {
             let mut asts = ASTS::new();
-            let (modules, source_id) = MemoryModules::from_deps(input, _deps);
+            let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
             let ast = asts
                 .parse(source_id, modules.sources().get(source_id))
                 .expect("Failed to parse");
 
             let root = ast.root_id().unwrap();
 
-            let mut env = TypeEnv::new();
+            let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
             // let mut env = TypeEnv::new(modules).with_prelude();
 
             let prelude = prelude();

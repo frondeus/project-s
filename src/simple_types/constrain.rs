@@ -1,6 +1,16 @@
 use super::*;
 
 impl TypeEnv {
+    fn find_non_var(&self, id: InferedTypeId) -> Option<&InferedType> {
+        match self.get(id) {
+            InferedType::Variable { id, span: _ } => self.vars[id.0]
+                .upper_bounds
+                .iter()
+                .find_map(|bound| self.find_non_var(*bound)),
+            t => Some(t),
+        }
+    }
+
     pub(crate) fn constrain(
         &mut self,
         lhs_id: InferedTypeId,
@@ -36,6 +46,156 @@ impl TypeEnv {
 
             use InferedType::*;
             match (lhs, rhs) {
+                (Error { span: _ }, _) | (_, Error { span: _ }) => continue,
+                (
+                    Primitive {
+                        name: lhs_name,
+                        span: _,
+                    },
+                    Primitive {
+                        name: rhs_name,
+                        span: _,
+                    },
+                ) if lhs_name == rhs_name => continue,
+                (
+                    Literal {
+                        value: lhs_value,
+                        span: _,
+                    },
+                    Literal {
+                        value: rhs_value,
+                        span: _,
+                    },
+                ) if lhs_value == rhs_value => continue,
+                (
+                    Literal {
+                        value: lhs_value,
+                        span: _,
+                    },
+                    Primitive {
+                        name: rhs_name,
+                        span: _,
+                    },
+                ) => match lhs_value {
+                    LitValue::Bool(_) if rhs_name == "bool" => continue,
+                    LitValue::Number(_) if rhs_name == "number" => continue,
+                    LitValue::String(_) if rhs_name == "string" => continue,
+                    LitValue::Keyword(_) if rhs_name == "keyword" => continue,
+                    _ => (),
+                },
+                (
+                    &Function {
+                        lhs: pattern,
+                        rhs: ret,
+                        span: _,
+                    },
+                    &Applicative {
+                        arg: args,
+                        ret: ret_use,
+                        first_arg: _,
+                        span: _,
+                    },
+                ) => {
+                    queue.push_back((args, pattern));
+                    queue.push_back((ret, ret_use));
+                    continue;
+                }
+                (
+                    &Record {
+                        ref fields,
+                        proto,
+                        span: _,
+                    },
+                    &Applicative {
+                        arg: _,
+                        ret,
+                        first_arg,
+                        span: _,
+                    },
+                ) => {
+                    let Some(field) = first_arg
+                        .and_then(|first| self.find_non_var(first))
+                        .and_then(|first| first.as_keyword_literal())
+                    else {
+                        diagnostics.add(rhs_span, "expected a keyword literal");
+                        continue;
+                    };
+
+                    if let Some(field_ty) = fields
+                        .iter()
+                        .find_map(|(name, ty)| if name == field { Some(ty) } else { None })
+                    {
+                        queue.push_back((*field_ty, ret));
+                    } else if let Some(proto) = proto {
+                        queue.push_back((proto, rhs_id));
+                    } else {
+                        diagnostics
+                            .add(rhs_span, "Undefined field: {field}")
+                            .add_extra("Used here", Some(rhs_span))
+                            .add_extra("Record defined here", Some(lhs_span));
+                    }
+                    continue;
+                }
+                (
+                    Tuple {
+                        items: left,
+                        span: _,
+                    },
+                    Tuple {
+                        items: right,
+                        span: _,
+                    },
+                ) => {
+                    if left.len() != right.len() {
+                        diagnostics
+                            .add(lhs_span, "Type mismatch")
+                            .add_extra(
+                                format!("Expected tuple of length {}", right.len()),
+                                Some(rhs_span),
+                            )
+                            .add_extra(
+                                format!("But found tuple of length {}", left.len()),
+                                Some(lhs_span),
+                            );
+                    } else {
+                        for (l, r) in left.iter().copied().zip(right.iter().copied()) {
+                            queue.push_back((l, r));
+                        }
+                        continue;
+                    }
+                }
+                (
+                    &Ref {
+                        read: lhs_read,
+                        write: lhs_write,
+                        span: _,
+                    },
+                    &Ref {
+                        read: rhs_read,
+                        write: rhs_write,
+                        span: _,
+                    },
+                ) => {
+                    if lhs_read.is_none() && lhs_write.is_none() {
+                        diagnostics.add(lhs_span, "Reference is not readable or writable");
+                        continue;
+                    }
+                    if let Some(rhs_read) = rhs_read {
+                        if let Some(lhs_read) = lhs_read {
+                            queue.push_back((lhs_read, rhs_read));
+                        } else {
+                            diagnostics.add(lhs_span, "Reference is not readable");
+                        }
+                    }
+                    if let Some(rhs_write) = rhs_write {
+                        if let Some(lhs_write) = lhs_write {
+                            queue.push_back((lhs_write, rhs_write));
+                        } else {
+                            diagnostics.add(rhs_span, "Reference is not writable");
+                        }
+                    }
+                    continue;
+                }
                 (
                     &Variable {
                         id: lhs_var_id,
@@ -101,119 +261,6 @@ impl TypeEnv {
                         queue.push_back((lhs_id, rhs_id));
                         continue;
                     }
-                }
-                (
-                    Primitive {
-                        name: lhs_name,
-                        span: _,
-                    },
-                    Primitive {
-                        name: rhs_name,
-                        span: _,
-                    },
-                ) if lhs_name == rhs_name => continue,
-                (
-                    Literal {
-                        value: lhs_value,
-                        span: _,
-                    },
-                    Literal {
-                        value: rhs_value,
-                        span: _,
-                    },
-                ) if lhs_value == rhs_value => continue,
-                (
-                    Literal {
-                        value: lhs_value,
-                        span: _,
-                    },
-                    Primitive {
-                        name: rhs_name,
-                        span: _,
-                    },
-                ) => match lhs_value {
-                    LitValue::Bool(_) if rhs_name == "bool" => continue,
-                    LitValue::Number(_) if rhs_name == "number" => continue,
-                    LitValue::String(_) if rhs_name == "string" => continue,
-                    LitValue::Keyword(_) if rhs_name == "keyword" => continue,
-                    _ => (),
-                },
-                (
-                    &Function {
-                        lhs: pattern,
-                        rhs: ret,
-                        span: _,
-                    },
-                    &Applicative {
-                        arg: args,
-                        ret: ret_use,
-                        first_arg: _,
-                        span: _,
-                    },
-                ) => {
-                    queue.push_back((args, pattern));
-                    queue.push_back((ret, ret_use));
-                    continue;
-                }
-                (
-                    Tuple {
-                        items: left,
-                        span: _,
-                    },
-                    Tuple {
-                        items: right,
-                        span: _,
-                    },
-                ) => {
-                    if left.len() != right.len() {
-                        diagnostics
-                            .add(lhs_span, "Type mismatch")
-                            .add_extra(
-                                format!("Expected tuple of length {}", right.len()),
-                                Some(rhs_span),
-                            )
-                            .add_extra(
-                                format!("But found tuple of length {}", left.len()),
-                                Some(lhs_span),
-                            );
-                    } else {
-                        for (l, r) in left.iter().copied().zip(right.iter().copied()) {
-                            queue.push_back((l, r));
-                        }
-                        continue;
-                    }
-                }
-                (
-                    &Ref {
-                        read: lhs_read,
-                        write: lhs_write,
-                        span: _,
-                    },
-                    &Ref {
-                        read: rhs_read,
-                        write: rhs_write,
-                        span: _,
-                    },
-                ) => {
-                    if lhs_read.is_none() && lhs_write.is_none() {
-                        diagnostics.add(lhs_span, "Reference is not readable or writable");
-                        continue;
-                    }
-                    if let Some(rhs_read) = rhs_read {
-                        if let Some(lhs_read) = lhs_read {
-                            queue.push_back((lhs_read, rhs_read));
-                        } else {
-                            diagnostics.add(lhs_span, "Reference is not readable");
-                        }
-                    }
-                    if let Some(rhs_write) = rhs_write {
-                        if let Some(lhs_write) = lhs_write {
-                            queue.push_back((lhs_write, rhs_write));
-                        } else {
-                            diagnostics.add(rhs_span, "Reference is not writable");
-                        }
-                    }
-                    continue;
                 }
                 _ => (),
             }

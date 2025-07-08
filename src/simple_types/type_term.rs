@@ -28,21 +28,21 @@ impl TypeEnv {
         match &**sexp {
             &SExp::Number(n) => {
                 let lit = self.literal(Literal::Number(n), span);
-                let number = self.primitive("number", span);
+                let number = self.primitive(Self::NUMBER, span);
 
                 self.constrain(lit, number, diagnostics);
                 lit
             }
             SExp::String(s) => {
                 let lit = self.literal(Literal::String(s.clone()), span);
-                let string = self.primitive("string", span);
+                let string = self.primitive(Self::STRING, span);
 
                 self.constrain(lit, string, diagnostics);
                 lit
             }
             &SExp::Bool(b) => {
                 let lit = self.literal(Literal::Bool(b), span);
-                let bool = self.primitive("bool", span);
+                let bool = self.primitive(Self::BOOLEAN, span);
 
                 self.constrain(lit, bool, diagnostics);
                 lit
@@ -58,7 +58,7 @@ impl TypeEnv {
             },
             SExp::Keyword(key) => {
                 let lit = self.literal(Literal::Keyword(key.clone()), span);
-                let keyword = self.primitive("keyword", span);
+                let keyword = self.primitive(Self::KEYWORD, span);
 
                 self.constrain(lit, keyword, diagnostics);
                 lit
@@ -75,7 +75,7 @@ impl TypeEnv {
                 [first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
                     tracing::trace!("Infering if expression");
                     let cond = self.type_term(asts, condition, diagnostics, level);
-                    let boolean = self.primitive("bool", Self::span_of(condition, asts));
+                    let boolean = self.primitive(Self::BOOLEAN, Self::span_of(condition, asts));
                     self.constrain(cond, boolean, diagnostics);
 
                     let then = self.type_term(asts, then_branch, diagnostics, level);
@@ -93,7 +93,7 @@ impl TypeEnv {
                     tracing::trace!("Infering if expression");
                     let cond = self.type_term(asts, condition, diagnostics, level);
                     tracing::trace!("Condition type: {}", cond.0);
-                    let boolean = self.primitive("bool", Self::span_of(condition, asts));
+                    let boolean = self.primitive(Self::BOOLEAN, Self::span_of(condition, asts));
                     self.constrain(cond, boolean, diagnostics);
 
                     let then = self.type_term(asts, then_branch, diagnostics, level);
@@ -195,16 +195,36 @@ impl TypeEnv {
                 [first, ref bindings @ ..]
                     if Self::is_symbols(asts, first, &["let-rec", "let*"]) =>
                 {
-                    // let mut patterns = vec![];
-                    // let mut bindings = bindings.to_vec().into_iter();
-                    // l
-
-                    // while let Some(pattern) = bindings.next() {
-                    //     let Some(value) = bindings.next() else {
-
-                    //     }
-                    // }
-                    todo!("let* {bindings:?}")
+                    let mut bounds = vec![];
+                    let (bindings, remainder) = bindings.as_chunks::<2>();
+                    if !remainder.is_empty() {
+                        let first = remainder[0];
+                        diagnostics.add_sexp(asts, first, "let*: found pattern that lacks a value");
+                    }
+                    for &[pattern, value] in bindings {
+                        let pattern = match Pattern::parse(pattern, asts) {
+                            Ok(pat) => pat,
+                            Err(err) => {
+                                diagnostics.add_sexp(
+                                    asts,
+                                    pattern,
+                                    format!("Unreadable pattern: {err}"),
+                                );
+                                continue;
+                            }
+                        };
+                        let bound = self.type_pattern(
+                            pattern.clone(),
+                            level + 1,
+                            TypeSchemeKind::Monomorphic,
+                        );
+                        bounds.push((bound, value));
+                    }
+                    for (bound, value) in bounds {
+                        let value = self.type_term(asts, value, diagnostics, level + 1);
+                        self.constrain(value, bound, diagnostics);
+                    }
+                    self.unit(span)
                 }
                 [first, _err] if Self::is_symbol(asts, first, "error") => self.error(span),
                 [first, _captured, rest] if Self::is_symbol(asts, first, "thunk") => {
