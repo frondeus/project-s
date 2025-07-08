@@ -1,5 +1,5 @@
 /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md:25
-````
+```
 (let :add-obj (macro (:key :value) 
   `(if (has? super ,key)
     '(,key (+ (super ,key) ,value))
@@ -22,15 +22,14 @@
 }))
 
 (+ left right)
-````
+```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json-002
-@@ -47,16 +47,61 @@
- (+ left right)
+@@ -48,14 +48,59 @@
  ```
  
--```json
+ ```json
 -{
 -  "another": 9.0,
 -  "key": {
@@ -39,8 +38,6 @@
 -    "c": 3.0
 -  }
 -}
--```
-+````json
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:7:12 ]
 +    │
@@ -94,7 +91,6 @@
 +   │           ╰─── Used here
 +───╯
 +
-+````
+ ```
  
  NICE
- 

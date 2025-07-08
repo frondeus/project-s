@@ -1,5 +1,5 @@
 /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md:11
-`````
+```
 (let :fix (fn (:f) (do
     (let* :result (f result))
     result
@@ -12,22 +12,19 @@
 }))
 
 (fix pkgs)
-`````
+```
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
 +++ json
-@@ -23,13 +23,27 @@
- (fix pkgs)
+@@ -24,11 +24,25 @@
  ```
  
--```json
+ ```json
 -{
 -  "a": 3.0,
 -  "b": 4.0,
 -  "c": 7.0
 -}
--```
-+```````json
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:6:24 ]
 +    │
@@ -47,7 +44,6 @@
 +    │ ╰───────── Used here
 +────╯
 +
-+```````
+ ```
  
  But do we need this fix?
- 

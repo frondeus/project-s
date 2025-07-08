@@ -183,6 +183,20 @@ where
     Ok(())
 }
 
+fn count_backticks(slice: &str) -> usize {
+    slice
+        .chars()
+        .fold((0, 0), |(max_count, current_count), c| {
+            if c == '`' {
+                let new_count = current_count + 1;
+                (max_count.max(new_count), new_count)
+            } else {
+                (max_count, 0)
+            }
+        })
+        .0
+}
+
 fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &str) -> Result<()> {
     let code = test_case.previous.get(source_name).expect("Source");
     let expected = test_case.section.expect("Expected");
@@ -193,9 +207,10 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
 
     let fenced_with_code = |slice: &str, code: CowStr<'_>| -> String {
         let (fin, fout) = {
-            let count = slice.chars().filter(|c| *c == '`').count();
+            let count = count_backticks(slice);
+            let count = if count >= 3 { count + 1 } else { 3 };
 
-            let backticks = "`".repeat(count + 3);
+            let backticks = "`".repeat(count);
             (format!("{backticks}{code}"), backticks)
         };
         format!("{fin}\n{slice}\n{fout}")
@@ -275,5 +290,19 @@ mod tests {
             "assert",
             |src: &str, _sections, _args| src.to_string(),
         )
+    }
+
+    use test_case::test_case;
+
+    #[test_case("` ` `" => 1; "1")]
+    #[test_case("` ` `" => 1; "2")]
+    #[test_case("`` 3 ``" => 2; "3")]
+    #[test_case("``` ddd ```" => 3; "4")]
+    #[test_case("``` `" => 3; "5")]
+    #[test_case("`` ``` ``" => 3; "6")]
+    #[test_case("`` ````` ``" => 5; "7")]
+    #[test_case("` `` ``` `` `" => 3; "8")]
+    fn count_backticks_test(input: &str) -> usize {
+        count_backticks(input)
     }
 }

@@ -1,5 +1,5 @@
 /Users/frondeus/Code/project-s/docs/frondeus.md:1
-```````````s
+```s
 (let :dwarf {
     :ancestry "Dwarf"
     :languages [ "Common" "Dwarvish" ]
@@ -33,7 +33,7 @@
 
 # In order to evaluate all fields before priting the JSON we use `deep-eager` here.
 (deep-eager result)
-```````````
+```
 
 --- /Users/frondeus/Code/project-s/docs/frondeus.md
 +++ json

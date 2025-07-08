@@ -1,5 +1,5 @@
 /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md:44
-`````
+```
 (let :fix (fn (:f) (do
     (let* :result (f result))
     result
@@ -12,22 +12,19 @@
 }))
 
 (fix pkgs)
-`````
+```
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/007-let-expr.md
 +++ json-003
-@@ -56,13 +56,27 @@
- (fix pkgs)
+@@ -57,11 +57,25 @@
  ```
  
--```json
+ ```json
 -{
 -  "a": 3.0,
 -  "b": 4.0,
 -  "c": 7.0
 -}
--```
-+```````json
 +Error: Undefined variable: obj/con
 +    ╭─[ <input>:6:24 ]
 +    │
@@ -47,7 +44,6 @@
 +    │ ╰───────── Used here
 +────╯
 +
-+```````
+ ```
  
  # Typechecking
- 

@@ -19,4 +19,4 @@ mono
 +('a) → 'b
  ```
  
- ```simple-type-traces trace
+ `````````````````````````````simple-type-traces trace
