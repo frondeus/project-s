@@ -1,7 +1,18 @@
 #![allow(dead_code)]
-use std::marker::PhantomData;
+use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
-struct NodeId<Node>(usize, PhantomData<Node>);
+type InnerNodeId = usize;
+
+struct GraphId<Node>(InnerNodeId, PhantomData<Node>);
+impl<T> Clone for GraphId<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<T> Copy for GraphId<T> {}
+
+struct NodeId<Node>(InnerNodeId, GraphId<Node>);
+
 impl<T> Clone for NodeId<T> {
     fn clone(&self) -> Self {
         *self
@@ -17,11 +28,50 @@ trait ToRef: Sized {
     fn to_ref<'a>(&self, graph: &'a Graph<Self>) -> Self::Ref<'a>;
 }
 
-struct Graph<Node> {
-    nodes: Vec<Node>,
+/// If one graph usually represents single tree, graphs are forest.
+struct Graphs<Node> {
+    inner: Rc<RefCell<GraphsInner<Node>>>,
+}
+impl<Node> Default for Graphs<Node> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
 }
 
-struct InnerGraph<Node> {
+struct GraphsInner<Node> {
+    graphs: Vec<Graph<Node>>,
+}
+impl<Node> Default for GraphsInner<Node> {
+    fn default() -> Self {
+        Self { graphs: Vec::new() }
+    }
+}
+
+impl<Node> GraphsInner<Node> {
+    pub fn new_graph(&mut self) -> Graph<Node> {
+        let id = GraphId(self.graphs.len(), PhantomData);
+        self.graphs.push(Graph::new(id)); // Placeholder
+        Graph::new(id)
+    }
+
+    pub fn update_graph(&mut self, graph: Graph<Node>) {
+        let id = graph.id;
+        self.graphs[id.0] = graph;
+    }
+}
+impl<Node> Graphs<Node> {
+    pub fn new_graph(&self) -> Graph<Node> {
+        self.inner.borrow_mut().new_graph()
+    }
+    pub fn update_graph(&mut self, graph: Graph<Node>) {
+        self.inner.borrow_mut().update_graph(graph);
+    }
+}
+
+struct Graph<Node> {
+    id: GraphId<Node>,
     nodes: Vec<Node>,
 }
 
@@ -44,12 +94,15 @@ impl<'a, Node> Ref<'a, Node> {
 }
 
 impl<Node> Graph<Node> {
-    fn new() -> Self {
-        Self { nodes: Vec::new() }
+    fn new(id: GraphId<Node>) -> Self {
+        Self {
+            id,
+            nodes: Vec::new(),
+        }
     }
 
     fn add(&mut self, node: Node) -> NodeId<Node> {
-        let id = NodeId(self.nodes.len(), PhantomData);
+        let id = NodeId(self.nodes.len(), self.id);
         self.nodes.push(node);
         id
     }
@@ -110,7 +163,8 @@ mod tests {
 
     #[test]
     fn test_name() {
-        let mut graph = Graph::new();
+        let graphs = Graphs::default();
+        let mut graph = graphs.new_graph();
         let leaf_id = graph.add(TestNode::Leaf);
         let branch_id = graph.add(TestNode::Branch(vec![leaf_id]));
 
