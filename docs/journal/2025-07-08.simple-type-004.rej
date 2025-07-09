@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-08.md:335
+/Users/frondeus/Code/project-s/docs/journal/2025-07-08.md:341
 ```s
 (let :fix (fn (:f) (do
     (let* :result (f result))
@@ -6,7 +6,7 @@
 )))
 
 (let :obj (fn (:self) (obj/plain
-    :a 1
+    :a "2"
     :b (thunk () (self 1))
 )))
 
@@ -15,12 +15,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-08.md
 +++ simple-type-004
-@@ -349,7 +349,7 @@
+@@ -355,7 +355,7 @@
  Yeah, its broken.
  
  ```simple-type
--{a: 1, b: 1}
-+{a: 1, b: 'a}
+-{a: "2", b: 1}
++{a: "2", b: 'a}
  ```
  
  

@@ -205,29 +205,25 @@ impl TypeEnv {
                         span: _,
                     },
                     _,
-                ) => {
-                    let lhs_lvl = self.vars[lhs_var_id.0].level;
-                    let rhs_lvl = rhs_id.level(self);
-                    tracing::trace!("Left LVL: {lhs_lvl} RIGHT LVL: {rhs_lvl}");
-                    if rhs_lvl <= lhs_lvl {
-                        let lhs_vars = &mut self.vars[lhs_var_id.0];
-                        tracing::trace!("Pushing {} to upper bounds of LHS {}", rhs_id.0, lhs_id.0);
-                        lhs_vars.upper_bounds.push(rhs_id);
-                        lhs_vars.lower_bounds.iter().copied().for_each(|lb| {
-                            tracing::trace!(
-                                "Constraint by extension of lower bound: {} :< {}",
-                                lb.0,
-                                rhs_id.0
-                            );
-                            queue.push_back((lb, rhs_id));
-                        });
-                        continue;
-                    } else {
-                        let rhs_id = self.extrude(rhs_id, Polarity::Negative, lhs_lvl);
-                        tracing::trace!("Extruded RHS ID: {}", rhs_id.0);
-                        queue.push_back((lhs_id, rhs_id));
-                        continue;
-                    }
+                ) if rhs_id.level(self) <= lhs_id.level(self) => {
+                    tracing::trace!(
+                        "RHS LVL: {} <= LHS LVL: {}",
+                        rhs_id.level(self),
+                        lhs_id.level(self),
+                    );
+
+                    let lhs_vars = &mut self.vars[lhs_var_id.0];
+                    tracing::trace!("Pushing {} to upper bounds of LHS {}", rhs_id.0, lhs_id.0);
+                    lhs_vars.upper_bounds.push(rhs_id);
+                    lhs_vars.lower_bounds.iter().copied().for_each(|lb| {
+                        tracing::trace!(
+                            "Constraint by extension of lower bound: {} :< {}",
+                            lb.0,
+                            rhs_id.0
+                        );
+                        queue.push_back((lb, rhs_id));
+                    });
+                    continue;
                 }
                 (
                     _,
@@ -235,38 +231,48 @@ impl TypeEnv {
                         id: rhs_var_id,
                         span: _,
                     },
-                ) => {
-                    let rhs_lvl = self.vars[rhs_var_id.0].level;
-                    let lhs_lvl = lhs_id.level(self);
-
-                    tracing::trace!("RHS VAR: {lhs_lvl} ? {rhs_lvl}");
-
-                    if lhs_lvl <= rhs_lvl {
-                        let rhs_vars = &mut self.vars[rhs_var_id.0];
+                ) if lhs_id.level(self) <= rhs_id.level(self) => {
+                    tracing::trace!(
+                        "LHS LVL: {} <= RHS LVL: {}",
+                        lhs_id.level(self),
+                        rhs_id.level(self)
+                    );
+                    let rhs_vars = &mut self.vars[rhs_var_id.0];
+                    tracing::trace!("Pushing {} to lower bounds of RHS: {}", lhs_id.0, rhs_id.0);
+                    rhs_vars.lower_bounds.push(lhs_id);
+                    rhs_vars.upper_bounds.iter().copied().for_each(|ub| {
                         tracing::trace!(
-                            "Pushing {} to lower bounds of RHS: {}",
+                            "Constraint by extension of upper bound: {} :< {}",
                             lhs_id.0,
-                            rhs_id.0
+                            ub.0,
                         );
-                        rhs_vars.lower_bounds.push(lhs_id);
-                        rhs_vars.upper_bounds.iter().copied().for_each(|ub| {
-                            tracing::trace!(
-                                "Constraint by extension of upper bound: {} :< {}",
-                                lhs_id.0,
-                                ub.0,
-                            );
-                            queue.push_back((lhs_id, ub));
-                        });
-                        continue;
-                    } else {
-                        let lhs_id = self.extrude(lhs_id, Polarity::Positive, rhs_lvl);
-                        tracing::trace!("Extruded LHS ID: {}", lhs_id.0);
-                        queue.push_back((lhs_id, rhs_id));
-                        continue;
-                    }
+                        queue.push_back((lhs_id, ub));
+                    });
+                    continue;
                 }
+                (&Variable { .. }, _) => {
+                    tracing::trace!("LHS VAR, extruding RHS-");
+                    let rhs_id = self.extrude(rhs_id, Polarity::Negative, lhs_id.level(self));
+                    tracing::trace!("Extruded RHS ID: {}", rhs_id.0);
+                    queue.push_back((lhs_id, rhs_id));
+                    continue;
+                }
+                (_, &Variable { .. }) => {
+                    tracing::trace!("RHS VAR, extruding LHS+");
+                    let lhs_id = self.extrude(lhs_id, Polarity::Positive, rhs_id.level(self));
+                    tracing::trace!("Extruded LHS ID: {}", lhs_id.0);
+                    queue.push_back((lhs_id, rhs_id));
+                    continue;
+                }
+
                 _ => (),
             }
+
+            tracing::error!(
+                "Type mismatch {lhs} ({}) <!: {rhs} ({})",
+                lhs_id.0,
+                rhs_id.0
+            );
 
             diagnostics
                 .add(lhs_span, "Type mismatch")
