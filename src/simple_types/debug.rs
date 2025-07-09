@@ -57,6 +57,10 @@ impl TypeEnv {
             }
         }
 
+        for &(lhs_id, rhs_id) in &self.constraints {
+            writeln!(buf, "N{rhs_id} -> N{lhs_id} [label=\"<:\";color=red];")?;
+        }
+
         writeln!(buf, "}}")?;
         Ok(())
     }

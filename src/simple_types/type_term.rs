@@ -9,9 +9,7 @@ impl TypeEnv {
         level: usize,
     ) -> InferedTypeId {
         let ty = self.type_term_inner(asts, id, diagnostics, level);
-        let infered = self.get(ty);
-        tracing::trace!("Infered ty {} : {}", ty.0, infered);
-        self.sexps.insert(id, ty);
+        self.add_sexp(asts, id, ty);
         ty
     }
 
@@ -120,7 +118,8 @@ impl TypeEnv {
                     };
 
                     self.envs.push();
-                    let pattern = self.type_pattern(pattern, level, TypeSchemeKind::Monomorphic);
+                    let pattern =
+                        self.type_pattern(asts, pattern, level, TypeSchemeKind::Monomorphic);
                     let body = self.type_term(asts, body, diagnostics, level);
                     self.envs.pop();
 
@@ -143,7 +142,8 @@ impl TypeEnv {
                     };
 
                     self.envs.push();
-                    let pattern = self.type_pattern(pattern, level, TypeSchemeKind::Monomorphic);
+                    let pattern =
+                        self.type_pattern(asts, pattern, level, TypeSchemeKind::Monomorphic);
 
                     let body = self.type_term(asts, body, diagnostics, level);
                     self.envs.pop();
@@ -188,7 +188,7 @@ impl TypeEnv {
                     } else {
                         TypeSchemeKind::Monomorphic
                     };
-                    let bound = self.type_pattern(pattern, level, scheme);
+                    let bound = self.type_pattern(asts, pattern, level, scheme);
                     self.constrain(rhs_ty, bound, diagnostics);
                     self.unit(span)
                 }
@@ -213,12 +213,18 @@ impl TypeEnv {
                                 continue;
                             }
                         };
-                        self.type_pattern(pattern.clone(), level + 1, TypeSchemeKind::Monomorphic);
+                        self.type_pattern(
+                            asts,
+                            pattern.clone(),
+                            level + 1,
+                            TypeSchemeKind::Monomorphic,
+                        );
                         patterns.push((pattern, value));
                     }
                     for (pattern, value) in patterns {
                         let value = self.type_term(asts, value, diagnostics, level + 1);
-                        let bound = self.type_pattern(pattern, level, TypeSchemeKind::Polymorphic);
+                        let bound =
+                            self.type_pattern(asts, pattern, level, TypeSchemeKind::Polymorphic);
                         self.constrain(value, bound, diagnostics);
                     }
                     self.unit(span)
@@ -341,6 +347,7 @@ impl TypeEnv {
 
     fn type_pattern(
         &mut self,
+        asts: &ASTS,
         pattern: Pattern,
         level: usize,
         scheme: TypeSchemeKind,
@@ -354,7 +361,7 @@ impl TypeEnv {
         match pattern {
             Pattern::Single(key, span, id) => {
                 let var = self.fresh_var(span, level);
-                self.add_sexp(id, var);
+                self.add_sexp(asts, id, var);
                 // self.envs.set(&key, core::Scheme::Monomorphic(value));
                 let scheme = match scheme {
                     TypeSchemeKind::Monomorphic => TypeScheme::Monomorphic(var),
@@ -368,22 +375,22 @@ impl TypeEnv {
             Pattern::List(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
-                    let bound = self.type_pattern(pattern, level, scheme);
+                    let bound = self.type_pattern(asts, pattern, level, scheme);
                     bounds.push(bound);
                 }
 
                 let tuple = self.tuple(bounds, span);
-                self.add_sexp(id, tuple)
+                self.add_sexp(asts, id, tuple)
             }
             Pattern::Object(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
-                    let bound = self.type_pattern(pattern, level, scheme);
+                    let bound = self.type_pattern(asts, pattern, level, scheme);
                     bounds.push((key, bound));
                 }
 
                 let record = self.record(bounds, None, span);
-                self.add_sexp(id, record)
+                self.add_sexp(asts, id, record)
             }
         }
     }

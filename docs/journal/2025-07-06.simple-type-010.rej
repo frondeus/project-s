@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:614
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:457
 ```s
 (let :f (fn (:x) x))
 
@@ -9,7 +9,7 @@ f
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ simple-type-010
-@@ -621,7 +621,7 @@
+@@ -464,7 +464,7 @@
  
  
  ```simple-type
@@ -17,4 +17,4 @@ f
 +('a) → 4
  ```
  
- ```````````````````simple-type-traces trace
+ ```simple-type-traces trace

@@ -33,6 +33,7 @@ impl TypeEnv {
                 continue;
             }
             self.constraint_cache.insert((lhs_id, rhs_id));
+            self.constraints.push((lhs_id, rhs_id));
             let lhs = self.get(lhs_id);
             let rhs = self.get(rhs_id);
 

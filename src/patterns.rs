@@ -5,11 +5,21 @@ use crate::{
     source::Span,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Pattern {
     Single(String, Span, SExpId),
     List(Vec<Pattern>, Span, SExpId),
     Object(HashMap<String, Pattern>, Span, SExpId),
+}
+
+impl std::fmt::Debug for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Single(name, _span, _id) => f.debug_tuple("Single").field(name).finish(),
+            Self::List(list, _span, _id) => f.debug_tuple("List").field(list).finish(),
+            Self::Object(obj, _span, _id) => f.debug_tuple("Object").field(obj).finish(),
+        }
+    }
 }
 
 impl Pattern {

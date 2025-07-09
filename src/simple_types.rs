@@ -341,6 +341,7 @@ pub struct TypeEnv {
     sexps: HashMap<SExpId, InferedTypeId>,
     envs: Envs,
     constraint_cache: HashSet<(InferedTypeId, InferedTypeId)>,
+    constraints: Vec<(InferedTypeId, InferedTypeId)>,
     types: Vec<Type>,
 }
 
@@ -534,14 +535,15 @@ mod tests {
 
                     tracing::subscriber::with_default(subscriber, move || {
                         let mut asts = ASTS::new();
-                        let (modules, source_id) = MemoryModules::from_deps(input, _deps);
+                        let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
                         let ast = asts
                             .parse(source_id, modules.sources().get(source_id))
                             .expect("Failed to parse");
 
                         let root = ast.root_id().unwrap();
 
-                        let mut env = TypeEnv::new();
+                        let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
+
                         // let mut env = TypeEnv::new(modules).with_prelude();
 
                         let prelude = prelude();

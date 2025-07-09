@@ -19,14 +19,14 @@ impl TypeEnv {
     ) -> InferedTypeId {
         let ty_level = ty.level(self);
         tracing::trace!(
-            "Extruding ID:{} ({:?}) - {} at level {}",
+            "Extruding ID:{} ({:?}) - level {} into level {}",
             ty.0,
             polarity,
             ty_level,
             level
         );
         if ty_level <= level {
-            tracing::trace!("Type level {ty_level} lower or equal than level {level}");
+            tracing::trace!("Type level {ty_level} <= level {level}");
             return ty;
         }
 
@@ -39,30 +39,62 @@ impl TypeEnv {
             &InferedType::Variable { id, span } => {
                 let tv_pol = PolarVariable { polarity, id };
                 match cache.get(&tv_pol).copied() {
-                    Some(id) => id,
+                    Some(id) => {
+                        tracing::trace!("Variable exists in cache. Reusing: {}", id.0);
+                        id
+                    }
                     None => {
                         let nvs = self.fresh_var(span, level);
                         tracing::trace!("Extruding new variable: {}", nvs.0);
                         cache.insert(tv_pol, nvs);
                         match polarity {
                             Polarity::Positive => {
+                                tracing::trace!(
+                                    "Inserting NV {} into upper bounds of VAR{}",
+                                    nvs.0,
+                                    id.0
+                                );
                                 self.vars[id.0].upper_bounds.push(nvs);
+                                tracing::trace!(
+                                    "Extruding lower bounds of VAR{}: {:?}",
+                                    id.0,
+                                    self.vars[id.0].lower_bounds
+                                );
                                 let lower_bounds = self.vars[id.0]
                                     .lower_bounds
                                     .clone()
                                     .into_iter()
                                     .map(|lb| self.extrude_inner(lb, polarity, level, cache))
                                     .collect();
+                                tracing::trace!(
+                                    "Updating lower bounds of NV {} with extruded {lower_bounds:?}",
+                                    nvs.0
+                                );
                                 self.vars_of(nvs).lower_bounds = lower_bounds;
                             }
                             Polarity::Negative => {
+                                tracing::trace!(
+                                    "Inserting NV {} into lower bounds of VAR{}",
+                                    nvs.0,
+                                    id.0
+                                );
                                 self.vars[id.0].lower_bounds.push(nvs);
+
+                                tracing::trace!(
+                                    "Extruding upper bounds of VAR{}: {:?}",
+                                    id.0,
+                                    self.vars[id.0].upper_bounds
+                                );
                                 let upper_bounds = self.vars[id.0]
                                     .upper_bounds
                                     .clone()
                                     .into_iter()
                                     .map(|ub| self.extrude_inner(ub, polarity, level, cache))
                                     .collect();
+                                tracing::trace!(
+                                    "Updating upper bounds of NV {} with extruded {upper_bounds:?}",
+                                    nvs.0
+                                );
                                 self.vars_of(nvs).upper_bounds = upper_bounds;
                             }
                         }

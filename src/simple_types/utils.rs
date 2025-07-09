@@ -77,15 +77,20 @@ impl TypeEnv {
         })
     }
 
-    pub(crate) fn add_sexp(&mut self, sexp: SExpId, infered: InferedTypeId) -> InferedTypeId {
-        tracing::trace!("Adding sexp {sexp:?} with infered {infered}");
+    pub(crate) fn add_sexp(
+        &mut self,
+        asts: &ASTS,
+        sexp: SExpId,
+        infered: InferedTypeId,
+    ) -> InferedTypeId {
+        tracing::trace!("`{}` with type N{infered}", asts.fmt(sexp));
         self.sexps.insert(sexp, infered);
         infered
     }
 
     pub(crate) fn add_infered(&mut self, infered: InferedType) -> InferedTypeId {
         let id = self.infered.len();
-        tracing::trace!("Adding infered {infered} as {id}: {infered:?}");
+        tracing::trace!("Adding infered {infered} as N{id}: {infered:?}");
         self.infered.push(infered);
         InferedTypeId(id)
     }
