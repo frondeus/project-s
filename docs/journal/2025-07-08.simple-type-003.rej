@@ -1,0 +1,21 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-08.md:240
+```s
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+fix
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-08.md
++++ simple-type-003
+@@ -247,7 +247,7 @@
+ ```
+ 
+ ```simple-type
+-(('a) -?-> 'b) → 'c
++(('a) -?-> 'b) → 'b
+ ```
+ 
+ ```type

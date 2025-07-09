@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:707
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:898
 ```s
 (let :poly (fn (:x) x))
 
@@ -9,7 +9,7 @@ poly
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ simple-type-011
-@@ -713,7 +713,7 @@
+@@ -904,7 +904,7 @@
  ```
  
  ```simple-type

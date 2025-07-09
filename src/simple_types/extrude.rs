@@ -113,10 +113,11 @@ impl TypeEnv {
                 first_arg,
                 span,
             } => {
-                let arg = self.extrude_inner(arg, polarity, level, cache);
+                let arg = self.extrude_inner(arg, polarity.negate(), level, cache);
                 let ret = self.extrude_inner(ret, polarity, level, cache);
-                let first_arg = first_arg
-                    .map(|first_arg| self.extrude_inner(first_arg, polarity, level, cache));
+                let first_arg = first_arg.map(|first_arg| {
+                    self.extrude_inner(first_arg, polarity.negate(), level, cache)
+                });
                 self.applicative(arg, ret, first_arg, span)
             }
             &InferedType::Tuple { ref items, span } => {

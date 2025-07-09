@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-08.md:341
+/Users/frondeus/Code/project-s/docs/journal/2025-07-08.md:335
 ```s
 (let :fix (fn (:f) (do
     (let* :result (f result))
@@ -15,7 +15,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-08.md
 +++ simple-type-004
-@@ -355,7 +355,7 @@
+@@ -349,7 +349,7 @@
  Yeah, its broken.
  
  ```simple-type
