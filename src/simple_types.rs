@@ -362,17 +362,9 @@ enum TypeScheme {
 
 enum TypeSchemeKind {
     Monomorphic,
-    Polymorphic,
+    Polymorphic { level: usize },
 }
 
-impl TypeScheme {
-    fn instantiate(&self, type_env: &mut TypeEnv, level: usize) -> InferedTypeId {
-        match self {
-            TypeScheme::Monomorphic(id) => *id,
-            TypeScheme::Polymorphic(poly) => poly.freshen_above(type_env, level),
-        }
-    }
-}
 impl WithLevel for TypeScheme {
     fn level(&self, type_env: &TypeEnv) -> usize {
         match self {

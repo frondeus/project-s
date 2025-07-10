@@ -1,16 +1,31 @@
 use super::*;
 
+impl TypeScheme {
+    pub(crate) fn instantiate(&self, type_env: &mut TypeEnv, level: usize) -> InferedTypeId {
+        match self {
+            TypeScheme::Monomorphic(id) => *id,
+            TypeScheme::Polymorphic(poly) => {
+                PolymorphicType::freshen_above(type_env, poly.level, poly.body, level)
+            }
+        }
+    }
+}
+
 impl PolymorphicType {
-    pub fn freshen_above(&self, type_env: &mut TypeEnv, level: usize) -> InferedTypeId {
+    pub fn freshen_above(
+        type_env: &mut TypeEnv,
+        limit: usize,
+        ty: InferedTypeId,
+        level: usize,
+    ) -> InferedTypeId {
         let mut freshened = HashMap::new();
+
         tracing::trace!(
-            "Freshen above: limit: {}; level: {}; body: {}",
-            self.level,
-            level,
-            self.body.0
+            "Freshen above: Limit: {limit} ; TY: N{} ; LVL {level}",
+            ty.0
         );
-        let res = Self::freshen(type_env, self.body, self.level, level, &mut freshened);
-        tracing::trace!("Freshened: {} -> {}", self.body.0, res.0);
+        let res = Self::freshen(type_env, ty, limit, level, &mut freshened);
+        tracing::trace!("Freshened: {} -> {}", ty.0, res.0);
 
         res
     }
@@ -24,11 +39,8 @@ impl PolymorphicType {
     ) -> InferedTypeId {
         let ty_level = ty.level(type_env);
         tracing::trace!(
-            "Freshening {} - {} with limit {}, level {}",
+            "Freshening N{} - lvl {ty_level} ; limit {limit} ; level {level}",
             ty.0,
-            ty_level,
-            limit,
-            level
         );
         if ty_level <= limit {
             tracing::trace!(

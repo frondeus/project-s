@@ -194,12 +194,17 @@ impl TypeEnv {
                     };
                     let rhs_ty = self.type_term(asts, value, diagnostics, level + 1);
                     let scheme = if Self::is_expression_value(value, asts) {
-                        TypeSchemeKind::Polymorphic
+                        TypeSchemeKind::Polymorphic { level }
                     } else {
                         TypeSchemeKind::Monomorphic
                     };
-                    let bound =
-                        self.type_pattern(asts, pattern, level, scheme, &mut Default::default());
+                    let bound = self.type_pattern(
+                        asts,
+                        pattern,
+                        level + 1,
+                        scheme,
+                        &mut Default::default(),
+                    );
                     self.constrain(rhs_ty, bound, diagnostics);
                     self.unit(span)
                 }
@@ -383,7 +388,7 @@ impl TypeEnv {
                 // self.envs.set(&key, core::Scheme::Monomorphic(value));
                 let scheme = match scheme {
                     TypeSchemeKind::Monomorphic => TypeScheme::Monomorphic(var),
-                    TypeSchemeKind::Polymorphic => {
+                    TypeSchemeKind::Polymorphic { level } => {
                         TypeScheme::Polymorphic(PolymorphicType { level, body: var })
                     }
                 };

@@ -10,312 +10,223 @@ TRACE project_s::simple_types::utils: Adding infered variable as N6: Variable { 
 TRACE project_s::simple_types::utils: Adding infered tuple as N7: Tuple { items: [InferedTypeId(5), InferedTypeId(6)] }
 TRACE project_s::simple_types::utils: Adding infered bool as N8: Primitive { name: "bool" }
 TRACE project_s::simple_types::utils: Adding infered function as N9: Function { lhs: InferedTypeId(7), rhs: InferedTypeId(8) }
-TRACE project_s::lambda_lifting: free var: self
-TRACE project_s::simple_types::type_term: Infering `(do (let :fix (fn (:f) (do (let* :result (f result)) result))) (let :obj (fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1))))) (fix obj))` level 0
+TRACE project_s::simple_types::type_term: Infering `(do (let :f (fn (:x) x)) (f 4) f)` level 0
 TRACE project_s::simple_types::type_term: Infering do expression
-TRACE project_s::simple_types::type_term: Infering `(let :fix (fn (:f) (do (let* :result (f result)) result)))` level 0
+TRACE project_s::simple_types::type_term: Infering `(let :f (fn (:x) x))` level 0
 TRACE project_s::simple_types::type_term: Infering let expression
-TRACE project_s::simple_types::type_term: Infering `(fn (:f) (do (let* :result (f result)) result))` level 1
+TRACE project_s::simple_types::type_term: Infering `(fn (:x) x)` level 1
 TRACE project_s::simple_types::type_term: Infering function expression
-TRACE project_s::simple_types::type_term: Infering pattern: List([Single("f")]) - 1 lvl Monomorphic
-TRACE project_s::simple_types::type_term: Infering pattern: Single("f") - 1 lvl Monomorphic
+TRACE project_s::simple_types::type_term: Infering pattern: List([Single("x")]) - 1 lvl Monomorphic
+TRACE project_s::simple_types::type_term: Infering pattern: Single("x") - 1 lvl Monomorphic
 TRACE project_s::simple_types::utils: Adding fresh variable 2 with level 1
 TRACE project_s::simple_types::utils: Adding infered variable as N10: Variable { id: VarId(2) }
-TRACE project_s::simple_types::utils: `:f` with type N10
+TRACE project_s::simple_types::utils: `:x` with type N10
 TRACE project_s::simple_types::utils: Adding infered tuple as N11: Tuple { items: [InferedTypeId(10)] }
-TRACE project_s::simple_types::utils: `(:f)` with type N11
-TRACE project_s::simple_types::type_term: Infering `(do (let* :result (f result)) result)` level 1
-TRACE project_s::simple_types::type_term: Infering do expression
-TRACE project_s::simple_types::type_term: Infering `(let* :result (f result))` level 1
-TRACE project_s::simple_types::type_term: Infering pattern: Single("result") - 2 lvl Monomorphic
-TRACE project_s::simple_types::utils: Adding fresh variable 3 with level 2
-TRACE project_s::simple_types::utils: Adding infered variable as N12: Variable { id: VarId(3) }
-TRACE project_s::simple_types::utils: `:result` with type N12
-TRACE project_s::simple_types::type_term: Infering `(f result)` level 2
-TRACE project_s::simple_types::type_term: Infering application call
-TRACE project_s::simple_types::type_term: Infering `f` level 2
-TRACE project_s::simple_types::utils: `f` with type N10
-TRACE project_s::simple_types::type_term: Infering `result` level 2
-TRACE project_s::simple_types::utils: `result` with type N12
-TRACE project_s::simple_types::utils: Adding fresh variable 4 with level 2
-TRACE project_s::simple_types::utils: Adding infered variable as N13: Variable { id: VarId(4) }
-TRACE project_s::simple_types::utils: Adding infered tuple as N14: Tuple { items: [InferedTypeId(12)] }
-TRACE project_s::simple_types::utils: Adding infered applicative as N15: Applicative { arg: InferedTypeId(14), ret: InferedTypeId(13), first_arg: Some(InferedTypeId(12)) }
-TRACE project_s::simple_types::constrain: Constraining (10 <: 15): variable <: applicative
-TRACE project_s::simple_types::constrain: LHS VAR, extruding RHS-
-TRACE project_s::simple_types::extrude: Extruding ID:15 (Negative) - level 2 into level 1
-TRACE project_s::simple_types::extrude: Extruding Type: Applicative { arg: InferedTypeId(14), ret: InferedTypeId(13), first_arg: Some(InferedTypeId(12)) }
-TRACE project_s::simple_types::extrude: Extruding ID:14 (Positive) - level 2 into level 1
-TRACE project_s::simple_types::extrude: Extruding Type: Tuple { items: [InferedTypeId(12)] }
-TRACE project_s::simple_types::extrude: Extruding ID:12 (Positive) - level 2 into level 1
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(3) }
-TRACE project_s::simple_types::utils: Adding fresh variable 5 with level 1
-TRACE project_s::simple_types::utils: Adding infered variable as N16: Variable { id: VarId(5) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 16
-TRACE project_s::simple_types::extrude: Inserting NV 16 into upper bounds of VAR3
-TRACE project_s::simple_types::extrude: Extruding lower bounds of VAR3: []
-TRACE project_s::simple_types::extrude: Updating lower bounds of NV 16 with extruded []
-TRACE project_s::simple_types::utils: Adding infered tuple as N17: Tuple { items: [InferedTypeId(16)] }
-TRACE project_s::simple_types::extrude: Extruding ID:13 (Negative) - level 2 into level 1
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(4) }
-TRACE project_s::simple_types::utils: Adding fresh variable 6 with level 1
-TRACE project_s::simple_types::utils: Adding infered variable as N18: Variable { id: VarId(6) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 18
-TRACE project_s::simple_types::extrude: Inserting NV 18 into lower bounds of VAR4
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR4: []
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 18 with extruded []
-TRACE project_s::simple_types::extrude: Extruding ID:12 (Positive) - level 2 into level 1
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(3) }
-TRACE project_s::simple_types::extrude: Variable exists in cache. Reusing: 16
-TRACE project_s::simple_types::utils: Adding infered applicative as N19: Applicative { arg: InferedTypeId(17), ret: InferedTypeId(18), first_arg: Some(InferedTypeId(16)) }
-TRACE project_s::simple_types::constrain: Extruded RHS ID: 19
-TRACE project_s::simple_types::constrain: Constraining (10 <: 19): variable <: applicative
-TRACE project_s::simple_types::constrain: RHS LVL: 1 <= LHS LVL: 1
-TRACE project_s::simple_types::constrain: Pushing 19 to upper bounds of LHS 10
-TRACE project_s::simple_types::utils: `(f result)` with type N13
-TRACE project_s::simple_types::type_term: Infering pattern: Single("result") - 1 lvl Polymorphic
-TRACE project_s::simple_types::utils: Adding fresh variable 7 with level 1
-TRACE project_s::simple_types::utils: Adding infered variable as N20: Variable { id: VarId(7) }
-TRACE project_s::simple_types::utils: `:result` with type N20
-TRACE project_s::simple_types::constrain: Constraining (13 <: 20): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 1 <= LHS LVL: 2
-TRACE project_s::simple_types::constrain: Pushing 20 to upper bounds of LHS 13
-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 18 :< 20
-TRACE project_s::simple_types::constrain: Constraining (18 <: 20): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 1 <= LHS LVL: 1
-TRACE project_s::simple_types::constrain: Pushing 20 to upper bounds of LHS 18
-TRACE project_s::simple_types::utils: Adding infered tuple as N21: Tuple { items: [] }
-TRACE project_s::simple_types::utils: `(let* :result (f result))` with type N21
-TRACE project_s::simple_types::type_term: Infering `result` level 1
-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 1; level: 1; body: 20
-TRACE project_s::simple_types::freshen_above: Freshening 20 - 1 with limit 1, level 1
-TRACE project_s::simple_types::freshen_above: Type level 1 lower or equal than limit 1
-TRACE project_s::simple_types::freshen_above: Freshened: 20 -> 20
-TRACE project_s::simple_types::utils: `result` with type N20
-TRACE project_s::simple_types::utils: `(do (let* :result (f result)) result)` with type N20
-TRACE project_s::simple_types::utils: Adding infered function as N22: Function { lhs: InferedTypeId(11), rhs: InferedTypeId(20) }
-TRACE project_s::simple_types::utils: `(fn (:f) (do (let* :result (f result)) result))` with type N22
-TRACE project_s::simple_types::type_term: Infering pattern: Single("fix") - 0 lvl Polymorphic
-TRACE project_s::simple_types::utils: Adding fresh variable 8 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N23: Variable { id: VarId(8) }
-TRACE project_s::simple_types::utils: `:fix` with type N23
-TRACE project_s::simple_types::constrain: Constraining (22 <: 23): function <: variable
+TRACE project_s::simple_types::utils: `(:x)` with type N11
+TRACE project_s::simple_types::type_term: Infering `x` level 1
+TRACE project_s::simple_types::utils: `x` with type N10
+TRACE project_s::simple_types::utils: Adding infered function as N12: Function { lhs: InferedTypeId(11), rhs: InferedTypeId(10) }
+TRACE project_s::simple_types::utils: `(fn (:x) x)` with type N12
+TRACE project_s::simple_types::type_term: Infering pattern: Single("f") - 0 lvl Polymorphic
+TRACE project_s::simple_types::utils: Adding fresh variable 3 with level 0
+TRACE project_s::simple_types::utils: Adding infered variable as N13: Variable { id: VarId(3) }
+TRACE project_s::simple_types::utils: `:f` with type N13
+TRACE project_s::simple_types::constrain: Constraining (12 <: 13): function <: variable
 TRACE project_s::simple_types::constrain: RHS VAR, extruding LHS+
-TRACE project_s::simple_types::extrude: Extruding ID:22 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Function { lhs: InferedTypeId(11), rhs: InferedTypeId(20) }
+TRACE project_s::simple_types::extrude: Extruding ID:12 (Positive) - level 1 into level 0
+TRACE project_s::simple_types::extrude: Extruding Type: Function { lhs: InferedTypeId(11), rhs: InferedTypeId(10) }
 TRACE project_s::simple_types::extrude: Extruding ID:11 (Negative) - level 1 into level 0
 TRACE project_s::simple_types::extrude: Extruding Type: Tuple { items: [InferedTypeId(10)] }
 TRACE project_s::simple_types::extrude: Extruding ID:10 (Negative) - level 1 into level 0
 TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(2) }
-TRACE project_s::simple_types::utils: Adding fresh variable 9 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N24: Variable { id: VarId(9) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 24
-TRACE project_s::simple_types::extrude: Inserting NV 24 into lower bounds of VAR2
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR2: [InferedTypeId(19)]
-TRACE project_s::simple_types::extrude: Extruding ID:19 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Applicative { arg: InferedTypeId(17), ret: InferedTypeId(18), first_arg: Some(InferedTypeId(16)) }
-TRACE project_s::simple_types::extrude: Extruding ID:17 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Tuple { items: [InferedTypeId(16)] }
-TRACE project_s::simple_types::extrude: Extruding ID:16 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(5) }
-TRACE project_s::simple_types::utils: Adding fresh variable 10 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N25: Variable { id: VarId(10) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 25
-TRACE project_s::simple_types::extrude: Inserting NV 25 into upper bounds of VAR5
-TRACE project_s::simple_types::extrude: Extruding lower bounds of VAR5: []
-TRACE project_s::simple_types::extrude: Updating lower bounds of NV 25 with extruded []
-TRACE project_s::simple_types::utils: Adding infered tuple as N26: Tuple { items: [InferedTypeId(25)] }
-TRACE project_s::simple_types::extrude: Extruding ID:18 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(6) }
-TRACE project_s::simple_types::utils: Adding fresh variable 11 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N27: Variable { id: VarId(11) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 27
-TRACE project_s::simple_types::extrude: Inserting NV 27 into lower bounds of VAR6
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR6: [InferedTypeId(20)]
-TRACE project_s::simple_types::extrude: Extruding ID:20 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(7) }
-TRACE project_s::simple_types::utils: Adding fresh variable 12 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N28: Variable { id: VarId(12) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 28
-TRACE project_s::simple_types::extrude: Inserting NV 28 into lower bounds of VAR7
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR7: []
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 28 with extruded []
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 27 with extruded [InferedTypeId(28)]
-TRACE project_s::simple_types::extrude: Extruding ID:16 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(5) }
-TRACE project_s::simple_types::extrude: Variable exists in cache. Reusing: 25
-TRACE project_s::simple_types::utils: Adding infered applicative as N29: Applicative { arg: InferedTypeId(26), ret: InferedTypeId(27), first_arg: Some(InferedTypeId(25)) }
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 24 with extruded [InferedTypeId(29)]
-TRACE project_s::simple_types::utils: Adding infered tuple as N30: Tuple { items: [InferedTypeId(24)] }
-TRACE project_s::simple_types::extrude: Extruding ID:20 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(7) }
-TRACE project_s::simple_types::utils: Adding fresh variable 13 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N31: Variable { id: VarId(13) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 31
-TRACE project_s::simple_types::extrude: Inserting NV 31 into upper bounds of VAR7
-TRACE project_s::simple_types::extrude: Extruding lower bounds of VAR7: [InferedTypeId(28)]
-TRACE project_s::simple_types::extrude: Extruding ID:28 (Positive) - level 0 into level 0
+TRACE project_s::simple_types::utils: Adding fresh variable 4 with level 0
+TRACE project_s::simple_types::utils: Adding infered variable as N14: Variable { id: VarId(4) }
+TRACE project_s::simple_types::extrude: Extruding new variable: 14
+TRACE project_s::simple_types::extrude: Inserting NV 14 into lower bounds of VAR2
+TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR2: []
+TRACE project_s::simple_types::extrude: Updating upper bounds of NV 14 with extruded []
+TRACE project_s::simple_types::utils: Adding infered tuple as N15: Tuple { items: [InferedTypeId(14)] }
+TRACE project_s::simple_types::extrude: Extruding ID:10 (Positive) - level 1 into level 0
+TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(2) }
+TRACE project_s::simple_types::utils: Adding fresh variable 5 with level 0
+TRACE project_s::simple_types::utils: Adding infered variable as N16: Variable { id: VarId(5) }
+TRACE project_s::simple_types::extrude: Extruding new variable: 16
+TRACE project_s::simple_types::extrude: Inserting NV 16 into upper bounds of VAR2
+TRACE project_s::simple_types::extrude: Extruding lower bounds of VAR2: [InferedTypeId(14)]
+TRACE project_s::simple_types::extrude: Extruding ID:14 (Positive) - level 0 into level 0
 TRACE project_s::simple_types::extrude: Type level 0 <= level 0
-TRACE project_s::simple_types::extrude: Updating lower bounds of NV 31 with extruded [InferedTypeId(28)]
-TRACE project_s::simple_types::utils: Adding infered function as N32: Function { lhs: InferedTypeId(30), rhs: InferedTypeId(31) }
-TRACE project_s::simple_types::constrain: Extruded LHS ID: 32
-TRACE project_s::simple_types::constrain: Constraining (32 <: 23): function <: variable
+TRACE project_s::simple_types::extrude: Updating lower bounds of NV 16 with extruded [InferedTypeId(14)]
+TRACE project_s::simple_types::utils: Adding infered function as N17: Function { lhs: InferedTypeId(15), rhs: InferedTypeId(16) }
+TRACE project_s::simple_types::constrain: Extruded LHS ID: 17
+TRACE project_s::simple_types::constrain: Constraining (17 <: 13): function <: variable
 TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 32 to lower bounds of RHS: 23
-TRACE project_s::simple_types::utils: Adding infered tuple as N33: Tuple { items: [] }
-TRACE project_s::simple_types::utils: `(let :fix (fn (:f) (do (let* :result (f result)) result)))` with type N33
-TRACE project_s::simple_types::type_term: Infering `(let :obj (fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1)))))` level 0
-TRACE project_s::simple_types::type_term: Infering let expression
-TRACE project_s::simple_types::type_term: Infering `(fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1))))` level 1
-TRACE project_s::simple_types::type_term: Infering function expression
-TRACE project_s::simple_types::type_term: Infering pattern: List([Single("self")]) - 1 lvl Monomorphic
-TRACE project_s::simple_types::type_term: Infering pattern: Single("self") - 1 lvl Monomorphic
-TRACE project_s::simple_types::utils: Adding fresh variable 14 with level 1
-TRACE project_s::simple_types::utils: Adding infered variable as N34: Variable { id: VarId(14) }
-TRACE project_s::simple_types::utils: `:self` with type N34
-TRACE project_s::simple_types::utils: Adding infered tuple as N35: Tuple { items: [InferedTypeId(34)] }
-TRACE project_s::simple_types::utils: `(:self)` with type N35
-TRACE project_s::simple_types::type_term: Infering `(obj/plain :a "2" :b (thunk (self) (self 1)))` level 1
-TRACE project_s::simple_types::type_term: Infering record expression
-TRACE project_s::simple_types::type_term: Infering `"2"` level 1
-TRACE project_s::simple_types::utils: Adding infered "2" as N36: Literal { value: String("2") }
-TRACE project_s::simple_types::utils: Adding infered string as N37: Primitive { name: "string" }
-TRACE project_s::simple_types::constrain: Constraining (36 <: 37): "2" <: string
-TRACE project_s::simple_types::utils: `"2"` with type N36
-TRACE project_s::simple_types::type_term: Infering `(thunk (self) (self 1))` level 1
-TRACE project_s::simple_types::type_term: Infering thunk expression
-TRACE project_s::simple_types::type_term: Infering `(self 1)` level 1
+TRACE project_s::simple_types::constrain: Pushing 17 to lower bounds of RHS: 13
+TRACE project_s::simple_types::utils: Adding infered tuple as N18: Tuple { items: [] }
+TRACE project_s::simple_types::utils: `(let :f (fn (:x) x))` with type N18
+TRACE project_s::simple_types::type_term: Infering `(f 4)` level 0
 TRACE project_s::simple_types::type_term: Infering application call
-TRACE project_s::simple_types::type_term: Infering `self` level 1
-TRACE project_s::simple_types::utils: `self` with type N34
-TRACE project_s::simple_types::type_term: Infering `1` level 1
-TRACE project_s::simple_types::utils: Adding infered 1 as N38: Literal { value: Number(1.0) }
-TRACE project_s::simple_types::utils: Adding infered number as N39: Primitive { name: "number" }
-TRACE project_s::simple_types::constrain: Constraining (38 <: 39): 1 <: number
-TRACE project_s::simple_types::utils: `1` with type N38
-TRACE project_s::simple_types::utils: Adding fresh variable 15 with level 1
-TRACE project_s::simple_types::utils: Adding infered variable as N40: Variable { id: VarId(15) }
-TRACE project_s::simple_types::utils: Adding infered tuple as N41: Tuple { items: [InferedTypeId(38)] }
-TRACE project_s::simple_types::utils: Adding infered applicative as N42: Applicative { arg: InferedTypeId(41), ret: InferedTypeId(40), first_arg: Some(InferedTypeId(38)) }
-TRACE project_s::simple_types::constrain: Constraining (34 <: 42): variable <: applicative
-TRACE project_s::simple_types::constrain: RHS LVL: 1 <= LHS LVL: 1
-TRACE project_s::simple_types::constrain: Pushing 42 to upper bounds of LHS 34
-TRACE project_s::simple_types::utils: `(self 1)` with type N40
-TRACE project_s::simple_types::utils: `(thunk (self) (self 1))` with type N40
-TRACE project_s::simple_types::utils: Adding infered record as N43: Record { fields: [("a", InferedTypeId(36)), ("b", InferedTypeId(40))], proto: None }
-TRACE project_s::simple_types::utils: `(obj/plain :a "2" :b (thunk (self) (self 1)))` with type N43
-TRACE project_s::simple_types::utils: Adding infered function as N44: Function { lhs: InferedTypeId(35), rhs: InferedTypeId(43) }
-TRACE project_s::simple_types::utils: `(fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1))))` with type N44
-TRACE project_s::simple_types::type_term: Infering pattern: Single("obj") - 0 lvl Polymorphic
-TRACE project_s::simple_types::utils: Adding fresh variable 16 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N45: Variable { id: VarId(16) }
-TRACE project_s::simple_types::utils: `:obj` with type N45
-TRACE project_s::simple_types::constrain: Constraining (44 <: 45): function <: variable
-TRACE project_s::simple_types::constrain: RHS VAR, extruding LHS+
-TRACE project_s::simple_types::extrude: Extruding ID:44 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Function { lhs: InferedTypeId(35), rhs: InferedTypeId(43) }
-TRACE project_s::simple_types::extrude: Extruding ID:35 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Tuple { items: [InferedTypeId(34)] }
-TRACE project_s::simple_types::extrude: Extruding ID:34 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(14) }
-TRACE project_s::simple_types::utils: Adding fresh variable 17 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N46: Variable { id: VarId(17) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 46
-TRACE project_s::simple_types::extrude: Inserting NV 46 into lower bounds of VAR14
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR14: [InferedTypeId(42)]
-TRACE project_s::simple_types::extrude: Extruding ID:42 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Applicative { arg: InferedTypeId(41), ret: InferedTypeId(40), first_arg: Some(InferedTypeId(38)) }
-TRACE project_s::simple_types::extrude: Extruding ID:41 (Positive) - level 0 into level 0
-TRACE project_s::simple_types::extrude: Type level 0 <= level 0
-TRACE project_s::simple_types::extrude: Extruding ID:40 (Negative) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(15) }
-TRACE project_s::simple_types::utils: Adding fresh variable 18 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N47: Variable { id: VarId(18) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 47
-TRACE project_s::simple_types::extrude: Inserting NV 47 into lower bounds of VAR15
-TRACE project_s::simple_types::extrude: Extruding upper bounds of VAR15: []
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 47 with extruded []
-TRACE project_s::simple_types::extrude: Extruding ID:38 (Positive) - level 0 into level 0
-TRACE project_s::simple_types::extrude: Type level 0 <= level 0
-TRACE project_s::simple_types::utils: Adding infered applicative as N48: Applicative { arg: InferedTypeId(41), ret: InferedTypeId(47), first_arg: Some(InferedTypeId(38)) }
-TRACE project_s::simple_types::extrude: Updating upper bounds of NV 46 with extruded [InferedTypeId(48)]
-TRACE project_s::simple_types::utils: Adding infered tuple as N49: Tuple { items: [InferedTypeId(46)] }
-TRACE project_s::simple_types::extrude: Extruding ID:43 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Record { fields: [("a", InferedTypeId(36)), ("b", InferedTypeId(40))], proto: None }
-TRACE project_s::simple_types::extrude: Extruding ID:36 (Positive) - level 0 into level 0
-TRACE project_s::simple_types::extrude: Type level 0 <= level 0
-TRACE project_s::simple_types::extrude: Extruding ID:40 (Positive) - level 1 into level 0
-TRACE project_s::simple_types::extrude: Extruding Type: Variable { id: VarId(15) }
-TRACE project_s::simple_types::utils: Adding fresh variable 19 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N50: Variable { id: VarId(19) }
-TRACE project_s::simple_types::extrude: Extruding new variable: 50
-TRACE project_s::simple_types::extrude: Inserting NV 50 into upper bounds of VAR15
-TRACE project_s::simple_types::extrude: Extruding lower bounds of VAR15: [InferedTypeId(47)]
-TRACE project_s::simple_types::extrude: Extruding ID:47 (Positive) - level 0 into level 0
-TRACE project_s::simple_types::extrude: Type level 0 <= level 0
-TRACE project_s::simple_types::extrude: Updating lower bounds of NV 50 with extruded [InferedTypeId(47)]
-TRACE project_s::simple_types::utils: Adding infered record as N51: Record { fields: [("a", InferedTypeId(36)), ("b", InferedTypeId(50))], proto: None }
-TRACE project_s::simple_types::utils: Adding infered function as N52: Function { lhs: InferedTypeId(49), rhs: InferedTypeId(51) }
-TRACE project_s::simple_types::constrain: Extruded LHS ID: 52
-TRACE project_s::simple_types::constrain: Constraining (52 <: 45): function <: variable
-TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 52 to lower bounds of RHS: 45
-TRACE project_s::simple_types::utils: Adding infered tuple as N53: Tuple { items: [] }
-TRACE project_s::simple_types::utils: `(let :obj (fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1)))))` with type N53
-TRACE project_s::simple_types::type_term: Infering `(fix obj)` level 0
-TRACE project_s::simple_types::type_term: Infering application call
-TRACE project_s::simple_types::type_term: Infering `fix` level 0
-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 0; level: 0; body: 23
-TRACE project_s::simple_types::freshen_above: Freshening 23 - 0 with limit 0, level 0
+TRACE project_s::simple_types::type_term: Infering `f` level 0
+TRACE project_s::simple_types::freshen_above: Freshen above: limit: 0; level: 0; body: 13
+TRACE project_s::simple_types::freshen_above: Freshening 13 - 0 with limit 0, level 0
 TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
-TRACE project_s::simple_types::freshen_above: Freshened: 23 -> 23
-TRACE project_s::simple_types::utils: `fix` with type N23
-TRACE project_s::simple_types::type_term: Infering `obj` level 0
-TRACE project_s::simple_types::freshen_above: Freshen above: limit: 0; level: 0; body: 45
-TRACE project_s::simple_types::freshen_above: Freshening 45 - 0 with limit 0, level 0
+TRACE project_s::simple_types::freshen_above: Freshened: 13 -> 13
+TRACE project_s::simple_types::utils: `f` with type N13
+TRACE project_s::simple_types::type_term: Infering `4` level 0
+TRACE project_s::simple_types::utils: Adding infered 4 as N19: Literal { value: Number(4.0) }
+TRACE project_s::simple_types::utils: Adding infered number as N20: Primitive { name: "number" }
+TRACE project_s::simple_types::constrain: Constraining (19 <: 20): 4 <: number
+TRACE project_s::simple_types::utils: `4` with type N19
+TRACE project_s::simple_types::utils: Adding fresh variable 6 with level 0
+TRACE project_s::simple_types::utils: Adding infered variable as N21: Variable { id: VarId(6) }
+TRACE project_s::simple_types::utils: Adding infered tuple as N22: Tuple { items: [InferedTypeId(19)] }
+TRACE project_s::simple_types::utils: Adding infered applicative as N23: Applicative { arg: InferedTypeId(22), ret: InferedTypeId(21), first_arg: Some(InferedTypeId(19)) }
+TRACE project_s::simple_types::constrain: Constraining (13 <: 23): variable <: applicative
+TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
+TRACE project_s::simple_types::constrain: Pushing 23 to upper bounds of LHS 13
+TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 17 :< 23
+TRACE project_s::simple_types::constrain: Constraining (17 <: 23): function <: applicative
+TRACE project_s::simple_types::constrain: Constraining (22 <: 15): tuple <: tuple
+TRACE project_s::simple_types::constrain: Constraining (16 <: 21): variable <: variable
+TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
+TRACE project_s::simple_types::constrain: Pushing 21 to upper bounds of LHS 16
+TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 14 :< 21
+TRACE project_s::simple_types::constrain: Constraining (19 <: 14): 4 <: variable
+TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
+TRACE project_s::simple_types::constrain: Pushing 19 to lower bounds of RHS: 14
+TRACE project_s::simple_types::constrain: Constraining (14 <: 21): variable <: variable
+TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
+TRACE project_s::simple_types::constrain: Pushing 21 to upper bounds of LHS 14
+TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 19 :< 21
+TRACE project_s::simple_types::constrain: Constraining (19 <: 21): 4 <: variable
+TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
+TRACE project_s::simple_types::constrain: Pushing 19 to lower bounds of RHS: 21
+TRACE project_s::simple_types::utils: `(f 4)` with type N21
+TRACE project_s::simple_types::type_term: Infering `f` level 0
+TRACE project_s::simple_types::freshen_above: Freshen above: limit: 0; level: 0; body: 13
+TRACE project_s::simple_types::freshen_above: Freshening 13 - 0 with limit 0, level 0
 TRACE project_s::simple_types::freshen_above: Type level 0 lower or equal than limit 0
-TRACE project_s::simple_types::freshen_above: Freshened: 45 -> 45
-TRACE project_s::simple_types::utils: `obj` with type N45
-TRACE project_s::simple_types::utils: Adding fresh variable 20 with level 0
-TRACE project_s::simple_types::utils: Adding infered variable as N54: Variable { id: VarId(20) }
-TRACE project_s::simple_types::utils: Adding infered tuple as N55: Tuple { items: [InferedTypeId(45)] }
-TRACE project_s::simple_types::utils: Adding infered applicative as N56: Applicative { arg: InferedTypeId(55), ret: InferedTypeId(54), first_arg: Some(InferedTypeId(45)) }
-TRACE project_s::simple_types::constrain: Constraining (23 <: 56): variable <: applicative
-TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 56 to upper bounds of LHS 23
-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 32 :< 56
-TRACE project_s::simple_types::constrain: Constraining (32 <: 56): function <: applicative
-TRACE project_s::simple_types::constrain: Constraining (55 <: 30): tuple <: tuple
-TRACE project_s::simple_types::constrain: Constraining (31 <: 54): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 54 to upper bounds of LHS 31
-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 28 :< 54
-TRACE project_s::simple_types::constrain: Constraining (45 <: 24): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 24 to upper bounds of LHS 45
-TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 52 :< 24
-TRACE project_s::simple_types::constrain: Constraining (28 <: 54): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 54 to upper bounds of LHS 28
-TRACE project_s::simple_types::constrain: Constraining (52 <: 24): function <: variable
-TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 52 to lower bounds of RHS: 24
-TRACE project_s::simple_types::constrain: Constraint by extension of upper bound: 52 :< 29
-TRACE project_s::simple_types::constrain: Constraining (52 <: 29): function <: applicative
-TRACE project_s::simple_types::constrain: Constraining (26 <: 49): tuple <: tuple
-TRACE project_s::simple_types::constrain: Constraining (51 <: 27): record <: variable
-TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 51 to lower bounds of RHS: 27
-TRACE project_s::simple_types::constrain: Constraint by extension of upper bound: 51 :< 28
-TRACE project_s::simple_types::constrain: Constraining (25 <: 46): variable <: variable
-TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 46 to upper bounds of LHS 25
-TRACE project_s::simple_types::constrain: Constraining (51 <: 28): record <: variable
-TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 51 to lower bounds of RHS: 28
-TRACE project_s::simple_types::constrain: Constraint by extension of upper bound: 51 :< 54
-TRACE project_s::simple_types::constrain: Constraining (51 <: 54): record <: variable
-TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
-TRACE project_s::simple_types::constrain: Pushing 51 to lower bounds of RHS: 54
-TRACE project_s::simple_types::utils: `(fix obj)` with type N54
-TRACE project_s::simple_types::utils: `(do (let :fix (fn (:f) (do (let* :result (f result)) result))) (let :obj (fn (:self) (obj/plain :a "2" :b (thunk (self) (self 1))))) (fix obj))` with type N54
+TRACE project_s::simple_types::freshen_above: Freshened: 13 -> 13
+TRACE project_s::simple_types::utils: `f` with type N13
+TRACE project_s::simple_types::utils: `(do (let :f (fn (:x) x)) (f 4) f)` with type N13
+TRACE project_s::simple_types::coalesce: Coalesce(13 ; Positive): Variable { id: VarId(3) }
+TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+    level: 0,
+    lower_bounds: [
+        InferedTypeId(
+            17,
+        ),
+    ],
+    upper_bounds: [
+        InferedTypeId(
+            23,
+        ),
+    ],
+}
+TRACE project_s::simple_types::coalesce: Polarity positive. Using lower bounds
+TRACE project_s::simple_types::coalesce: Bounds: [
+    InferedTypeId(
+        17,
+    ),
+]
+TRACE project_s::simple_types::coalesce: Coalesce(17 ; Positive): Function { lhs: InferedTypeId(15), rhs: InferedTypeId(16) }
+TRACE project_s::simple_types::coalesce: Coalesce(15 ; Negative): Tuple { items: [InferedTypeId(14)] }
+TRACE project_s::simple_types::coalesce: Coalesce(14 ; Negative): Variable { id: VarId(4) }
+TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+    level: 0,
+    lower_bounds: [
+        InferedTypeId(
+            19,
+        ),
+    ],
+    upper_bounds: [
+        InferedTypeId(
+            21,
+        ),
+    ],
+}
+TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+TRACE project_s::simple_types::coalesce: Bounds: [
+    InferedTypeId(
+        21,
+    ),
+]
+TRACE project_s::simple_types::coalesce: Coalesce(21 ; Negative): Variable { id: VarId(6) }
+TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+    level: 0,
+    lower_bounds: [
+        InferedTypeId(
+            19,
+        ),
+    ],
+    upper_bounds: [],
+}
+TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+TRACE project_s::simple_types::coalesce: Bounds: []
+TRACE project_s::simple_types::coalesce: Bound types: []
+TRACE project_s::simple_types::coalesce: Bounds are empty. PolarVariable { polarity: Negative, id: VarId(6) }
+TRACE project_s::simple_types::coalesce: Creating new type var: 'a
+TRACE project_s::simple_types::utils: Adding Variable { name: "'a" } as 0
+TRACE project_s::simple_types::coalesce: Bound types: [
+    TypeId(
+        0,
+    ),
+]
+TRACE project_s::simple_types::utils: Adding Tuple { items: [TypeId(0)] } as 1
+TRACE project_s::simple_types::coalesce: Coalesce(16 ; Positive): Variable { id: VarId(5) }
+TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+    level: 0,
+    lower_bounds: [
+        InferedTypeId(
+            14,
+        ),
+    ],
+    upper_bounds: [
+        InferedTypeId(
+            21,
+        ),
+    ],
+}
+TRACE project_s::simple_types::coalesce: Polarity positive. Using lower bounds
+TRACE project_s::simple_types::coalesce: Bounds: [
+    InferedTypeId(
+        14,
+    ),
+]
+TRACE project_s::simple_types::coalesce: Coalesce(14 ; Positive): Variable { id: VarId(4) }
+TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
+    level: 0,
+    lower_bounds: [
+        InferedTypeId(
+            19,
+        ),
+    ],
+    upper_bounds: [
+        InferedTypeId(
+            21,
+        ),
+    ],
+}
+TRACE project_s::simple_types::coalesce: Polarity positive. Using lower bounds
+TRACE project_s::simple_types::coalesce: Bounds: [
+    InferedTypeId(
+        19,
+    ),
+]
+TRACE project_s::simple_types::coalesce: Coalesce(19 ; Positive): Literal { value: Number(4.0) }
+TRACE project_s::simple_types::utils: Adding Literal { value: Number(4.0) } as 2
+TRACE project_s::simple_types::coalesce: Bound types: [
+    TypeId(
+        2,
+    ),
+]
+TRACE project_s::simple_types::coalesce: Bound types: [
+    TypeId(
+        2,
+    ),
+]
+TRACE project_s::simple_types::utils: Adding Function { lhs: TypeId(1), rhs: TypeId(2) } as 3
+TRACE project_s::simple_types::coalesce: Bound types: [
+    TypeId(
+        3,
+    ),
+]
