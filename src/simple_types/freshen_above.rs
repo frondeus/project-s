@@ -1,17 +1,17 @@
 use super::*;
 
-impl TypeScheme {
+impl InferedTypeScheme {
     pub(crate) fn instantiate(&self, type_env: &mut TypeEnv, level: usize) -> InferedTypeId {
         match self {
-            TypeScheme::Monomorphic(id) => *id,
-            TypeScheme::Polymorphic(poly) => {
-                PolymorphicType::freshen_above(type_env, poly.level, poly.body, level)
+            InferedTypeScheme::Monomorphic(id) => *id,
+            InferedTypeScheme::Polymorphic(poly) => {
+                InferedPolymorphicType::freshen_above(type_env, poly.level, poly.body, level)
             }
         }
     }
 }
 
-impl PolymorphicType {
+impl InferedPolymorphicType {
     pub fn freshen_above(
         type_env: &mut TypeEnv,
         limit: usize,
@@ -143,6 +143,7 @@ impl PolymorphicType {
                         read.map(|read| Self::freshen(type_env, read, limit, level, freshened));
                     type_env.reference(write, read, span)
                 }
+                &InferedType::Module { .. } => ty,
             }
         }
     }

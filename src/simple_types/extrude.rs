@@ -153,6 +153,19 @@ impl TypeEnv {
                 let read = read.map(|read| self.extrude_inner(read, polarity, level, cache));
                 self.reference(write, read, span)
             }
+            &InferedType::Module { ref members, span } => {
+                let members = members
+                    .clone()
+                    .into_iter()
+                    // .map(|(name, scheme)| {
+                    //     // TODO: What to do with module extrusion
+                    //     // let ty = scheme.instantiate(self, level);
+                    //     // let ty = self.extrude_inner(ty, polarity, level, cache);
+                    //     (name, scheme)
+                    // })
+                    .collect();
+                self.module(members, span)
+            }
         }
     }
 }

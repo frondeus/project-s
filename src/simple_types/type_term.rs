@@ -66,7 +66,14 @@ impl TypeEnv {
                 [first, ty, value] if Self::is_symbol(asts, first, ":") => {
                     todo!(": {ty:?} {value:?}")
                 }
-                [first] if Self::is_symbol(asts, first, "module") => todo!("module"),
+                [first] if Self::is_symbol(asts, first, "module") => {
+                    let Some(env) = self.envs.pop() else {
+                        diagnostics.add(span, "No environment found");
+                        return self.error(span);
+                    };
+
+                    self.module(env, span)
+                }
                 [first, path_id] if Self::is_symbol(asts, first, "import") => {
                     todo!("import {path_id:?}")
                 }
@@ -244,7 +251,10 @@ impl TypeEnv {
                         if let Some(key) = stored_keys.remove(&bound) {
                             self.envs.set(
                                 &key,
-                                TypeScheme::Polymorphic(PolymorphicType { level, body: bound }),
+                                InferedTypeScheme::Polymorphic(InferedPolymorphicType {
+                                    level,
+                                    body: bound,
+                                }),
                             );
                         }
                         self.constrain(value, bound, diagnostics);
@@ -387,9 +397,9 @@ impl TypeEnv {
                 self.add_sexp(asts, id, var);
                 // self.envs.set(&key, core::Scheme::Monomorphic(value));
                 let scheme = match scheme {
-                    TypeSchemeKind::Monomorphic => TypeScheme::Monomorphic(var),
+                    TypeSchemeKind::Monomorphic => InferedTypeScheme::Monomorphic(var),
                     TypeSchemeKind::Polymorphic { level } => {
-                        TypeScheme::Polymorphic(PolymorphicType { level, body: var })
+                        InferedTypeScheme::Polymorphic(InferedPolymorphicType { level, body: var })
                     }
                 };
                 self.envs.set(&key, scheme);

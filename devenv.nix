@@ -5,13 +5,18 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git pkgs.tree-sitter pkgs.colordiff pkgs.bun pkgs.lnav ];
+  overlays =  [ inputs.rust-overlay.overlays.default ];
+  packages = [ pkgs.git pkgs.tree-sitter pkgs.colordiff pkgs.bun pkgs.lnav
+    (pkgs.rust-bin.stable.latest.default.override {
+      extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
+    })
+  ];
 
   # https://devenv.sh/languages/
-  languages.rust.enable = true;
-  languages.rust.channel = "stable";
-  languages.rust.version = "1.88.0";
-  languages.rust.toolchain.clippy = null;
+  # languages.rust.enable = true;
+  # languages.rust.channel = "stable";
+  # languages.rust.version = "1.88.0";
+  # languages.rust.toolchain.clippy = null;
 
   languages.typescript.enable = true;
   languages.c.enable = true;

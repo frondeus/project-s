@@ -47,6 +47,7 @@ impl WithLevel for InferedTypeId {
                 let read = read.map(|read| read.level(type_env)).unwrap_or(0);
                 write.max(read)
             }
+            InferedType::Module { .. } => 0,
         }
     }
 }

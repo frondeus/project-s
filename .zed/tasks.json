@@ -1,0 +1,6 @@
+[
+  {
+    "label": "CI",
+    "command": "cargo xtask ci"
+  }
+]

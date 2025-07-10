@@ -90,6 +90,20 @@ pub enum Type {
         write: Option<TypeId>,
         read: Option<TypeId>,
     },
+    Module {
+        members: Vec<(String, TypeScheme)>,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TypeScheme {
+    Monomorphic(TypeId),
+    Polymorphic(PolymorphicType),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub struct PolymorphicType {
+    level: usize,
+    body: TypeId,
 }
 
 pub enum InferedType {
@@ -140,9 +154,10 @@ pub enum InferedType {
         read: Option<InferedTypeId>,
         span: Span,
     },
-    // Module {
-    //     members: BTreeMap<String, InferedTypeId>,
-    // }
+    Module {
+        members: BTreeMap<String, InferedTypeScheme>,
+        span: Span,
+    },
 }
 
 impl std::fmt::Debug for InferedType {
@@ -194,6 +209,9 @@ impl std::fmt::Debug for InferedType {
                 .field("write", write)
                 .field("read", read)
                 .finish(),
+            Self::Module { members, span: _ } => {
+                f.debug_struct("Module").field("members", members).finish()
+            }
         }
     }
 }
@@ -211,7 +229,7 @@ impl InferedType {
             InferedType::Applicative { span, .. } => span,
             InferedType::List { span, .. } => span,
             InferedType::Ref { span, .. } => span,
-            // InferedType::Module { span, .. } => span,
+            InferedType::Module { span, .. } => span,
         }
     }
 
@@ -270,6 +288,13 @@ impl InferedType {
                 ids.extend(*write);
                 ids.extend(*read);
             }
+            InferedType::Module { members, span: _ } => {
+                for member in members.values() {
+                    if let InferedTypeScheme::Monomorphic(d) = member {
+                        ids.push(*d);
+                    }
+                }
+            }
         }
 
         ids.into_iter()
@@ -289,6 +314,7 @@ impl std::fmt::Display for InferedType {
             InferedType::Applicative { .. } => write!(f, "applicative"),
             InferedType::List { .. } => write!(f, "list"),
             InferedType::Ref { .. } => write!(f, "ref"),
+            InferedType::Module { .. } => write!(f, "module"),
         }
     }
 }
@@ -353,9 +379,9 @@ pub(crate) struct VarState {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum TypeScheme {
+pub enum InferedTypeScheme {
     Monomorphic(InferedTypeId),
-    Polymorphic(PolymorphicType),
+    Polymorphic(InferedPolymorphicType),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -365,17 +391,17 @@ enum TypeSchemeKind {
     Polymorphic { level: usize },
 }
 
-impl WithLevel for TypeScheme {
+impl WithLevel for InferedTypeScheme {
     fn level(&self, type_env: &TypeEnv) -> usize {
         match self {
-            TypeScheme::Monomorphic(id) => id.level(type_env),
-            TypeScheme::Polymorphic(poly) => poly.level,
+            InferedTypeScheme::Monomorphic(id) => id.level(type_env),
+            InferedTypeScheme::Polymorphic(poly) => poly.level,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-struct PolymorphicType {
+pub struct InferedPolymorphicType {
     level: usize,
     body: InferedTypeId,
 }
@@ -400,7 +426,7 @@ impl TypeEnv {
             let args = self.tuple(vec![lhs, rhs], span);
             let rhs = self.primitive(Self::NUMBER, span);
             let ty = self.function(args, rhs, span);
-            self.envs.set("-", TypeScheme::Monomorphic(ty));
+            self.envs.set("-", InferedTypeScheme::Monomorphic(ty));
         }
         {
             // "="
@@ -411,7 +437,7 @@ impl TypeEnv {
             let ty = self.function(args, rhs, span);
             self.envs.set(
                 "=",
-                TypeScheme::Polymorphic(PolymorphicType { level: 1, body: ty }),
+                InferedTypeScheme::Polymorphic(InferedPolymorphicType { level: 1, body: ty }),
             );
         }
 
@@ -421,7 +447,7 @@ impl TypeEnv {
 
 #[derive(Default, Debug)]
 struct Env {
-    vars: BTreeMap<String, TypeScheme>,
+    vars: BTreeMap<String, InferedTypeScheme>,
 }
 
 #[derive(Debug)]
@@ -444,7 +470,7 @@ impl Envs {
         }
     }
 
-    pub fn set(&mut self, name: &str, value: TypeScheme) {
+    pub fn set(&mut self, name: &str, value: InferedTypeScheme) {
         self.envs
             .last_mut()
             .unwrap()
@@ -452,7 +478,7 @@ impl Envs {
             .insert(name.to_string(), value);
     }
 
-    pub fn get(&self, name: &str) -> Option<&TypeScheme> {
+    pub fn get(&self, name: &str) -> Option<&InferedTypeScheme> {
         self.envs.iter().rev().find_map(|env| env.vars.get(name))
     }
 
@@ -466,7 +492,7 @@ impl Envs {
         EnvSavePoint(self.envs.len())
     }
 
-    pub fn pop(&mut self) -> Option<BTreeMap<String, TypeScheme>> {
+    pub fn pop(&mut self) -> Option<BTreeMap<String, InferedTypeScheme>> {
         self.envs.pop().map(|env| env.vars)
     }
 

@@ -76,4 +76,12 @@ impl TypeEnv {
             span,
         })
     }
+
+    pub(crate) fn module(
+        &mut self,
+        members: BTreeMap<String, InferedTypeScheme>,
+        span: Span,
+    ) -> InferedTypeId {
+        self.add_infered(InferedType::Module { members, span })
+    }
 }

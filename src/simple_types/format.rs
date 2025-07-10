@@ -80,6 +80,23 @@ impl TypeEnv {
                 write!(buf, "]")?;
                 Ok(())
             }
+            Type::Module { members } => {
+                write!(buf, "module {{")?;
+                for (i, (name, member)) in members.iter().enumerate() {
+                    if i > 0 {
+                        write!(buf, ", ")?;
+                    }
+                    write!(buf, "def {name}: ")?;
+                    match member {
+                        TypeScheme::Monomorphic(type_id) => self.fmt(*type_id, buf)?,
+                        TypeScheme::Polymorphic(polymorphic_type) => {
+                            self.fmt(polymorphic_type.body, buf)?
+                        }
+                    }
+                }
+                write!(buf, "}}")?;
+                Ok(())
+            }
             Type::Ref {
                 read: Some(read),
                 write: Some(write),

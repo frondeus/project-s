@@ -33,6 +33,36 @@ impl TypeEnv {
         )
     }
 
+    fn coalesce_scheme(
+        &mut self,
+        scheme: InferedTypeScheme,
+        polarity: Polarity,
+        recursive: &mut HashMap<PolarVariable, String>,
+        in_process: &mut HashSet<PolarVariable>,
+        vars: &mut VarGenerator,
+    ) -> TypeScheme {
+        match scheme {
+            InferedTypeScheme::Monomorphic(infered_type_id) => {
+                let ty =
+                    self.coalesce_inner(infered_type_id, polarity, recursive, in_process, vars);
+                TypeScheme::Monomorphic(ty)
+            }
+            InferedTypeScheme::Polymorphic(infered_polymorphic_type) => {
+                let body = self.coalesce_inner(
+                    infered_polymorphic_type.body,
+                    polarity,
+                    recursive,
+                    in_process,
+                    vars,
+                );
+                TypeScheme::Polymorphic(PolymorphicType {
+                    level: infered_polymorphic_type.level,
+                    body,
+                })
+            }
+        }
+    }
+
     fn coalesce_inner(
         &mut self,
         ty_id: InferedTypeId,
@@ -195,6 +225,19 @@ impl TypeEnv {
                     self.coalesce_inner(read, polarity.negate(), recursive, in_process, vars)
                 });
                 self.add_type(Type::Ref { write, read })
+            }
+            InferedType::Module { members, span: _ } => {
+                let members = members
+                    .clone()
+                    .into_iter()
+                    .map(|(name, scheme)| {
+                        let ty =
+                            self.coalesce_scheme(scheme, polarity, recursive, in_process, vars);
+                        (name, ty)
+                    })
+                    .collect();
+
+                self.add_type(Type::Module { members })
             }
         }
     }

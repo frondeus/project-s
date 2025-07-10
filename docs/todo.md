@@ -37,7 +37,7 @@ Like vertical stack
     * [ ] Import
     * [ ] Module
     * [ ] Ascription
-    * [ ] Let*
+    * [x] Let*
   * [ ] + operator
   * [x] let-rec and let*
   * [x] Structs
