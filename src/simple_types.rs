@@ -243,6 +243,16 @@ impl InferedType {
         }
     }
 
+    pub fn as_string_literal(&self) -> Option<&str> {
+        match self {
+            InferedType::Literal {
+                value: Literal::String(value),
+                ..
+            } => Some(value),
+            _ => None,
+        }
+    }
+
     pub fn ids(&self) -> impl Iterator<Item = InferedTypeId> {
         let mut ids = vec![];
 
@@ -570,7 +580,8 @@ mod tests {
 
                         let prelude = prelude();
                         let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                        let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+                        let infered =
+                            env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
 
                         env.coalesce(infered);
                     });
@@ -601,7 +612,7 @@ mod tests {
 
             let prelude = prelude();
             let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-            let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+            let infered = env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
 
             // let infered = env.check(&mut asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
@@ -639,7 +650,7 @@ mod tests {
 
                 let prelude = prelude();
                 let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                let infered = env.type_term(&mut asts, root, &mut diagnostics, 0);
+                let infered = env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
 
                 env.debug_dot(&asts, infered)
             },

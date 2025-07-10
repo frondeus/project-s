@@ -1,3 +1,7 @@
+use std::path::PathBuf;
+
+use crate::modules::ModuleProvider;
+
 use super::*;
 
 impl TypeEnv {
@@ -6,9 +10,10 @@ impl TypeEnv {
         asts: &mut ASTS,
         id: SExpId,
         diagnostics: &mut Diagnostics,
+        modules: &mut dyn ModuleProvider,
         level: usize,
     ) -> InferedTypeId {
-        let ty = self.type_term_inner(asts, id, diagnostics, level);
+        let ty = self.type_term_inner(asts, id, diagnostics, modules, level);
         self.add_sexp(asts, id, ty);
         ty
     }
@@ -18,6 +23,7 @@ impl TypeEnv {
         asts: &mut ASTS,
         id: SExpId,
         diagnostics: &mut Diagnostics,
+        modules: &mut dyn ModuleProvider,
         level: usize,
     ) -> InferedTypeId {
         let sexp = asts.get(id);
@@ -67,23 +73,61 @@ impl TypeEnv {
                     todo!(": {ty:?} {value:?}")
                 }
                 [first] if Self::is_symbol(asts, first, "module") => {
-                    let Some(env) = self.envs.pop() else {
-                        diagnostics.add(span, "No environment found");
-                        return self.error(span);
-                    };
+                    self.module(Default::default(), span)
+                }
+                [first, ref exprs @ ..] if Self::is_symbol(asts, first, "module") => {
+                    self.envs.push();
+                    for e in exprs.to_vec() {
+                        self.type_term(asts, e, diagnostics, modules, level);
+                    }
+                    let env = self.envs.pop().unwrap();
 
                     self.module(env, span)
                 }
                 [first, path_id] if Self::is_symbol(asts, first, "import") => {
-                    todo!("import {path_id:?}")
+                    let path = self.type_term(asts, path_id, diagnostics, modules, level);
+                    let path_span = Self::span_of(path_id, asts);
+                    let Some(path) = self
+                        .find_non_var(path)
+                        .and_then(|path| path.as_string_literal())
+                    else {
+                        diagnostics
+                            .add(span, "Expected string literal")
+                            .add_extra("Got", Some(path_span));
+                        return self.error(span);
+                    };
+                    let path = PathBuf::from(path);
+                    let Some((module, source)) = modules.get_module(&path).and_then(|module| {
+                        let source = modules.get_source(module)?;
+                        Some((module, source))
+                    }) else {
+                        diagnostics
+                            .add(span, format!("Module not found: {}", path.display()))
+                            .add_extra("Importing here", Some(span));
+                        return self.error(span);
+                    };
+                    let Some(root) = asts
+                        .parse(module, source)
+                        .ok()
+                        .and_then(|root| root.root_id())
+                    else {
+                        diagnostics
+                            .add(span, format!("Failed to parse module: {}", path.display()))
+                            .add_extra("Importing here", Some(span));
+                        return self.error(span);
+                    };
+                    let savepoint = self.envs.push();
+                    let val = self.type_term_inner(asts, root, diagnostics, modules, 0);
+                    self.envs.restore(savepoint);
+                    val
                 }
                 [first, condition, then_branch] if Self::is_symbol(asts, first, "if") => {
                     tracing::trace!("Infering if expression");
-                    let cond = self.type_term(asts, condition, diagnostics, level);
+                    let cond = self.type_term(asts, condition, diagnostics, modules, level);
                     let boolean = self.primitive(Self::BOOLEAN, Self::span_of(condition, asts));
                     self.constrain(cond, boolean, diagnostics);
 
-                    let then = self.type_term(asts, then_branch, diagnostics, level);
+                    let then = self.type_term(asts, then_branch, diagnostics, modules, level);
                     let else_ = self.unit(span);
 
                     let merged = self.fresh_var(Self::span_of(then_branch, asts), level);
@@ -96,13 +140,13 @@ impl TypeEnv {
                     if Self::is_symbol(asts, first, "if") =>
                 {
                     tracing::trace!("Infering if expression");
-                    let cond = self.type_term(asts, condition, diagnostics, level);
+                    let cond = self.type_term(asts, condition, diagnostics, modules, level);
                     tracing::trace!("Condition type: {}", cond.0);
                     let boolean = self.primitive(Self::BOOLEAN, Self::span_of(condition, asts));
                     self.constrain(cond, boolean, diagnostics);
 
-                    let then = self.type_term(asts, then_branch, diagnostics, level);
-                    let else_ = self.type_term(asts, else_branch, diagnostics, level);
+                    let then = self.type_term(asts, then_branch, diagnostics, modules, level);
+                    let else_ = self.type_term(asts, else_branch, diagnostics, modules, level);
 
                     let merged = self.fresh_var(Self::span_of(then_branch, asts), level);
                     self.constrain(then, merged, diagnostics);
@@ -132,7 +176,7 @@ impl TypeEnv {
                         TypeSchemeKind::Monomorphic,
                         &mut Default::default(),
                     );
-                    let body = self.type_term(asts, body, diagnostics, level);
+                    let body = self.type_term(asts, body, diagnostics, modules, level);
                     self.envs.pop();
 
                     self.function(pattern, body, span)
@@ -162,7 +206,7 @@ impl TypeEnv {
                         &mut Default::default(),
                     );
 
-                    let body = self.type_term(asts, body, diagnostics, level);
+                    let body = self.type_term(asts, body, diagnostics, modules, level);
                     self.envs.pop();
 
                     self.function(pattern, body, span)
@@ -171,7 +215,7 @@ impl TypeEnv {
                     tracing::trace!("Infering do expression");
 
                     self.envs.push();
-                    let body = self.type_term(asts, last, diagnostics, level);
+                    let body = self.type_term(asts, last, diagnostics, modules, level);
                     self.envs.pop();
                     body
                 }
@@ -180,9 +224,9 @@ impl TypeEnv {
 
                     self.envs.push();
                     for arg in args.to_vec() {
-                        self.type_term(asts, arg, diagnostics, level);
+                        self.type_term(asts, arg, diagnostics, modules, level);
                     }
-                    let last = self.type_term(asts, last, diagnostics, level);
+                    let last = self.type_term(asts, last, diagnostics, modules, level);
                     self.envs.pop();
                     last
                 }
@@ -199,7 +243,7 @@ impl TypeEnv {
                             return self.error(Self::span_of(pattern_id, asts));
                         }
                     };
-                    let rhs_ty = self.type_term(asts, value, diagnostics, level + 1);
+                    let rhs_ty = self.type_term(asts, value, diagnostics, modules, level + 1);
                     let scheme = if Self::is_expression_value(value, asts) {
                         TypeSchemeKind::Polymorphic { level }
                     } else {
@@ -247,7 +291,7 @@ impl TypeEnv {
                         bounds.push((bound, value));
                     }
                     for (bound, value) in bounds {
-                        let value = self.type_term(asts, value, diagnostics, level + 1);
+                        let value = self.type_term(asts, value, diagnostics, modules, level + 1);
                         if let Some(key) = stored_keys.remove(&bound) {
                             self.envs.set(
                                 &key,
@@ -264,11 +308,11 @@ impl TypeEnv {
                 [first, _err] if Self::is_symbol(asts, first, "error") => self.error(span),
                 [first, _captured, rest] if Self::is_symbol(asts, first, "thunk") => {
                     tracing::trace!("Infering thunk expression");
-                    self.type_term(asts, rest, diagnostics, level)
+                    self.type_term(asts, rest, diagnostics, modules, level)
                 }
                 [first, value] if Self::is_symbol(asts, first, "ref") => {
                     tracing::trace!("Infering reference expression");
-                    let value_type = self.type_term(asts, value, diagnostics, level);
+                    let value_type = self.type_term(asts, value, diagnostics, modules, level);
                     // let var = self.fresh_var(span, level);
                     // self.constrain(value_type, var, diagnostics);
 
@@ -284,7 +328,7 @@ impl TypeEnv {
                             return self.error(Self::span_of(key, asts));
                         };
                         let key = key.to_string();
-                        let value = self.type_term(asts, value, diagnostics, level);
+                        let value = self.type_term(asts, value, diagnostics, modules, level);
                         fields.push((key, value));
                     }
 
@@ -295,14 +339,14 @@ impl TypeEnv {
 
                     let mut fields = Vec::new();
                     let args = args.to_vec();
-                    let proto = self.type_term(asts, proto, diagnostics, level);
+                    let proto = self.type_term(asts, proto, diagnostics, modules, level);
                     for (key, value) in args.into_iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, key) else {
                             diagnostics.add_sexp(asts, key, "Expected keyword");
                             return self.error(Self::span_of(key, asts));
                         };
                         let key = key.to_string();
-                        let value = self.type_term(asts, value, diagnostics, level);
+                        let value = self.type_term(asts, value, diagnostics, modules, level);
                         fields.push((key, value));
                     }
 
@@ -310,8 +354,8 @@ impl TypeEnv {
                 }
                 [first, ref_mut, value_id] if Self::is_symbol(asts, first, "set") => {
                     tracing::trace!("Infering set reference");
-                    let ref_mut = self.type_term(asts, ref_mut, diagnostics, level);
-                    let value = self.type_term(asts, value_id, diagnostics, level);
+                    let ref_mut = self.type_term(asts, ref_mut, diagnostics, modules, level);
+                    let value = self.type_term(asts, value_id, diagnostics, modules, level);
                     let bound = self.reference(Some(value), None, Self::span_of(value_id, asts));
                     self.constrain(ref_mut, bound, diagnostics);
                     value
@@ -320,7 +364,7 @@ impl TypeEnv {
                 [callee, ref args @ ..] => {
                     tracing::trace!("Infering application call");
                     let args = args.to_vec();
-                    let callee_type = self.type_term(asts, callee, diagnostics, level);
+                    let callee_type = self.type_term(asts, callee, diagnostics, modules, level);
 
                     let args_range = args
                         .iter()
@@ -339,7 +383,7 @@ impl TypeEnv {
 
                     let arg_types = args
                         .iter()
-                        .map(|arg| self.type_term(asts, *arg, diagnostics, level))
+                        .map(|arg| self.type_term(asts, *arg, diagnostics, modules, level))
                         .collect::<Vec<_>>();
 
                     let ret_type = self.fresh_var(span, level);

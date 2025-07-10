@@ -34,8 +34,8 @@ Like vertical stack
 * [/] Type checker!
   * [ ] Simplification
   * [ ] Simple type
-    * [ ] Import
-    * [ ] Module
+    * [x] Import
+    * [x] Module
     * [ ] Ascription
     * [x] Let*
   * [ ] + operator

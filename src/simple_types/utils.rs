@@ -63,6 +63,18 @@ impl TypeEnv {
         &mut self.vars[var.0]
     }
 
+    pub(crate) fn find_non_var(&self, id: InferedTypeId) -> Option<&InferedType> {
+        match self.get(id) {
+            InferedType::Variable {
+                id: var_id,
+                span: _,
+            } => self
+                .predecessors(id, *var_id)
+                .find_map(|bound| self.find_non_var(bound)),
+            t => Some(t),
+        }
+    }
+
     pub(crate) fn fresh_var(&mut self, span: Span, level: usize) -> InferedTypeId {
         let id = self.vars.len();
         self.vars.push(VarState {

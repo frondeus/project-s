@@ -1,18 +1,6 @@
 use super::*;
 
 impl TypeEnv {
-    fn find_non_var(&self, id: InferedTypeId) -> Option<&InferedType> {
-        match self.get(id) {
-            InferedType::Variable {
-                id: var_id,
-                span: _,
-            } => self
-                .predecessors(id, *var_id)
-                .find_map(|bound| self.find_non_var(bound)),
-            t => Some(t),
-        }
-    }
-
     pub(crate) fn constrain(
         &mut self,
         lhs_id: InferedTypeId,
@@ -142,6 +130,41 @@ impl TypeEnv {
                             .add(rhs_span, "Undefined field: {field}")
                             .add_extra("Used here", Some(rhs_span))
                             .add_extra("Record defined here", Some(lhs_span));
+                    }
+                    continue;
+                }
+                (
+                    Module { members, span: _ },
+                    &Applicative {
+                        arg: _,
+                        ret,
+                        first_arg,
+                        span: _,
+                    },
+                ) => {
+                    let Some(member) = first_arg
+                        .and_then(|first| self.find_non_var(first))
+                        .and_then(|first| first.as_keyword_literal())
+                    else {
+                        diagnostics
+                            .add(rhs_span, "expected a keyword literal")
+                            .add_extra("This is a module", Some(lhs_span))
+                            .add_extra(
+                                "But here we have an application that is not asking about member",
+                                Some(rhs_span),
+                            );
+                        continue;
+                    };
+
+                    if let Some(member_scheme) = members.get(member).copied() {
+                        let rhs_level = rhs_id.level(self);
+                        let member_ty = member_scheme.instantiate(self, rhs_level);
+                        queue.push_back((member_ty, ret));
+                    } else {
+                        diagnostics
+                            .add(rhs_span, "Undefined member: {member}")
+                            .add_extra("Used here", Some(rhs_span))
+                            .add_extra("Module defined here", Some(lhs_span));
                     }
                     continue;
                 }
