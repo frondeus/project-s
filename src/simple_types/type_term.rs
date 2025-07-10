@@ -118,8 +118,13 @@ impl TypeEnv {
                     };
 
                     self.envs.push();
-                    let pattern =
-                        self.type_pattern(asts, pattern, level, TypeSchemeKind::Monomorphic);
+                    let pattern = self.type_pattern(
+                        asts,
+                        pattern,
+                        level,
+                        TypeSchemeKind::Monomorphic,
+                        &mut Default::default(),
+                    );
                     let body = self.type_term(asts, body, diagnostics, level);
                     self.envs.pop();
 
@@ -142,8 +147,13 @@ impl TypeEnv {
                     };
 
                     self.envs.push();
-                    let pattern =
-                        self.type_pattern(asts, pattern, level, TypeSchemeKind::Monomorphic);
+                    let pattern = self.type_pattern(
+                        asts,
+                        pattern,
+                        level,
+                        TypeSchemeKind::Monomorphic,
+                        &mut Default::default(),
+                    );
 
                     let body = self.type_term(asts, body, diagnostics, level);
                     self.envs.pop();
@@ -188,19 +198,21 @@ impl TypeEnv {
                     } else {
                         TypeSchemeKind::Monomorphic
                     };
-                    let bound = self.type_pattern(asts, pattern, level, scheme);
+                    let bound =
+                        self.type_pattern(asts, pattern, level, scheme, &mut Default::default());
                     self.constrain(rhs_ty, bound, diagnostics);
                     self.unit(span)
                 }
                 [first, ref bindings @ ..]
                     if Self::is_symbols(asts, first, &["let-rec", "let*"]) =>
                 {
-                    let mut patterns = vec![];
+                    let mut bounds = vec![];
                     let (bindings, remainder) = bindings.as_chunks::<2>();
                     if !remainder.is_empty() {
                         let first = remainder[0];
                         diagnostics.add_sexp(asts, first, "let*: found pattern that lacks a value");
                     }
+                    let mut stored_keys = Default::default();
                     for &[pattern, value] in bindings {
                         let pattern = match Pattern::parse(pattern, asts) {
                             Ok(pat) => pat,
@@ -213,18 +225,23 @@ impl TypeEnv {
                                 continue;
                             }
                         };
-                        self.type_pattern(
+                        let bound = self.type_pattern(
                             asts,
-                            pattern.clone(),
+                            pattern,
                             level + 1,
                             TypeSchemeKind::Monomorphic,
+                            &mut stored_keys,
                         );
-                        patterns.push((pattern, value));
+                        bounds.push((bound, value));
                     }
-                    for (pattern, value) in patterns {
+                    for (bound, value) in bounds {
                         let value = self.type_term(asts, value, diagnostics, level + 1);
-                        let bound =
-                            self.type_pattern(asts, pattern, level, TypeSchemeKind::Polymorphic);
+                        if let Some(key) = stored_keys.remove(&bound) {
+                            self.envs.set(
+                                &key,
+                                TypeScheme::Polymorphic(PolymorphicType { level, body: bound }),
+                            );
+                        }
                         self.constrain(value, bound, diagnostics);
                     }
                     self.unit(span)
@@ -351,6 +368,7 @@ impl TypeEnv {
         pattern: Pattern,
         level: usize,
         scheme: TypeSchemeKind,
+        stored_keys: &mut HashMap<InferedTypeId, String>,
     ) -> InferedTypeId {
         tracing::trace!(
             "Infering pattern: {:?} - {} lvl {:?}",
@@ -370,12 +388,13 @@ impl TypeEnv {
                     }
                 };
                 self.envs.set(&key, scheme);
+                stored_keys.insert(var, key);
                 var
             }
             Pattern::List(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for pattern in patterns {
-                    let bound = self.type_pattern(asts, pattern, level, scheme);
+                    let bound = self.type_pattern(asts, pattern, level, scheme, stored_keys);
                     bounds.push(bound);
                 }
 
@@ -385,7 +404,7 @@ impl TypeEnv {
             Pattern::Object(patterns, span, id) => {
                 let mut bounds = Vec::new();
                 for (key, pattern) in patterns {
-                    let bound = self.type_pattern(asts, pattern, level, scheme);
+                    let bound = self.type_pattern(asts, pattern, level, scheme, stored_keys);
                     bounds.push((key, bound));
                 }
 

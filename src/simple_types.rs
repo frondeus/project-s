@@ -465,9 +465,13 @@ impl Envs {
     }
 
     pub fn push(&mut self) -> EnvSavePoint {
-        let point = EnvSavePoint(self.envs.len());
+        let point = self.save();
         self.envs.push(Env::default());
         point
+    }
+
+    pub fn save(&mut self) -> EnvSavePoint {
+        EnvSavePoint(self.envs.len())
     }
 
     pub fn pop(&mut self) -> Option<BTreeMap<String, TypeScheme>> {

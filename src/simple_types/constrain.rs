@@ -120,7 +120,13 @@ impl TypeEnv {
                         .and_then(|first| self.find_non_var(first))
                         .and_then(|first| first.as_keyword_literal())
                     else {
-                        diagnostics.add(rhs_span, "expected a keyword literal");
+                        diagnostics
+                            .add(rhs_span, "expected a keyword literal")
+                            .add_extra("This is a record", Some(lhs_span))
+                            .add_extra(
+                                "But here we have an application that is not asking about field",
+                                Some(rhs_span),
+                            );
                         continue;
                     };
 
