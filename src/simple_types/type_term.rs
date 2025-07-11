@@ -70,7 +70,11 @@ impl TypeEnv {
             SExp::List(sexp_ids) => match *sexp_ids.as_slice() {
                 [] => self.unit(span),
                 [first, ty, value] if Self::is_symbol(asts, first, ":") => {
-                    todo!(": {ty:?} {value:?}")
+                    let ty = self.ascribe(asts, ty, diagnostics, &mut Default::default(), level);
+                    let value_ty = self.type_term(asts, value, diagnostics, modules, level);
+                    self.add_sexp(asts, value, ty);
+                    self.constrain(value_ty, ty, diagnostics);
+                    ty
                 }
                 [first] if Self::is_symbol(asts, first, "module") => {
                     self.module(Default::default(), span)
@@ -81,6 +85,7 @@ impl TypeEnv {
                         self.type_term(asts, e, diagnostics, modules, level);
                     }
                     let env = self.envs.pop().unwrap();
+                    let env = env.into_iter().collect();
 
                     self.module(env, span)
                 }
@@ -321,7 +326,7 @@ impl TypeEnv {
                 }
                 [first, ref args @ ..] if Self::is_symbol(asts, first, "obj/plain") => {
                     tracing::trace!("Infering record expression");
-                    let mut fields = Vec::new();
+                    let mut fields = IndexMap::new();
                     for (key, value) in args.to_vec().into_iter().tuples() {
                         let Some(key) = Self::as_keyword(asts, key) else {
                             diagnostics.add_sexp(asts, key, "Expected keyword");
@@ -329,7 +334,7 @@ impl TypeEnv {
                         };
                         let key = key.to_string();
                         let value = self.type_term(asts, value, diagnostics, modules, level);
-                        fields.push((key, value));
+                        fields.insert(key, value);
                     }
 
                     self.record(fields, None, span)
@@ -337,7 +342,7 @@ impl TypeEnv {
                 [first, proto, ref args @ ..] if Self::is_symbol(asts, first, "obj/extend") => {
                     tracing::trace!("Infering record extension expression");
 
-                    let mut fields = Vec::new();
+                    let mut fields = IndexMap::new();
                     let args = args.to_vec();
                     let proto = self.type_term(asts, proto, diagnostics, modules, level);
                     for (key, value) in args.into_iter().tuples() {
@@ -347,7 +352,7 @@ impl TypeEnv {
                         };
                         let key = key.to_string();
                         let value = self.type_term(asts, value, diagnostics, modules, level);
-                        fields.push((key, value));
+                        fields.insert(key, value);
                     }
 
                     self.record(fields, Some(proto), span)
@@ -461,10 +466,10 @@ impl TypeEnv {
                 self.add_sexp(asts, id, tuple)
             }
             Pattern::Object(patterns, span, id) => {
-                let mut bounds = Vec::new();
+                let mut bounds = IndexMap::new();
                 for (key, pattern) in patterns {
                     let bound = self.type_pattern(asts, pattern, level, scheme, stored_keys);
-                    bounds.push((key, bound));
+                    bounds.insert(key, bound);
                 }
 
                 let record = self.record(bounds, None, span);

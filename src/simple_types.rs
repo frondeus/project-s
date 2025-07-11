@@ -1,6 +1,7 @@
 #![allow(dead_code, clippy::unnecessary_to_owned)]
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
+use indexmap::IndexMap;
 use itertools::Itertools;
 use levels::WithLevel;
 use tree_sitter::Range;
@@ -12,6 +13,7 @@ use crate::{
     source::{Sources, Span},
 };
 
+mod ascribe;
 mod coalesce;
 mod constrain;
 mod constructors;
@@ -29,7 +31,7 @@ pub struct InferedTypeId(usize);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VarId(usize);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TypeId(usize);
 
 #[derive(Debug)]
@@ -53,7 +55,8 @@ pub enum Type {
     },
     /// { :foo type }
     Record {
-        fields: Vec<(String, TypeId)>,
+        fields: IndexMap<String, TypeId>,
+        proto: Option<TypeId>,
     },
     /// type as 'a
     Recursive {
@@ -91,7 +94,7 @@ pub enum Type {
         read: Option<TypeId>,
     },
     Module {
-        members: Vec<(String, TypeScheme)>,
+        members: IndexMap<String, TypeScheme>,
     },
 }
 
@@ -141,7 +144,7 @@ pub enum InferedType {
         span: Span,
     },
     Record {
-        fields: Vec<(String, InferedTypeId)>,
+        fields: IndexMap<String, InferedTypeId>,
         proto: Option<InferedTypeId>,
         span: Span,
     },
@@ -155,7 +158,7 @@ pub enum InferedType {
         span: Span,
     },
     Module {
-        members: BTreeMap<String, InferedTypeScheme>,
+        members: IndexMap<String, InferedTypeScheme>,
         span: Span,
     },
 }
@@ -425,6 +428,7 @@ impl TypeEnv {
     pub const STRING: &str = "string";
     pub const BOOLEAN: &str = "bool";
     pub const KEYWORD: &str = "keyword";
+    pub const SYMBOL: &str = "symbol";
 
     pub fn with_prelude(mut self, sources: &mut Sources) -> Self {
         let builtin = sources.add("<builtin>", "");

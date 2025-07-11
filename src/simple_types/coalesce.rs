@@ -109,6 +109,9 @@ impl TypeEnv {
                         .collect::<Vec<_>>();
                     tracing::trace!("Bound types: {:#?}", bound_types);
 
+                    bound_types.sort();
+                    bound_types.dedup();
+
                     if bound_types.is_empty() {
                         tracing::trace!("Bounds are empty. {:?}", tv_pol);
                         let name = recursive
@@ -187,7 +190,7 @@ impl TypeEnv {
                 span: _,
             } => {
                 let proto = *proto;
-                let mut fields: Vec<(String, TypeId)> = fields
+                let mut fields: IndexMap<String, TypeId> = fields
                     .clone()
                     .into_iter()
                     .map(|(name, ty)| {
@@ -198,17 +201,29 @@ impl TypeEnv {
 
                 if let Some(proto) = proto {
                     let proto = self.coalesce_inner(proto, polarity, recursive, in_process, vars);
-                    let Type::Record { fields: p_fields } = &self.types[proto.0] else {
-                        panic!("Expected Record type");
+                    let p_fields = match &self.types[proto.0] {
+                        Type::Record {
+                            fields: p_fields,
+                            proto: _,
+                        } => p_fields,
+                        _ => {
+                            return self.add_type(Type::Record {
+                                fields,
+                                proto: Some(proto),
+                            });
+                        }
                     };
                     for (field_name, field_ty) in p_fields {
                         if fields.iter().all(|(n, _)| n != field_name) {
-                            fields.push((field_name.clone(), *field_ty));
+                            fields.insert(field_name.clone(), *field_ty);
                         }
                     }
                 }
 
-                self.add_type(Type::Record { fields })
+                self.add_type(Type::Record {
+                    fields,
+                    proto: None,
+                })
             }
             &InferedType::List { item, span: _ } => {
                 let item = self.coalesce_inner(item, polarity, recursive, in_process, vars);

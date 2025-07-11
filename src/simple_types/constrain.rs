@@ -74,6 +74,23 @@ impl TypeEnv {
                     LitValue::Keyword(_) if rhs_name == "keyword" => continue,
                     _ => (),
                 },
+
+                (
+                    &Function {
+                        lhs: pattern,
+                        rhs: ret,
+                        span: _,
+                    },
+                    &Function {
+                        lhs: args,
+                        rhs: ret_use,
+                        span: _,
+                    },
+                ) => {
+                    queue.push_back((args, pattern));
+                    queue.push_back((ret, ret_use));
+                    continue;
+                }
                 (
                     &Function {
                         lhs: pattern,
@@ -89,6 +106,35 @@ impl TypeEnv {
                 ) => {
                     queue.push_back((args, pattern));
                     queue.push_back((ret, ret_use));
+                    continue;
+                }
+                (
+                    &Record {
+                        fields: ref lhs,
+                        proto: lhs_proto,
+                        span: _,
+                    },
+                    &Record {
+                        fields: ref rhs,
+                        proto: rhs_proto,
+                        span: _,
+                    },
+                ) => {
+                    for (key, r) in rhs {
+                        if let Some(l) = lhs.get(key) {
+                            queue.push_back((*l, *r));
+                        } else if let Some(lhs_proto) = lhs_proto {
+                            queue.push_back((lhs_proto, rhs_id));
+                        } else {
+                            diagnostics
+                                .add(rhs_span, "Field not found")
+                                .add_extra("Accessed here", Some(rhs_span))
+                                .add_extra("Record defined here", Some(lhs_span));
+                        }
+                    }
+                    if let Some(rhs_proto) = rhs_proto {
+                        queue.push_back((lhs_id, rhs_proto));
+                    }
                     continue;
                 }
                 (

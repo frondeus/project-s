@@ -31,7 +31,11 @@ impl TypeEnv {
                 self.fmt(rhs, buf)?;
                 Ok(())
             }
-            Type::Record { fields } => {
+            Type::Record { fields, proto } => {
+                if let Some(proto) = proto {
+                    self.fmt(*proto, buf)?;
+                    write!(buf, " extends ")?;
+                }
                 write!(buf, "{{")?;
                 for (i, (name, ty)) in fields.iter().enumerate() {
                     if i > 0 {
@@ -44,8 +48,9 @@ impl TypeEnv {
                 Ok(())
             }
             Type::Recursive { name, body } => {
+                write!(buf, "<")?;
                 self.fmt(*body, buf)?;
-                write!(buf, " as ")?;
+                write!(buf, "> as ")?;
                 write!(buf, "{name}")?;
                 Ok(())
             }

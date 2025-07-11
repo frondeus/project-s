@@ -66,7 +66,7 @@ impl TypeEnv {
 
     pub(crate) fn record(
         &mut self,
-        fields: Vec<(String, InferedTypeId)>,
+        fields: IndexMap<String, InferedTypeId>,
         proto: Option<InferedTypeId>,
         span: Span,
     ) -> InferedTypeId {
@@ -79,7 +79,7 @@ impl TypeEnv {
 
     pub(crate) fn module(
         &mut self,
-        members: BTreeMap<String, InferedTypeScheme>,
+        members: IndexMap<String, InferedTypeScheme>,
         span: Span,
     ) -> InferedTypeId {
         self.add_infered(InferedType::Module { members, span })
