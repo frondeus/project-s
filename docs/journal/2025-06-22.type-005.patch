@@ -1,0 +1,42 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-22.md:58
+```
+(list 1 (list 2 3))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-22.md
++++ type-005
+@@ -61,7 +61,33 @@
+ 
+ Has a type of:
+ ```type
+-[[3 | 2] | 1]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:15 ]
++   │
++ 1 │ (list 1 (list 2 3))
++   │               ─┬─  
++   │                ╰─── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:7 ]
++   │
++ 1 │ (list 1 (list 2 3))
++   │       ──────┬─────  
++   │             ╰─────── But found tuple
++───╯
++
+ ```
+ 
+ What if we change the expression?

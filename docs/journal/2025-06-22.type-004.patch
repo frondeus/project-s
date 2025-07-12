@@ -1,0 +1,59 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-22.md:38
+```
+(let (:a (:b :c)) (list 1 (list 2 3)))
+b
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-22.md
++++ type-004
+@@ -41,14 +41,44 @@
+ ```
+ 
+ ```type
+-Error: Incompatible types
+-   ╭─[ <input>:1:10 ]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:33 ]
++   │
++ 1 │ (let (:a (:b :c)) (list 1 (list 2 3)))
++   │                                 ─┬─  
++   │                                  ╰─── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:25 ]
++   │
++ 1 │ (let (:a (:b :c)) (list 1 (list 2 3)))
++   │                         ──────┬─────  
++   │                               ╰─────── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <input>:1:6 ]
+    │
+  1 │ (let (:a (:b :c)) (list 1 (list 2 3)))
+-   │          ───┬───        ┬  
+-   │             ╰────────────── Expected tuple
+-   │                         │  
+-   │                         ╰── But got 1
++   │      ──────┬─────  
++   │            ╰─────── Expected tuple
++   │
++   ├─[ <builtin>:9:24 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                        ──┬─  
++   │                          ╰─── But found list
+ ───╯
+ 
+ ```

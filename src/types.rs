@@ -747,6 +747,7 @@ mod tests {
     use super::{canonical::Canonicalizer, *};
 
     #[test]
+    #[ignore]
     fn type_() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", &["s", ""], "type", |input, _deps, _args| {

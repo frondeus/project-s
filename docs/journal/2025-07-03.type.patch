@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-03.md:6
+```s
+(let :foo (import "foo.s"))
+foo
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-03.md
++++ type
+@@ -15,7 +15,20 @@
+ 
+ 
+ ```type
+-[3 | 2 | 1]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ foo.s:1:2 ]
++   │
++ 1 │ [1 2 3]
++   │  ──┬──  
++   │    ╰──── But found tuple
++───╯
++
+ ```
+ 
+ ```json

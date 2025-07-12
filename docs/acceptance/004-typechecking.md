@@ -38,7 +38,7 @@ x
 ```
 
 ```type
-5 | "foo"
+5 ∨ "foo"
 ```
 
 ## If else the same type 
@@ -50,7 +50,7 @@ x
 ```
 
 ```type
-5 | 3
+5 ∨ 3
 ```
 
 ## If only
@@ -62,7 +62,7 @@ x
 ```
 
 ```type
-5 | ()
+5 ∨ ()
 ```
 
 ## Functions
@@ -72,7 +72,7 @@ x
 ```
 
 ```type
-(Any) -> Any
+('a) → 'a
 ```
 
 ```
@@ -93,7 +93,7 @@ f
 ```
 
 ```type
-(Any) -> Any
+('a) → 'a
 ```
 
 ## Functions with ifs
@@ -121,7 +121,7 @@ f
 ```
 
 ```type
-(bool, Any) -> Any | "foo"
+(bool, 'a) → "foo"
 ```
 
 

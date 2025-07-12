@@ -1,0 +1,48 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-21.md:275
+```
+(let (:f :g) (list
+    (fn (:x) x)
+    (fn (:y) y)
+))
+(f 3)
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-21.md
++++ type-005
+@@ -282,7 +282,34 @@
+ ```
+ 
+ ```type
+-(3) -> 3
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:2:5 ]
++   │
++ 2 │ ╭─▶     (fn (:x) x)
++ 3 │ ├─▶     (fn (:y) y)
++   │ │                     
++   │ ╰───────────────────── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <input>:1:6 ]
++   │
++ 1 │ (let (:f :g) (list
++   │      ───┬───  
++   │         ╰───── Expected tuple
++   │
++   ├─[ <builtin>:9:24 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                        ──┬─  
++   │                          ╰─── But found list
++───╯
++
+ ```
+ 
+ Okay, we fixed one small issue with canonical form, so now we can focus on polymorphism.

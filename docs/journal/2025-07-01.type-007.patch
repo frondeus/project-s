@@ -1,0 +1,42 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-01.md:182
+```s
+(let :s (list/find-or
+    (list 1 2 4)
+    (fn (:x) (= x 5))
+    0
+    )
+)
+s
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-01.md
++++ type-007
+@@ -190,7 +190,27 @@
+ ```
+ 
+ ```type
+-4 | 2 | 1 | 0
++Error: Undefined variable: list/find-or
++   ╭─[ <input>:1:10 ]
++   │
++ 1 │ (let :s (list/find-or
++   │          ──────┬─────  
++   │                ╰─────── Used here
++───╯
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:2:11 ]
++   │
++ 2 │     (list 1 2 4)
++   │           ──┬──  
++   │             ╰──── But found tuple
++───╯
++
+ ```
+ 
+ ```json

@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-21.md:85
+```
+(let :l (list 1 2 3))
+l
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-21.md
++++ type-002
+@@ -88,7 +88,20 @@
+ ```
+ 
+ ```type
+-[3 | 2 | 1]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:15 ]
++   │
++ 1 │ (let :l (list 1 2 3))
++   │               ──┬──  
++   │                 ╰──── But found tuple
++───╯
++
+ ```
+ 
+ Ok. this works...

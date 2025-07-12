@@ -12,7 +12,7 @@
 ```
 
 ```type
-(Any) -> Any
+('a) → 'a
 ```
 
 # Calling a function
@@ -43,7 +43,7 @@ f
 ```
 
 ```type
-(Any) -> Any
+('a) → 'a
 ```
 
 # Closures

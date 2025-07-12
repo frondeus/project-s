@@ -1,0 +1,65 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:360
+```
+(fn
+  (:self
+    :root
+    :super
+    :origin)
+  (do
+    (obj/insert
+      self
+      :a
+      (thunk
+        ()
+        (obj/construct-or
+          1)))
+    (obj/insert
+      self
+      :b
+      (thunk
+        (self)
+        (obj/construct-or
+          (self
+            :a))))
+    self))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-003
+@@ -430,7 +430,35 @@
+ ```
+ 
+ ```type
+-(refmut<{}> & Applicable(:a -> Any), Any, Any, Any) -> Any
++Error: Undefined variable: obj/insert
++   ╭─[ <input>:7:6 ]
++   │
++ 7 │     (obj/insert
++   │      ─────┬────  
++   │           ╰────── Used here
++───╯
++Error: Undefined variable: obj/construct-or
++    ╭─[ <input>:12:10 ]
++    │
++ 12 │         (obj/construct-or
++    │          ────────┬───────  
++    │                  ╰───────── Used here
++────╯
++Error: Undefined variable: obj/insert
++    ╭─[ <input>:14:6 ]
++    │
++ 14 │     (obj/insert
++    │      ─────┬────  
++    │           ╰────── Used here
++────╯
++Error: Undefined variable: obj/construct-or
++    ╭─[ <input>:19:10 ]
++    │
++ 19 │         (obj/construct-or
++    │          ────────┬───────  
++    │                  ╰───────── Used here
++────╯
++
+ ```
+ 
+ Then we have another issue to solve.

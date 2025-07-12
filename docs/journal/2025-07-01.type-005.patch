@@ -1,0 +1,41 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-01.md:144
+```s
+(let :s (list/map (list 2 3 4) (fn (:x) (- x 1) )))
+s
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-01.md
++++ type-005
+@@ -147,7 +147,31 @@
+ ```
+ 
+ ```type
+-[number]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:25 ]
++   │
++ 1 │ (let :s (list/map (list 2 3 4) (fn (:x) (- x 1) )))
++   │                         ──┬──  
++   │                           ╰──── But found tuple
++───╯
++Error: Type mismatch
++    ╭─[ <builtin>:9:24 ]
++    │
++  9 │ "list": forall ['a] -> ['a]
++    │                        ──┬─  
++    │                          ╰─── But found list
++    │ 
++ 11 │ "list/map": forall (['a], ('a, ) -> 'b, ) -> ['b]
++    │                     ──┬─  
++    │                       ╰─── Expected list
++────╯
++
+ ```
+ 
+ ```json

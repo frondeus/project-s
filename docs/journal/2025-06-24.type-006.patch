@@ -1,0 +1,20 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:524
+```
+(let :g ((fn () (fn (:x) x))))
+
+(thunk (g) (g 1))
+
+g
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-006
+@@ -530,7 +530,7 @@
+ ```
+ 
+ ```type
+-(1) -> 1
++('a) → 1
+ ```
+ 
+ Okay, going back to the issue:

@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:679
+```
+(let :t (ref (obj/plain )))
+
+t
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-014
+@@ -683,7 +683,7 @@
+ ```
+ 
+ ```type
+-refmut<{}>
++ref {} mut {}
+ ```
+ 
+ ```json

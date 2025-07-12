@@ -235,6 +235,7 @@ impl TypeEnv {
                                 format!("But found tuple of length {}", left.len()),
                                 Some(lhs_span),
                             );
+                        continue;
                     } else {
                         for (l, r) in left.iter().copied().zip(right.iter().copied()) {
                             queue.push_back((l, r));

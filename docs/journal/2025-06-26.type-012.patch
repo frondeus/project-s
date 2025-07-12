@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-26.md:212
+```
+(: (refmut :number) (ref 1))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-26.md
++++ type-012
+@@ -214,7 +214,7 @@
+ ```
+ 
+ ```type
+-refmut<number>
++ref number mut number
+ ```
+ 
+ ## Skip type

@@ -1,0 +1,40 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-01.md:116
+```s
+(let :s (list/enumerate (list 1 2 3)))
+s
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-01.md
++++ type-004
+@@ -119,7 +119,30 @@
+ ```
+ 
+ ```type
+-[(number, 1 | 2 | 3)]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:31 ]
++   │
++ 1 │ (let :s (list/enumerate (list 1 2 3)))
++   │                               ──┬──  
++   │                                 ╰──── But found tuple
++───╯
++Error: Type mismatch
++    ╭─[ <builtin>:9:24 ]
++    │
++  9 │ "list": forall ['a] -> ['a]
++    │                        ──┬─  
++    │                          ╰─── But found list
++ 10 │ "list/enumerate": forall (['a], ) -> [(number, 'a, )]
++    │                           ──┬─  
++    │                             ╰─── Expected list
++────╯
++
+ ```
+ 
+ ```json

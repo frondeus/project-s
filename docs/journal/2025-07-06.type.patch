@@ -1,0 +1,23 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1146
+```s
+(let :id (fn (:x) x))
+
+(let :mono (id (fn (:x) x)))
+
+(let :a (mono 4))
+(let :b (mono "6"))
+
+(obj/plain :mono mono :a a :b b)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ type
+@@ -1162,7 +1162,7 @@
+ Shit. I clearly lack some kind of constrain
+ 
+ ```type
+-{a: 4 | "6", b: 4 | "6", mono: (4 & "6") -> 4 | "6"}
++{mono: ('a ∧ 'b) → 4 ∨ "6", a: 4 ∨ "6", b: 4 ∨ "6"}
+ ```
+ 
+ Or it is basically fundamental property of this type system.

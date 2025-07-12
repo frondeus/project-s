@@ -14,6 +14,7 @@ use crate::{
 };
 
 mod ascribe;
+mod builder;
 mod coalesce;
 mod constrain;
 mod constructors;
@@ -22,6 +23,7 @@ mod extrude;
 mod format;
 mod freshen_above;
 mod levels;
+mod prelude;
 mod type_term;
 mod utils;
 
@@ -429,34 +431,6 @@ impl TypeEnv {
     pub const BOOLEAN: &str = "bool";
     pub const KEYWORD: &str = "keyword";
     pub const SYMBOL: &str = "symbol";
-
-    pub fn with_prelude(mut self, sources: &mut Sources) -> Self {
-        let builtin = sources.add("<builtin>", "");
-        let span = Span::new_empty(builtin);
-        {
-            // "-"
-            let lhs = self.primitive(Self::NUMBER, span);
-            let rhs = self.primitive(Self::NUMBER, span);
-            let args = self.tuple(vec![lhs, rhs], span);
-            let rhs = self.primitive(Self::NUMBER, span);
-            let ty = self.function(args, rhs, span);
-            self.envs.set("-", InferedTypeScheme::Monomorphic(ty));
-        }
-        {
-            // "="
-            let lhs = self.fresh_var(span, 1);
-            let rhs = self.fresh_var(span, 1);
-            let args = self.tuple(vec![lhs, rhs], span);
-            let rhs = self.primitive(Self::BOOLEAN, span);
-            let ty = self.function(args, rhs, span);
-            self.envs.set(
-                "=",
-                InferedTypeScheme::Polymorphic(InferedPolymorphicType { level: 1, body: ty }),
-            );
-        }
-
-        self
-    }
 }
 
 #[derive(Default, Debug)]
@@ -602,7 +576,9 @@ mod tests {
     #[test]
     fn simple_type() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
-        test_runner::test_snapshots("docs/", &["s", ""], "simple-type", |input, _deps, _args| {
+        let test = move |input: &str,
+                         _deps: &HashMap<test_runner::CowStr<'_>, &str>,
+                         _args: &HashSet<&str>| {
             let mut asts = ASTS::new();
             let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
             let ast = asts
@@ -630,7 +606,10 @@ mod tests {
             out
 
             // env.to_string(infered)
-        })
+        };
+
+        test_runner::test_snapshots("docs/", &["s", ""], "simple-type", test)?;
+        test_runner::test_snapshots("docs/", &["s", ""], "type", test)
     }
 
     #[test]

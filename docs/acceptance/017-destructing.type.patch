@@ -1,0 +1,44 @@
+/Users/frondeus/Code/project-s/docs/acceptance/017-destructing.md:15
+```
+(let (:a :b :c) (list 1 2 3))
+
+a
+```
+
+--- /Users/frondeus/Code/project-s/docs/acceptance/017-destructing.md
++++ type
+@@ -19,7 +19,33 @@
+ ```
+ 
+ ```type
+-1 | 2 | 3
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:23 ]
++   │
++ 1 │ (let (:a :b :c) (list 1 2 3))
++   │                       ──┬──  
++   │                         ╰──── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <input>:1:6 ]
++   │
++ 1 │ (let (:a :b :c) (list 1 2 3))
++   │      ─────┬────  
++   │           ╰────── Expected tuple
++   │
++   ├─[ <builtin>:9:24 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                        ──┬─  
++   │                          ╰─── But found list
++───╯
++
+ ```
+ 
+ Destructing nested lists

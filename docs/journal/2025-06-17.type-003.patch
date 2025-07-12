@@ -1,0 +1,45 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-17.md:30
+```
+(let :x (list 1 2 3))
+(let :y (list 3 2))
+
+x
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-17.md
++++ type-003
+@@ -35,7 +35,33 @@
+ ```
+ 
+ ```type
+-[3 | 2 | 1]
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:1:15 ]
++   │
++ 1 │ (let :x (list 1 2 3))
++   │               ──┬──  
++   │                 ╰──── But found tuple
++───╯
++Error: Type mismatch
++   ╭─[ <builtin>:9:16 ]
++   │
++ 9 │ "list": forall ['a] -> ['a]
++   │                ──┬─  
++   │                  ╰─── Expected list
++   │
++   ├─[ <input>:2:15 ]
++   │
++ 2 │ (let :y (list 3 2))
++   │               ─┬─  
++   │                ╰─── But found tuple
++───╯
++
+ ```
+ 
+ what?

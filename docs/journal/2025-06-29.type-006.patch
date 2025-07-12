@@ -1,0 +1,36 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-29.md:149
+```s
+# (let :id (fn (:x) x))
+(let :dot
+# (id
+  (fn (:f :arg) (f arg))
+# )
+)
+
+(let :plain (obj/plain :a 1))
+(let :field :a)
+
+(dot plain field)
+dot
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-29.md
++++ type-006
+@@ -162,5 +162,16 @@
+ ```
+ 
+ ```type
+-(Applicable(Any -> Any), Any) -> Any
++Error: expected a keyword literal
++   ╭─[ <input>:4:17 ]
++   │
++ 4 │   (fn (:f :arg) (f arg))
++   │                 ───┬───  
++   │                    ╰───── But here we have an application that is not asking about field
++   │ 
++ 8 │ (let :plain (obj/plain :a 1))
++   │             ────────┬───────  
++   │                     ╰───────── This is a record
++───╯
++
+ ```

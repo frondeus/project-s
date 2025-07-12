@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-18.md:7
+```
+(let :f (fn (:x) (if true 1 x)))
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-18.md
++++ type
+@@ -11,7 +11,7 @@
+ ```
+ 
+ ```type
+-(Any) -> Any | 1
++('a) → 1
+ ```
+ 
+ 

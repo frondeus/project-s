@@ -1,0 +1,17 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:576
+```
+(let :f (ref 4))
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-008
+@@ -579,7 +579,7 @@
+ ```
+ 
+ ```type
+-refmut<4>
++ref 4 mut 4
+ ```
+ 
+ Now set:

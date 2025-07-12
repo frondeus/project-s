@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-26.md:258
+```
+(let :f (: (fn (tuple 'a 'b) 'a)
+   (fn (:a :b) b)
+))
+
+(f 1 "2")
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-26.md
++++ type-016
+@@ -266,7 +266,7 @@
+ ```
+ 
+ ```type
+-("2" & 1, "2") -> "2" | 1
++('a ∧ 'b, 'a ∧ 'b) → 1 ∨ "2"
+ ```
+ 
+ Technically I'd expect it to fail and return type error that 
