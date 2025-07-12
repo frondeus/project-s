@@ -208,7 +208,7 @@ impl TypeEnv {
                         queue.push_back((member_ty, ret));
                     } else {
                         diagnostics
-                            .add(rhs_span, "Undefined member: {member}")
+                            .add(rhs_span, format!("Undefined member: {member}"))
                             .add_extra("Used here", Some(rhs_span))
                             .add_extra("Module defined here", Some(lhs_span));
                     }

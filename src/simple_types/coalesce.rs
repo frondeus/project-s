@@ -63,6 +63,45 @@ impl TypeEnv {
         }
     }
 
+    fn coalesce_bounds(
+        &mut self,
+        id: VarId,
+        tv_pol: PolarVariable,
+        polarity: Polarity,
+        recursive: &mut HashMap<PolarVariable, String>,
+        in_process: &mut HashSet<PolarVariable>,
+        vars: &mut VarGenerator,
+    ) -> Vec<TypeId> {
+        let vs_vars = &self.vars[id.0];
+        tracing::trace!("VS_VARS: {:#?}", vs_vars);
+        let bounds = match polarity {
+            Polarity::Positive => {
+                tracing::trace!("Polarity positive. Using lower bounds");
+                vs_vars.lower_bounds.clone()
+            }
+            Polarity::Negative => {
+                tracing::trace!("Polarity negative. Using upper bounds");
+                vs_vars.upper_bounds.clone()
+            }
+        };
+        tracing::trace!("Bounds: {:#?}", bounds);
+        let mut bound_types = bounds
+            .into_iter()
+            .map(|bound| {
+                in_process.insert(tv_pol);
+                let ty = self.coalesce_inner(bound, polarity, recursive, in_process, vars);
+                in_process.remove(&tv_pol);
+                ty
+            })
+            .collect::<Vec<_>>();
+        tracing::trace!("Bound types: {:#?}", bound_types);
+
+        bound_types.sort();
+        bound_types.dedup();
+
+        bound_types
+    }
+
     fn coalesce_inner(
         &mut self,
         ty_id: InferedTypeId,
@@ -84,33 +123,19 @@ impl TypeEnv {
                         .clone();
                     self.add_type(Type::Variable { name })
                 } else {
-                    let vs_vars = &self.vars[id.0];
-                    tracing::trace!("VS_VARS: {:#?}", vs_vars);
-                    let bounds = match polarity {
-                        Polarity::Positive => {
-                            tracing::trace!("Polarity positive. Using lower bounds");
-                            vs_vars.lower_bounds.clone()
-                        }
-                        Polarity::Negative => {
-                            tracing::trace!("Polarity negative. Using upper bounds");
-                            vs_vars.upper_bounds.clone()
-                        }
-                    };
-                    tracing::trace!("Bounds: {:#?}", bounds);
-                    let mut bound_types = bounds
-                        .into_iter()
-                        .map(|bound| {
-                            in_process.insert(tv_pol);
-                            let ty =
-                                self.coalesce_inner(bound, polarity, recursive, in_process, vars);
-                            in_process.remove(&tv_pol);
-                            ty
-                        })
-                        .collect::<Vec<_>>();
-                    tracing::trace!("Bound types: {:#?}", bound_types);
+                    let mut bound_types =
+                        self.coalesce_bounds(id, tv_pol, polarity, recursive, in_process, vars);
 
-                    bound_types.sort();
-                    bound_types.dedup();
+                    if bound_types.is_empty() && polarity == Polarity::Negative {
+                        bound_types.extend(self.coalesce_bounds(
+                            id,
+                            tv_pol,
+                            Polarity::Positive,
+                            recursive,
+                            in_process,
+                            vars,
+                        ));
+                    }
 
                     if bound_types.is_empty() {
                         tracing::trace!("Bounds are empty. {:?}", tv_pol);

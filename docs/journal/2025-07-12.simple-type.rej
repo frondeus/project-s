@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-12.md:1
+```s
+(let :f (:
+    (fn ((extend :a :number)) :number)
+    (fn (:o)
+        (o :a)
+    )
+))
+
+(let :obj (obj/plain
+    :a 1
+    :b 2
+))
+
+(f obj)
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-12.md
++++ simple-type
+@@ -17,7 +17,7 @@
+ ```
+ 
+ ```simple-type
+-('a extends {a: number}) → number
++({a: number, b: 2}) → number
+ ```
+ 
+ ```s
