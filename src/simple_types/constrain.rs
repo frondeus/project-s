@@ -215,6 +215,35 @@ impl TypeEnv {
                     continue;
                 }
                 (
+                    // Every tuple can be treated as a list if it has the same type for every element.
+                    Tuple {
+                        items: left,
+                        span: _,
+                    },
+                    &List {
+                        item: right,
+                        span: _,
+                    },
+                ) => {
+                    for left in left {
+                        queue.push_back((*left, right));
+                    }
+                    continue;
+                }
+                (
+                    &List {
+                        item: left,
+                        span: _,
+                    },
+                    &List {
+                        item: right,
+                        span: _,
+                    },
+                ) => {
+                    queue.push_back((left, right));
+                    continue;
+                }
+                (
                     Tuple {
                         items: left,
                         span: _,

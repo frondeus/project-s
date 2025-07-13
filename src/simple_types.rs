@@ -608,8 +608,10 @@ mod tests {
             // env.to_string(infered)
         };
 
-        test_runner::test_snapshots("docs/", &["s", ""], "simple-type", test)?;
-        test_runner::test_snapshots("docs/", &["s", ""], "type", test)
+        let t1 = test_runner::test_snapshots("docs/", &["s", ""], "simple-type", test);
+        let t2 = test_runner::test_snapshots("docs/", &["s", ""], "type", test);
+        t1?;
+        t2
     }
 
     #[test]

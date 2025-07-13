@@ -126,16 +126,16 @@ impl TypeEnv {
                     let mut bound_types =
                         self.coalesce_bounds(id, tv_pol, polarity, recursive, in_process, vars);
 
-                    if bound_types.is_empty() && polarity == Polarity::Negative {
-                        bound_types.extend(self.coalesce_bounds(
-                            id,
-                            tv_pol,
-                            Polarity::Positive,
-                            recursive,
-                            in_process,
-                            vars,
-                        ));
-                    }
+                    // if bound_types.is_empty() && polarity == Polarity::Negative {
+                    //     bound_types.extend(self.coalesce_bounds(
+                    //         id,
+                    //         tv_pol,
+                    //         Polarity::Positive,
+                    //         recursive,
+                    //         in_process,
+                    //         vars,
+                    //     ));
+                    // }
 
                     if bound_types.is_empty() {
                         tracing::trace!("Bounds are empty. {:?}", tv_pol);

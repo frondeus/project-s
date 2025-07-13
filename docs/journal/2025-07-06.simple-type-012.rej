@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1002
+```s
+(let :id (fn (:x) x))
+
+(let :mono (id (fn (:x) x)))
+
+(mono 4)
+
+mono
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-012
+@@ -1010,7 +1010,7 @@
+ ```
+ 
+ ```simple-type
+-(4) → 4
++('a) → 4
+ ```
+ 
+ ```simple-type-traces trace

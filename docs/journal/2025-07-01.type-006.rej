@@ -11,7 +11,7 @@ s
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-01.md
 +++ type-006
-@@ -172,7 +172,27 @@
+@@ -172,7 +172,14 @@
  ```
  
  ```type
@@ -22,19 +22,6 @@ s
 + 1 │ (let :s (list/find-or
 +   │          ──────┬─────  
 +   │                ╰─────── Used here
-+───╯
-+Error: Type mismatch
-+   ╭─[ <builtin>:9:16 ]
-+   │
-+ 9 │ "list": forall ['a] -> ['a]
-+   │                ──┬─  
-+   │                  ╰─── Expected list
-+   │
-+   ├─[ <input>:2:11 ]
-+   │
-+ 2 │     (list 1 2 4)
-+   │           ──┬──  
-+   │             ╰──── But found tuple
 +───╯
 +
  ```
