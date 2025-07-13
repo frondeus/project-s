@@ -116,7 +116,8 @@ impl Runtime {
                 let pattern = Pattern::parse(*ident, &self.asts)?;
                 let value = self.eval(*value);
 
-                self.destruct_(pattern, value)
+                self.destruct_(pattern, value)?;
+                Ok(Value::List(vec![]))
             }
             _ => Err(format!("Expected 2 arguments, found: {}", items.len())),
         }

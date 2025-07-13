@@ -1,0 +1,33 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:993
+```s
+(let :id (fn (:x) x))
+
+(let :mono (id (fn (:x) x)))
+
+(mono 4)
+
+mono
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-traces-005
+@@ -1239,6 +1239,7 @@
+         ),
+     ],
+ }
++TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+ TRACE project_s::simple_types::coalesce: Bounds: [
+     InferedTypeId(
+         76,
+@@ -1254,8 +1255,11 @@
+     ],
+     upper_bounds: [],
+ }
++TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+ TRACE project_s::simple_types::coalesce: Bounds: []
+ TRACE project_s::simple_types::coalesce: Bound types: []
++TRACE project_s::simple_types::coalesce: Bounds are empty. PolarVariable { polarity: Negative, id: VarId(16) }
++TRACE project_s::simple_types::coalesce: Creating new type var: 'a
+ TRACE project_s::simple_types::utils: Adding Variable { name: "'a" } as 0
+ TRACE project_s::simple_types::coalesce: Bound types: [
+     TypeId(

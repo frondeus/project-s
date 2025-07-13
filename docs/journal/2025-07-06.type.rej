@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1322
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1309
 ```s
 (let :id (fn (:x) x))
 
@@ -12,7 +12,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ type
-@@ -1338,7 +1338,7 @@
+@@ -1325,7 +1325,7 @@
  Shit. I clearly lack some kind of constrain
  
  ```type

@@ -126,7 +126,8 @@ mod tests {
 
     #[test]
     fn eval() -> test_runner::Result {
-        test_runner::test_snapshots("docs/", &["s"], "eval", |input, deps, _args| {
+        test_runner::test_snapshots("docs/", &["s"], "eval", |input, deps, args| {
+            let lazy = args.contains("lazy");
             let (mut modules, source_id) = MemoryModules::from_deps(input, deps);
             let mut asts = ASTS::new();
             let source = modules.sources.get(source_id);
@@ -148,7 +149,7 @@ mod tests {
             runtime.with_env(prelude);
 
             let value = runtime.eval(root_id);
-            let json = runtime.to_json(value, true);
+            let json = runtime.to_json(value, !lazy);
 
             let mut result = String::new();
             let t_env = type_env.top_env().clone();
@@ -170,7 +171,7 @@ mod tests {
                     }
                 }
                 if let Some(json) = r_env.get(k) {
-                    let json = runtime.to_json(json.clone(), true);
+                    let json = runtime.to_json(json.clone(), !lazy);
                     result.push_str(" = ");
                     result.push_str(&serde_json::to_string_pretty(&json).unwrap());
                 }

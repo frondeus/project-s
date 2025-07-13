@@ -178,7 +178,7 @@ impl<'a> LambdaPass<'a> {
         let first_id = sexp_ids.first().copied()?;
         if self.is_one_of(first_id, &["quote", "quasiquote"]) {
             None
-        } else if self.is_symbol(first_id, "do") {
+        } else if self.is_one_of(first_id, &["do", "top-level"]) {
             self.process_do(span, sexp_ids.to_vec(), |pass, id| pass.pass_inner(id))
         } else if self.is_one_of(first_id, &["let-rec", "let*"]) {
             let sexp_ids = sexp_ids.to_vec();
@@ -394,7 +394,7 @@ impl<'a> LambdaPass<'a> {
                 if self.is_symbol(first, "quasiquote") {
                     return self.process_quasiquote(span, sexp_ids.clone(), free_vars);
                 }
-                if self.is_symbol(first, "do") {
+                if self.is_one_of(first, &["do", "top-level"]) {
                     return self.process_do(span, sexp_ids.clone(), move |pass, id| {
                         pass.process_fn_decl_body(id, free_vars)
                     });
