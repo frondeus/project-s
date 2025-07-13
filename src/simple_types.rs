@@ -238,6 +238,16 @@ impl InferedType {
         }
     }
 
+    pub fn as_number_literal(&self) -> Option<f64> {
+        match self {
+            InferedType::Literal {
+                value: Literal::Number(value),
+                ..
+            } => Some(*value),
+            _ => None,
+        }
+    }
+
     pub fn as_keyword_literal(&self) -> Option<&str> {
         match self {
             InferedType::Literal {

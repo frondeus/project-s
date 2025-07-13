@@ -215,6 +215,50 @@ impl TypeEnv {
                     continue;
                 }
                 (
+                    Tuple {
+                        items: left,
+                        span: _,
+                    },
+                    &Applicative {
+                        arg: _,
+                        ret,
+                        first_arg,
+                        span: _,
+                    },
+                ) => {
+                    let Some(index) = first_arg
+                        .and_then(|first| self.find_non_var(first))
+                        .and_then(|first| first.as_number_literal())
+                    else {
+                        diagnostics
+                            .add(rhs_span, "expected a number literal")
+                            .add_extra("This is a tuple", Some(lhs_span))
+                            .add_extra(
+                                "But here we have an application that is not asking about index",
+                                Some(rhs_span),
+                            );
+                        continue;
+                    };
+                    // TODO : Make it more safe
+                    let index = index as usize;
+                    if index >= left.len() {
+                        diagnostics
+                            .add(rhs_span, "index out of bounds")
+                            .add_extra(
+                                format!("This is a tuple that has {} elements", left.len()),
+                                Some(lhs_span),
+                            )
+                            .add_extra(
+                                format!("But here we ask about {index} element"),
+                                Some(rhs_span),
+                            )
+                            .add_extra("Note, tuples are zero-indexed", None);
+                        continue;
+                    }
+                    queue.push_back((left[index], ret));
+                    continue;
+                }
+                (
                     // Every tuple can be treated as a list if it has the same type for every element.
                     Tuple {
                         items: left,

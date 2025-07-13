@@ -421,6 +421,21 @@ impl Runtime {
                             Value::Constructor(constructor) => {
                                 self.constructor_call(constructor, None)
                             }
+                            Value::List(list) => {
+                                let Some(index) = items.get(1) else {
+                                    return Value::List(list);
+                                };
+                                let index = self.eval(*index);
+                                try_err!(index);
+                                let Some(index) = index.as_number() else {
+                                    return Value::Error(format!("Invalid index: {index:?}"));
+                                };
+                                let index = index as usize;
+                                if index >= list.len() {
+                                    return Value::Error(format!("Index out of bounds: {index}"));
+                                }
+                                list[index].clone()
+                            }
                             Value::Function(function) => self.closure_call(function, &items[1..]),
                             _ => Value::Error(format!("Invalid caller: {first:?}")),
                         }

@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:993
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:846
 ```s
 (let :id (fn (:x) x))
 
@@ -11,7 +11,7 @@ mono
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ simple-type-traces-005
-@@ -1239,6 +1239,7 @@
+@@ -1092,6 +1092,7 @@
          ),
      ],
  }
@@ -19,7 +19,7 @@ mono
  TRACE project_s::simple_types::coalesce: Bounds: [
      InferedTypeId(
          76,
-@@ -1254,8 +1255,11 @@
+@@ -1107,8 +1108,11 @@
      ],
      upper_bounds: [],
  }

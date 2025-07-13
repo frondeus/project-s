@@ -8,15 +8,6 @@ fn bin_op(lhs: impl TypeBuilder, rhs: impl TypeBuilder, ret: impl TypeBuilder) -
 }
 
 impl TypeEnv {
-    fn bin_op(&mut self, name: &str, span: Span, lhs: &str, rhs: &str, out: &str) {
-        let lhs = self.primitive(lhs, span);
-        let rhs = self.primitive(rhs, span);
-        let args = self.tuple(vec![lhs, rhs], span);
-        let rhs = self.primitive(out, span);
-        let ty = self.function(args, rhs, span);
-        self.envs.set(name, InferedTypeScheme::Monomorphic(ty));
-    }
-
     fn with_mono(&mut self, source: &mut SourceBuilder, name: &str, ty: impl TypeBuilder) {
         source.append(&format!("\"{name}\": "));
         let ty = ty.build(self, source);

@@ -1,0 +1,166 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:537
+```s
+(let :x 1)
+(if x "4" 5)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
++++ simple-type-traces-003
+@@ -555,10 +555,157 @@
+ ```
+ 
+ ```simple-type-traces trace
++TRACE project_s::simple_types::utils: Adding infered number as N0: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered number as N1: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N2: Tuple { items: [InferedTypeId(0), InferedTypeId(1)] }
++TRACE project_s::simple_types::utils: Adding infered number as N3: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered function as N4: Function { lhs: InferedTypeId(2), rhs: InferedTypeId(3) }
++TRACE project_s::simple_types::utils: Adding infered number as N5: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered number as N6: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N7: Tuple { items: [InferedTypeId(5), InferedTypeId(6)] }
++TRACE project_s::simple_types::utils: Adding infered number as N8: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered function as N9: Function { lhs: InferedTypeId(7), rhs: InferedTypeId(8) }
++TRACE project_s::simple_types::utils: Adding infered number as N10: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered number as N11: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N12: Tuple { items: [InferedTypeId(10), InferedTypeId(11)] }
++TRACE project_s::simple_types::utils: Adding infered number as N13: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered function as N14: Function { lhs: InferedTypeId(12), rhs: InferedTypeId(13) }
++TRACE project_s::simple_types::utils: Adding infered number as N15: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered number as N16: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N17: Tuple { items: [InferedTypeId(15), InferedTypeId(16)] }
++TRACE project_s::simple_types::utils: Adding infered bool as N18: Primitive { name: "bool" }
++TRACE project_s::simple_types::utils: Adding infered function as N19: Function { lhs: InferedTypeId(17), rhs: InferedTypeId(18) }
++TRACE project_s::simple_types::utils: Adding infered number as N20: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered number as N21: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N22: Tuple { items: [InferedTypeId(20), InferedTypeId(21)] }
++TRACE project_s::simple_types::utils: Adding infered bool as N23: Primitive { name: "bool" }
++TRACE project_s::simple_types::utils: Adding infered function as N24: Function { lhs: InferedTypeId(22), rhs: InferedTypeId(23) }
++TRACE project_s::simple_types::utils: Adding fresh variable 0 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N25: Variable { id: VarId(0) }
++TRACE project_s::simple_types::utils: Adding fresh variable 1 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N26: Variable { id: VarId(1) }
++TRACE project_s::simple_types::utils: Adding infered tuple as N27: Tuple { items: [InferedTypeId(25), InferedTypeId(26)] }
++TRACE project_s::simple_types::utils: Adding infered bool as N28: Primitive { name: "bool" }
++TRACE project_s::simple_types::utils: Adding infered function as N29: Function { lhs: InferedTypeId(27), rhs: InferedTypeId(28) }
++TRACE project_s::simple_types::utils: Adding fresh variable 2 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N30: Variable { id: VarId(2) }
++TRACE project_s::simple_types::utils: Adding infered tuple as N31: Tuple { items: [InferedTypeId(30)] }
++TRACE project_s::simple_types::utils: Adding infered number as N32: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered function as N33: Function { lhs: InferedTypeId(31), rhs: InferedTypeId(32) }
++TRACE project_s::simple_types::utils: Adding fresh variable 3 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N34: Variable { id: VarId(3) }
++TRACE project_s::simple_types::utils: Adding infered function as N35: Function { lhs: InferedTypeId(34), rhs: InferedTypeId(34) }
++TRACE project_s::simple_types::utils: Adding fresh variable 4 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N36: Variable { id: VarId(4) }
++TRACE project_s::simple_types::utils: Adding infered function as N37: Function { lhs: InferedTypeId(36), rhs: InferedTypeId(36) }
++TRACE project_s::simple_types::utils: Adding fresh variable 5 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N38: Variable { id: VarId(5) }
++TRACE project_s::simple_types::utils: Adding infered list as N39: List { item: InferedTypeId(38) }
++TRACE project_s::simple_types::utils: Adding infered list as N40: List { item: InferedTypeId(38) }
++TRACE project_s::simple_types::utils: Adding infered function as N41: Function { lhs: InferedTypeId(39), rhs: InferedTypeId(40) }
++TRACE project_s::simple_types::utils: Adding fresh variable 6 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N42: Variable { id: VarId(6) }
++TRACE project_s::simple_types::utils: Adding infered list as N43: List { item: InferedTypeId(42) }
++TRACE project_s::simple_types::utils: Adding infered tuple as N44: Tuple { items: [InferedTypeId(43)] }
++TRACE project_s::simple_types::utils: Adding infered number as N45: Primitive { name: "number" }
++TRACE project_s::simple_types::utils: Adding infered tuple as N46: Tuple { items: [InferedTypeId(45), InferedTypeId(42)] }
++TRACE project_s::simple_types::utils: Adding infered list as N47: List { item: InferedTypeId(46) }
++TRACE project_s::simple_types::utils: Adding infered function as N48: Function { lhs: InferedTypeId(44), rhs: InferedTypeId(47) }
++TRACE project_s::simple_types::utils: Adding fresh variable 7 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N49: Variable { id: VarId(7) }
++TRACE project_s::simple_types::utils: Adding infered list as N50: List { item: InferedTypeId(49) }
++TRACE project_s::simple_types::utils: Adding infered tuple as N51: Tuple { items: [InferedTypeId(49)] }
++TRACE project_s::simple_types::utils: Adding fresh variable 8 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N52: Variable { id: VarId(8) }
++TRACE project_s::simple_types::utils: Adding infered function as N53: Function { lhs: InferedTypeId(51), rhs: InferedTypeId(52) }
++TRACE project_s::simple_types::utils: Adding infered tuple as N54: Tuple { items: [InferedTypeId(50), InferedTypeId(53)] }
++TRACE project_s::simple_types::utils: Adding infered list as N55: List { item: InferedTypeId(52) }
++TRACE project_s::simple_types::utils: Adding infered function as N56: Function { lhs: InferedTypeId(54), rhs: InferedTypeId(55) }
++TRACE project_s::simple_types::type_term: Infering `(top-level (let :x 1) (if x "4" 5))` level 0
+ TRACE project_s::simple_types::type_term: Infering do expression
++TRACE project_s::simple_types::type_term: Infering `(let :x 1)` level 0
+ TRACE project_s::simple_types::type_term: Infering let expression
++TRACE project_s::simple_types::type_term: Infering `1` level 1
++TRACE project_s::simple_types::utils: Adding infered 1 as N57: Literal { value: Number(1.0) }
++TRACE project_s::simple_types::utils: Adding infered number as N58: Primitive { name: "number" }
++TRACE project_s::simple_types::constrain: Constraining (57 <: 58): 1 <: number
++TRACE project_s::simple_types::utils: `1` with type N57
+ TRACE project_s::simple_types::type_term: Infering pattern: Single("x") - 1 lvl Monomorphic
++TRACE project_s::simple_types::utils: Adding fresh variable 9 with level 1
++TRACE project_s::simple_types::utils: Adding infered variable as N59: Variable { id: VarId(9) }
++TRACE project_s::simple_types::utils: `:x` with type N59
++TRACE project_s::simple_types::constrain: Constraining (57 <: 59): 1 <: variable
++TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 1
++TRACE project_s::simple_types::constrain: Pushing 57 to lower bounds of RHS: 59
++TRACE project_s::simple_types::utils: Adding infered tuple as N60: Tuple { items: [] }
++TRACE project_s::simple_types::utils: `(let :x 1)` with type N60
++TRACE project_s::simple_types::type_term: Infering `(if x "4" 5)` level 0
++TRACE project_s::simple_types::type_term: Infering if expression
++TRACE project_s::simple_types::type_term: Infering `x` level 0
++TRACE project_s::simple_types::utils: `x` with type N59
++TRACE project_s::simple_types::type_term: Condition type: 59
++TRACE project_s::simple_types::utils: Adding infered bool as N61: Primitive { name: "bool" }
++TRACE project_s::simple_types::constrain: Constraining (59 <: 61): variable <: bool
++TRACE project_s::simple_types::constrain: RHS LVL: 0 <= LHS LVL: 1
++TRACE project_s::simple_types::constrain: Pushing 61 to upper bounds of LHS 59
++TRACE project_s::simple_types::constrain: Constraint by extension of lower bound: 57 :< 61
++TRACE project_s::simple_types::constrain: Constraining (57 <: 61): 1 <: bool
+ ERROR project_s::simple_types::constrain: Type mismatch 1 (57) <!: bool (61)
++TRACE project_s::simple_types::type_term: Infering `"4"` level 0
++TRACE project_s::simple_types::utils: Adding infered "4" as N62: Literal { value: String("4") }
++TRACE project_s::simple_types::utils: Adding infered string as N63: Primitive { name: "string" }
++TRACE project_s::simple_types::constrain: Constraining (62 <: 63): "4" <: string
++TRACE project_s::simple_types::utils: `"4"` with type N62
++TRACE project_s::simple_types::type_term: Infering `5` level 0
++TRACE project_s::simple_types::utils: Adding infered 5 as N64: Literal { value: Number(5.0) }
++TRACE project_s::simple_types::utils: Adding infered number as N65: Primitive { name: "number" }
++TRACE project_s::simple_types::constrain: Constraining (64 <: 65): 5 <: number
++TRACE project_s::simple_types::utils: `5` with type N64
++TRACE project_s::simple_types::utils: Adding fresh variable 10 with level 0
++TRACE project_s::simple_types::utils: Adding infered variable as N66: Variable { id: VarId(10) }
++TRACE project_s::simple_types::constrain: Constraining (62 <: 66): "4" <: variable
++TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
++TRACE project_s::simple_types::constrain: Pushing 62 to lower bounds of RHS: 66
++TRACE project_s::simple_types::constrain: Constraining (64 <: 66): 5 <: variable
++TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
++TRACE project_s::simple_types::constrain: Pushing 64 to lower bounds of RHS: 66
++TRACE project_s::simple_types::utils: `(if x "4" 5)` with type N66
++TRACE project_s::simple_types::utils: `(top-level (let :x 1) (if x "4" 5))` with type N66
++TRACE project_s::simple_types::coalesce: Coalesce(66 ; Positive): Variable { id: VarId(10) }
++TRACE project_s::simple_types::coalesce: VS_VARS: VarState {
++    level: 0,
++    lower_bounds: [
++        InferedTypeId(
++            62,
++        ),
++        InferedTypeId(
++            64,
++        ),
++    ],
++    upper_bounds: [],
++}
++TRACE project_s::simple_types::coalesce: Polarity positive. Using lower bounds
++TRACE project_s::simple_types::coalesce: Bounds: [
++    InferedTypeId(
++        62,
++    ),
++    InferedTypeId(
++        64,
++    ),
++]
++TRACE project_s::simple_types::coalesce: Coalesce(62 ; Positive): Literal { value: String("4") }
++TRACE project_s::simple_types::utils: Adding Literal { value: String("4") } as 0
++TRACE project_s::simple_types::coalesce: Coalesce(64 ; Positive): Literal { value: Number(5.0) }
++TRACE project_s::simple_types::utils: Adding Literal { value: Number(5.0) } as 1
++TRACE project_s::simple_types::coalesce: Bound types: [
++    TypeId(
++        0,
++    ),
++    TypeId(
++        1,
++    ),
++]
++TRACE project_s::simple_types::utils: Adding Union { items: [TypeId(0), TypeId(1)] } as 2
+ 
+ ```
+ 
