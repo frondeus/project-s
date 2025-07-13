@@ -34,3 +34,118 @@ val t : (1, 2, 3) = [
 ```
 
 Note, tuples are zero-indexed, so by asking for `(t 1)` we access the second element of the tuple.
+
+
+# Application
+
+What if we define a function that accesses the first element of a tuple?
+What would be the type of such function?
+
+How S-lang knows that `(t 1)` is "accessing" tuple, and not calling a function with single numeral parameter?
+
+The answer is - S-lang has no idea.
+All it can infer is that "`t` is something that must be able to be called with a tuple of `(1)`".
+And that is it!
+
+So if we look at such a function:
+
+```s
+(let :f (fn (:t)
+  (t 0)
+))
+
+(let :t (tuple 1 2 3))
+
+(f t)
+```
+
+```eval
+val f : forall ((0) -?-> 'a) → 'a = "<Function: LispFn>"
+val t : (1, 2, 3) = [
+  1.0,
+  2.0,
+  3.0
+]
+- : 1 = 1.0
+```
+
+You can see that `f` has a type `forall ((0) -?-> 'a) → 'a`. which can be read as:
+"For every `'a` f takes a tuple of with something ''applicative'' that can take a tuple of `(0)` and return `'a`."
+In the type system currently we encode that "applicative" type as `{left} -?-> {right}`.
+
+Another way of seeing it, is as if we had a trait (using Rust notation):
+
+```rust
+trait Applicative<Args> {
+    type Output;
+
+    fn apply(self, args: Args) -> Self::Output;
+}
+```
+
+That trait is implemented for tuples (well. imagine if it was implemented because in reality it cannot be expressed in Rust):
+
+```rust
+impl Applicative<(usize)> for (T1,T2,...) {
+    type Output = <depending on arg return T1, T2 etc>;
+
+    fn apply(self, args: ()) -> Self::Output {
+        self.0
+    }
+}
+```
+
+Yet another (and more correct tbh) way of looking it is as if we had a TYPE.
+
+> [!NOTE]
+> This is just an example of non-existing semantics and syntax.
+
+```example
+type Applicative<Args, Ret>;
+```
+
+and then tuple is a **subtype** of Applicative:
+
+```example
+type Tuple<(T1, T2)>
+  where Self :< Applicative<(0,), T1>
+  and Self :< Applicative<(1,), T2>;
+```
+
+And **Function** is also a subtype of Applicative:
+
+```example
+type Function<T1, T2>
+  where Self :< Applicative<T1, T2>;
+```
+
+In other words in our example, since `f` is polymorphic, we can use it with both tuples
+and functions because both are a subtype of this Applicative type.
+
+```s
+(let :f (fn (:t)
+  (t 0)
+))
+
+(let :t (tuple 1 2 3))
+(let :id (fn (:x) x))
+
+(tuple
+  (f t)
+  (f id)
+)
+```
+
+```eval
+val f : forall ((0) -?-> 'a) → 'a = "<Function: LispFn>"
+val id : forall ('a) → 'a = "<Function: LispFn>"
+val t : (1, 2, 3) = [
+  1.0,
+  2.0,
+  3.0
+]
+- : (1, 0) = [
+  1.0,
+  0.0
+]
+```
