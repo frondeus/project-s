@@ -292,6 +292,18 @@ impl TypeEnv {
                     self.envs.pop();
                     last_type
                 }
+                [first, last] if Self::is_symbol(asts, *first, "top-level") => {
+                    self.envs.push();
+                    self.check(asts, *last, diagnostics)
+                }
+                [first, args @ .., last] if Self::is_symbol(asts, *first, "top-level") => {
+                    self.envs.push();
+                    let last = *last;
+                    for arg in args.to_vec() {
+                        self.check(asts, arg, diagnostics);
+                    }
+                    self.check(asts, last, diagnostics)
+                }
                 [first, pattern_id, value] if Self::is_symbol(asts, *first, "let") => {
                     let pattern = match Pattern::parse(*pattern_id, asts) {
                         Ok(pattern) => pattern,

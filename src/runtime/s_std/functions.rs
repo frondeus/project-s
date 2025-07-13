@@ -367,7 +367,11 @@ pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
         .map_err(|e| e.to_string())?;
     let root = ast.root_id().ok_or("Import: Expected root")?;
 
-    Ok(rt.eval(root))
+    let save = rt.envs.savepoint();
+    let result = rt.eval(root);
+    rt.envs.restore(save);
+
+    Ok(result)
 }
 
 // Eq

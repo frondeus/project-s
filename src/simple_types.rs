@@ -417,8 +417,8 @@ impl WithLevel for InferedTypeScheme {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct InferedPolymorphicType {
-    level: usize,
-    body: InferedTypeId,
+    pub level: usize,
+    pub body: InferedTypeId,
 }
 
 impl TypeEnv {
@@ -433,9 +433,15 @@ impl TypeEnv {
     pub const SYMBOL: &str = "symbol";
 }
 
-#[derive(Default, Debug)]
-struct Env {
+#[derive(Default, Debug, Clone)]
+pub struct Env {
     vars: BTreeMap<String, InferedTypeScheme>,
+}
+
+impl Env {
+    pub fn iter(&self) -> impl Iterator<Item = (&String, InferedTypeScheme)> {
+        self.vars.iter().map(|(k, v)| (k, *v))
+    }
 }
 
 #[derive(Debug)]

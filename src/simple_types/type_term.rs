@@ -235,6 +235,21 @@ impl TypeEnv {
                     self.envs.pop();
                     last
                 }
+                [first, last] if Self::is_symbol(asts, first, "top-level") => {
+                    tracing::trace!("Infering do expression");
+
+                    self.envs.push();
+                    self.type_term(asts, last, diagnostics, modules, level)
+                }
+                [first, ref args @ .., last] if Self::is_symbol(asts, first, "top-level") => {
+                    tracing::trace!("Infering do expression");
+
+                    self.envs.push();
+                    for arg in args.to_vec() {
+                        self.type_term(asts, arg, diagnostics, modules, level);
+                    }
+                    self.type_term(asts, last, diagnostics, modules, level)
+                }
                 [first, pattern_id, value] if Self::is_symbol(asts, first, "let") => {
                     tracing::trace!("Infering let expression");
                     let pattern = match Pattern::parse(pattern_id, asts) {
@@ -249,7 +264,7 @@ impl TypeEnv {
                         }
                     };
                     let rhs_ty = self.type_term(asts, value, diagnostics, modules, level + 1);
-                    let scheme = if Self::is_expression_value(value, asts) {
+                    let scheme = if Self::is_worth_generalizing(value, asts) {
                         TypeSchemeKind::Polymorphic { level }
                     } else {
                         TypeSchemeKind::Monomorphic
@@ -403,6 +418,29 @@ impl TypeEnv {
                 }
             },
             SExp::Error => self.error(span),
+        }
+    }
+
+    fn is_worth_generalizing(sexp: SExpId, asts: &ASTS) -> bool {
+        if !Self::is_expression_value(sexp, asts) {
+            return false;
+        }
+        Self::has_unknown_variable(sexp, asts)
+    }
+
+    fn has_unknown_variable(sexp: SExpId, asts: &ASTS) -> bool {
+        match &**asts.get(sexp) {
+            SExp::Number(_)
+            | SExp::String(_)
+            | SExp::Bool(_)
+            | SExp::Symbol(_)
+            | SExp::Keyword(_)
+            | SExp::Error => false,
+            SExp::List(sexp_ids) => match sexp_ids[..] {
+                [] => false,
+                [first, ..] if Self::is_symbols(asts, first, &["fn", "cl"]) => true,
+                _ => false,
+            },
         }
     }
 

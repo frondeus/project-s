@@ -546,10 +546,10 @@ impl SExpParser {
                 range: root.range(),
                 source_id: self.source_id,
             };
-            let do_symbol = self
-                .ast
-                .add_node(SExp::Symbol("do".to_string()), span, None);
-            ids.insert(0, do_symbol);
+            let top_level_symbol =
+                self.ast
+                    .add_node(SExp::Symbol("top-level".to_string()), span, None);
+            ids.insert(0, top_level_symbol);
             let root = self.ast.add_node(SExp::List(ids), span, None);
             self.ast.root = Some(root);
         }

@@ -193,6 +193,27 @@ impl Runtime {
         result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
     }
 
+    fn top_level(&mut self, items: &[SExpId]) -> Value {
+        let mut result = None;
+        self.envs.push();
+        for item in items {
+            let mut value = self.eval(*item);
+
+            if self.eager_do_error {
+                value = match value.ok() {
+                    Err(e) => {
+                        return Value::Error(e);
+                    }
+                    Ok(value) => value,
+                }
+            }
+            result = Some(value);
+        }
+        result.unwrap_or_else(|| {
+            Value::Error("Top Level: Expected at least one argument".to_string())
+        })
+    }
+
     fn if_(&mut self, items: &[SExpId]) -> Result<Value, String> {
         match items {
             [condition, then, else_] => {
@@ -342,6 +363,7 @@ impl Runtime {
                         item
                     }
                     SExp::Symbol(tag) if tag == "do" => self.do_(&items[1..]),
+                    SExp::Symbol(tag) if tag == "top-level" => self.top_level(&items[1..]),
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)
                     }
@@ -414,6 +436,10 @@ impl Runtime {
 
     pub fn modules_mut(&mut self) -> &mut dyn ModuleProvider {
         &mut *self.modules
+    }
+
+    pub fn top_env(&self) -> &Env {
+        self.envs.last()
     }
 }
 

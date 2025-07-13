@@ -9,7 +9,7 @@ use crate::{
 
 use super::value::{Function, Macro, Value};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Env {
     // is_obj: bool,
     vars: BTreeMap<String, Value>,
@@ -22,6 +22,10 @@ impl Env {
 
     pub fn iter(&self) -> impl Iterator<Item = (&str, &Value)> {
         self.vars.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.vars.get(key)
     }
 
     pub fn with_macro(
@@ -141,7 +145,17 @@ impl Envs {
         self.envs.pop().map(|env| env.vars)
     }
 
+    pub fn savepoint(&self) -> EnvSavePoint {
+        EnvSavePoint(self.envs.len())
+    }
+
+    pub fn restore(&mut self, savepoint: EnvSavePoint) {
+        self.envs.truncate(savepoint.0);
+    }
+
     // pub fn _self(&self) -> Option<&Env> {
     //     self.envs.iter().rev().find(|env| env.is_obj)
     // }
 }
+
+pub struct EnvSavePoint(usize);

@@ -23,6 +23,9 @@ pub(crate) fn variable_letters(mut i: usize) -> String {
 }
 
 impl TypeEnv {
+    pub fn top_env(&self) -> &Env {
+        self.envs.envs.last().unwrap()
+    }
     pub(crate) fn span_of(sexp: SExpId, asts: &ASTS) -> Span {
         let sexp = asts.get(sexp);
         sexp.span
