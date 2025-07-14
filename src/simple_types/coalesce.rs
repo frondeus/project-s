@@ -201,13 +201,19 @@ impl TypeEnv {
                     first_arg,
                 })
             }
-            InferedType::Tuple { items, span: _ } => {
+            &InferedType::Tuple {
+                ref items,
+                rest,
+                span: _,
+            } => {
                 let items = items
                     .clone()
                     .into_iter()
                     .map(|ty| self.coalesce_inner(ty, polarity, recursive, in_process, vars))
                     .collect();
-                self.add_type(Type::Tuple { items })
+                let rest = rest
+                    .map(|rest| self.coalesce_inner(rest, polarity, recursive, in_process, vars));
+                self.add_type(Type::Tuple { items, rest })
             }
             InferedType::Record {
                 fields,

@@ -527,6 +527,10 @@ impl TypeEnv {
         let bound = match pattern {
             // If its not a value, we cant generalize it so we treat is as monomorphic scheme.
             _ if !Self::is_expression_value(value, asts) => self.check_pattern(pattern),
+            Pattern::Hole(_n, _id) => {
+                todo!()
+            }
+            Pattern::Splice(_, _, _) => todo!(),
             Pattern::Single(key, span, id) => {
                 let inner_key = key.clone();
                 let f =
@@ -574,6 +578,8 @@ impl TypeEnv {
 
     fn check_pattern(&mut self, pattern: Pattern) -> core::Use {
         match pattern {
+            Pattern::Hole(_, _) => todo!(),
+            Pattern::Splice(_, _, _) => todo!(),
             Pattern::Single(key, span, id) => {
                 let (value, bound) = self.engine.var(span);
                 self.assign_expr(id, value);

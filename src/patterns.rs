@@ -7,7 +7,9 @@ use crate::{
 
 #[derive(Clone)]
 pub enum Pattern {
+    Hole(Span, SExpId),
     Single(String, Span, SExpId),
+    Splice(Box<Pattern>, Span, SExpId),
     List(Vec<Pattern>, Span, SExpId),
     Object(HashMap<String, Pattern>, Span, SExpId),
 }
@@ -15,9 +17,11 @@ pub enum Pattern {
 impl std::fmt::Debug for Pattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Hole(_span, _id) => f.debug_tuple("_").finish(),
             Self::Single(name, _span, _id) => f.debug_tuple("Single").field(name).finish(),
             Self::List(list, _span, _id) => f.debug_tuple("List").field(list).finish(),
             Self::Object(obj, _span, _id) => f.debug_tuple("Object").field(obj).finish(),
+            Self::Splice(splice, _span, _id) => f.debug_tuple("Splice").field(splice).finish(),
         }
     }
 }
@@ -35,6 +39,7 @@ impl Pattern {
         let sexp = asts.get(id).clone();
         let span = sexp.span;
         match sexp.inner() {
+            SExp::Symbol(s) if s == "_" => Ok(Pattern::Hole(span, id)),
             SExp::Keyword(k) => Ok(Pattern::Single(k, span, id)),
             SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![], span, id)),
             SExp::List(items) => {
@@ -75,6 +80,12 @@ impl Pattern {
                     }
 
                     return Ok(Pattern::Object(patterns, span, id));
+                } else if Self::is_special_case(asts, first, "splice") {
+                    let Some(next) = items.into_iter().nth(1) else {
+                        return Err("Expected pattern after 'splice' keyword".to_string());
+                    };
+                    let pattern = Self::parse(next, asts)?;
+                    return Ok(Pattern::Splice(Box::new(pattern), span, id));
                 }
 
                 let mut patterns = vec![];

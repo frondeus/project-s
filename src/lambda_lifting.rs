@@ -254,6 +254,10 @@ impl<'a> LambdaPass<'a> {
 
     fn process_pattern(&mut self, pattern: Pattern) {
         match pattern {
+            Pattern::Hole(_, _) => (),
+            Pattern::Splice(s, _, _) => {
+                self.process_pattern(*s);
+            }
             Pattern::Single(key, _, _) => {
                 self.envs.set(&key);
             }

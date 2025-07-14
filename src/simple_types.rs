@@ -87,6 +87,7 @@ pub enum Type {
     },
     Tuple {
         items: Vec<TypeId>,
+        rest: Option<TypeId>,
     },
     List {
         item: TypeId,
@@ -143,6 +144,7 @@ pub enum InferedType {
     },
     Tuple {
         items: Vec<InferedTypeId>,
+        rest: Option<InferedTypeId>,
         span: Span,
     },
     Record {
@@ -192,9 +194,15 @@ impl std::fmt::Debug for InferedType {
                 .field("ret", ret)
                 .field("first_arg", first_arg)
                 .finish(),
-            Self::Tuple { items, span: _ } => {
-                f.debug_struct("Tuple").field("items", items).finish()
-            }
+            Self::Tuple {
+                items,
+                rest,
+                span: _,
+            } => f
+                .debug_struct("Tuple")
+                .field("items", items)
+                .field("rest", rest)
+                .finish(),
             Self::Record {
                 fields,
                 proto,
@@ -289,8 +297,13 @@ impl InferedType {
                 ids.push(*arg);
                 ids.push(*ret);
             }
-            InferedType::Tuple { items, span: _ } => {
+            InferedType::Tuple {
+                items,
+                rest,
+                span: _,
+            } => {
                 ids.extend(items.iter().copied());
+                ids.extend(rest);
             }
             InferedType::Record {
                 fields,

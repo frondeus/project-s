@@ -105,14 +105,19 @@ impl InferedPolymorphicType {
                     });
                     type_env.applicative(arg, ret, first_arg, span)
                 }
-                InferedType::Tuple { items, span } => {
-                    let span = *span;
+                &InferedType::Tuple {
+                    ref items,
+                    rest,
+                    span,
+                } => {
                     let items = items
                         .clone()
                         .into_iter()
                         .map(|item| Self::freshen(type_env, item, limit, level, freshened))
                         .collect();
-                    type_env.tuple(items, span)
+                    let rest =
+                        rest.map(|rest| Self::freshen(type_env, rest, limit, level, freshened));
+                    type_env.tuple(items, rest, span)
                 }
                 InferedType::Record {
                     fields,

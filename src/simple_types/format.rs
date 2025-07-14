@@ -68,13 +68,20 @@ impl TypeEnv {
                 self.fmt(*ret, buf)?;
                 Ok(())
             }
-            Type::Tuple { items } => {
+            Type::Tuple { items, rest } => {
                 write!(buf, "(")?;
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 {
                         write!(buf, ", ")?;
                     }
                     self.fmt(*item, buf)?;
+                }
+                if let Some(rest) = rest {
+                    if !items.is_empty() {
+                        write!(buf, ", ")?;
+                    }
+                    write!(buf, "..")?;
+                    self.fmt(*rest, buf)?;
                 }
                 write!(buf, ")")?;
                 Ok(())

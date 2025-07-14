@@ -8,6 +8,7 @@ impl TypeEnv {
     pub(crate) fn unit(&mut self, span: Span) -> InferedTypeId {
         self.add_infered(InferedType::Tuple {
             items: vec![],
+            rest: None,
             span,
         })
     }
@@ -32,8 +33,13 @@ impl TypeEnv {
         self.add_infered(InferedType::Ref { read, write, span })
     }
 
-    pub(crate) fn tuple(&mut self, items: Vec<InferedTypeId>, span: Span) -> InferedTypeId {
-        self.add_infered(InferedType::Tuple { items, span })
+    pub(crate) fn tuple(
+        &mut self,
+        items: Vec<InferedTypeId>,
+        rest: Option<InferedTypeId>,
+        span: Span,
+    ) -> InferedTypeId {
+        self.add_infered(InferedType::Tuple { items, rest, span })
     }
 
     pub(crate) fn list(&mut self, item: InferedTypeId, span: Span) -> InferedTypeId {

@@ -4,6 +4,31 @@ use crate::modules::ModuleProvider;
 
 use super::*;
 
+#[derive(Copy, Clone)]
+enum TypeOrRest {
+    Type,
+    Rest,
+}
+
+#[derive(Copy, Clone)]
+enum PartOf {
+    ListRest,
+    ObjectRest,
+    Nothing,
+    List,
+    Object,
+}
+
+impl PartOf {
+    fn into_rest(self) -> Self {
+        match self {
+            PartOf::List => PartOf::ListRest,
+            PartOf::Object => PartOf::ObjectRest,
+            s => s,
+        }
+    }
+}
+
 impl TypeEnv {
     pub fn type_term(
         &mut self,
@@ -409,7 +434,7 @@ impl TypeEnv {
                     let ret_type = self.fresh_var(span, level);
 
                     let first_arg = arg_types.first().copied();
-                    let args = self.tuple(arg_types, args_span);
+                    let args = self.tuple(arg_types, None, args_span);
                     let bound = self.applicative(args, ret_type, first_arg, span);
 
                     self.constrain(callee_type, bound, diagnostics);
@@ -472,6 +497,20 @@ impl TypeEnv {
         scheme: TypeSchemeKind,
         stored_keys: &mut HashMap<InferedTypeId, String>,
     ) -> InferedTypeId {
+        let (ty, _kind) =
+            self.type_pattern_inner(asts, pattern, level, scheme, stored_keys, PartOf::Nothing);
+        ty
+    }
+
+    fn type_pattern_inner(
+        &mut self,
+        asts: &ASTS,
+        pattern: Pattern,
+        level: usize,
+        scheme: TypeSchemeKind,
+        stored_keys: &mut HashMap<InferedTypeId, String>,
+        part_of: PartOf,
+    ) -> (InferedTypeId, TypeOrRest) {
         tracing::trace!(
             "Infering pattern: {:?} - {} lvl {:?}",
             pattern,
@@ -479,39 +518,98 @@ impl TypeEnv {
             scheme
         );
         match pattern {
+            Pattern::Hole(span, id) => {
+                let var = self.fresh_var(span, level);
+                self.add_sexp(asts, id, var);
+                (var, TypeOrRest::Type)
+            }
             Pattern::Single(key, span, id) => {
                 let var = self.fresh_var(span, level);
                 self.add_sexp(asts, id, var);
-                // self.envs.set(&key, core::Scheme::Monomorphic(value));
+                let mut bound_var = var;
+                // When binding rest pattern there is a disparity between the type in the object
+                // and the type bound to a variable.
+                // Example:
+                // Lets say we have a tuple full of integers, represented in a type by (1, 2, 3).
+                // When we create a pattern (:a, ..:rest) we store in the tuple (1)&{rest:3 or 3} instead of
+                // (1)&{rest:List<2 or 3>}.
+                // However, when binding a rest pattern, we must ensure that the `:rest` variable has a type of list
+                // instead of a type of its element.
+                match part_of {
+                    PartOf::ListRest => {
+                        bound_var = self.list(var, span);
+                    }
+                    PartOf::ObjectRest => todo!(),
+                    _ => (),
+                }
                 let scheme = match scheme {
-                    TypeSchemeKind::Monomorphic => InferedTypeScheme::Monomorphic(var),
+                    TypeSchemeKind::Monomorphic => InferedTypeScheme::Monomorphic(bound_var),
                     TypeSchemeKind::Polymorphic { level } => {
-                        InferedTypeScheme::Polymorphic(InferedPolymorphicType { level, body: var })
+                        InferedTypeScheme::Polymorphic(InferedPolymorphicType {
+                            level,
+                            body: bound_var,
+                        })
                     }
                 };
                 self.envs.set(&key, scheme);
-                stored_keys.insert(var, key);
-                var
+                stored_keys.insert(bound_var, key);
+                (var, TypeOrRest::Type)
+            }
+            Pattern::Splice(s, _span, id) => {
+                // :
+                let (s, _) = self.type_pattern_inner(
+                    asts,
+                    *s,
+                    level,
+                    scheme,
+                    stored_keys,
+                    part_of.into_rest(),
+                );
+                self.add_sexp(asts, id, s);
+                (s, TypeOrRest::Rest)
             }
             Pattern::List(patterns, span, id) => {
                 let mut bounds = Vec::new();
+                let mut rest = None;
                 for pattern in patterns {
-                    let bound = self.type_pattern(asts, pattern, level, scheme, stored_keys);
-                    bounds.push(bound);
+                    let (bound, kind) = self.type_pattern_inner(
+                        asts,
+                        pattern,
+                        level,
+                        scheme,
+                        stored_keys,
+                        PartOf::List,
+                    );
+                    match kind {
+                        TypeOrRest::Type => {
+                            bounds.push(bound);
+                        }
+                        TypeOrRest::Rest => {
+                            rest = Some(bound);
+                        }
+                    }
                 }
+                // let rest = rest.map(|rest| self.list(rest, span));
 
-                let tuple = self.tuple(bounds, span);
-                self.add_sexp(asts, id, tuple)
+                let tuple = self.tuple(bounds, rest, span);
+                (self.add_sexp(asts, id, tuple), TypeOrRest::Type)
             }
             Pattern::Object(patterns, span, id) => {
                 let mut bounds = IndexMap::new();
                 for (key, pattern) in patterns {
-                    let bound = self.type_pattern(asts, pattern, level, scheme, stored_keys);
+                    let (bound, _) = self.type_pattern_inner(
+                        asts,
+                        pattern,
+                        level,
+                        scheme,
+                        stored_keys,
+                        PartOf::Object,
+                    );
                     bounds.insert(key, bound);
                 }
 
                 let record = self.record(bounds, None, span);
-                self.add_sexp(asts, id, record)
+                (self.add_sexp(asts, id, record), TypeOrRest::Type)
             }
         }
     }

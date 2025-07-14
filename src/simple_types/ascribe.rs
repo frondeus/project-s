@@ -174,7 +174,7 @@ impl TypeEnv {
                         let item = self.ascribe(asts, item, diagnostics, vars, level);
                         items.push(item);
                     }
-                    self.tuple(items, span)
+                    self.tuple(items, None, span)
                 }
                 ref rest => {
                     let mut items = Vec::new();
@@ -182,7 +182,7 @@ impl TypeEnv {
                         let item = self.ascribe(asts, item, diagnostics, vars, level);
                         items.push(item);
                     }
-                    self.tuple(items, span)
+                    self.tuple(items, None, span)
                 }
             },
             SExp::Error => self.error(span),

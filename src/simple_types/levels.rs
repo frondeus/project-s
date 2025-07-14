@@ -22,9 +22,14 @@ impl WithLevel for InferedTypeId {
                 first_arg: _,
                 span: _,
             } => arg.level(type_env).max(ret.level(type_env)),
-            InferedType::Tuple { items, span: _ } => items
+            InferedType::Tuple {
+                items,
+                rest,
+                span: _,
+            } => items
                 .iter()
                 .map(|item| item.level(type_env))
+                .chain(rest.iter().map(|item| item.level(type_env)))
                 .max()
                 .unwrap_or(0),
             InferedType::Record {

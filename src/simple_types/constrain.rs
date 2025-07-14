@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::*;
 
 impl TypeEnv {
@@ -217,6 +219,7 @@ impl TypeEnv {
                 (
                     Tuple {
                         items: left,
+                        rest: left_rest,
                         span: _,
                     },
                     &Applicative {
@@ -241,7 +244,7 @@ impl TypeEnv {
                     };
                     // TODO : Make it more safe
                     let index = index as usize;
-                    if index >= left.len() {
+                    if index >= left.len() && left_rest.is_none() {
                         diagnostics
                             .add(rhs_span, "index out of bounds")
                             .add_extra(
@@ -254,6 +257,11 @@ impl TypeEnv {
                             )
                             .add_extra("Note, tuples are zero-indexed", None);
                         continue;
+                    } else if index >= left.len()
+                        && let Some(rest) = left_rest
+                    {
+                        queue.push_back((*rest, ret));
+                        continue;
                     }
                     queue.push_back((left[index], ret));
                     continue;
@@ -262,6 +270,7 @@ impl TypeEnv {
                     // Every tuple can be treated as a list if it has the same type for every element.
                     Tuple {
                         items: left,
+                        rest: left_rest,
                         span: _,
                     },
                     &List {
@@ -271,6 +280,9 @@ impl TypeEnv {
                 ) => {
                     for left in left {
                         queue.push_back((*left, right));
+                    }
+                    if let Some(rest) = left_rest {
+                        queue.push_back((*rest, right));
                     }
                     continue;
                 }
@@ -290,30 +302,94 @@ impl TypeEnv {
                 (
                     Tuple {
                         items: left,
+                        rest: left_rest,
                         span: _,
                     },
                     Tuple {
                         items: right,
+                        rest: right_rest,
                         span: _,
                     },
                 ) => {
-                    if left.len() != right.len() {
-                        diagnostics
-                            .add(lhs_span, "Type mismatch")
-                            .add_extra(
-                                format!("Expected tuple of length {}", right.len()),
-                                Some(rhs_span),
-                            )
-                            .add_extra(
-                                format!("But found tuple of length {}", left.len()),
-                                Some(lhs_span),
-                            );
-                        continue;
-                    } else {
-                        for (l, r) in left.iter().copied().zip(right.iter().copied()) {
-                            queue.push_back((l, r));
+                    let cmp = left.len().cmp(&right.len());
+                    use Ordering::*;
+                    match (left_rest, right_rest, cmp) {
+                        (None, None, Equal) => {
+                            for (l, r) in left.iter().copied().zip(right.iter().copied()) {
+                                queue.push_back((l, r));
+                            }
+                            continue;
                         }
-                        continue;
+                        (None, None, Greater | Less)
+                        | (None, Some(_), Less)
+                        | (Some(_), None, Greater) => {
+                            diagnostics
+                                .add(lhs_span, "Type mismatch")
+                                .add_extra(
+                                    format!("Expected tuple of length {}", right.len()),
+                                    Some(rhs_span),
+                                )
+                                .add_extra(
+                                    format!("But found tuple of length {}", left.len()),
+                                    Some(lhs_span),
+                                );
+                            continue;
+                        }
+                        (None, Some(right_rest), Equal | Greater) => {
+                            for (l, r) in left
+                                .iter()
+                                .copied()
+                                .take(right.len())
+                                .zip(right.iter().copied())
+                            {
+                                queue.push_back((l, r));
+                            }
+                            for (l, r) in left
+                                .iter()
+                                .copied()
+                                .skip(right.len())
+                                .zip(std::iter::repeat(*right_rest))
+                            {
+                                queue.push_back((l, r));
+                            }
+                            continue;
+                        }
+                        (Some(left_rest), None, Less | Equal) => {
+                            for (l, r) in left
+                                .iter()
+                                .copied()
+                                .zip(right.iter().take(left.len()).copied())
+                            {
+                                queue.push_back((l, r));
+                            }
+                            for (l, r) in std::iter::repeat(*left_rest)
+                                .zip(right.iter().copied().skip(left.len()))
+                            {
+                                queue.push_back((l, r));
+                            }
+                            continue;
+                        }
+                        (Some(left_rest), Some(right_rest), _) => {
+                            for (l, r) in left
+                                .iter()
+                                .take(right.len())
+                                .copied()
+                                .zip(right.iter().take(left.len()).copied())
+                            {
+                                queue.push_back((l, r));
+                            }
+                            for (l, r) in std::iter::repeat(*left_rest)
+                                .zip(right.iter().skip(left.len()).copied())
+                            {
+                                queue.push_back((l, r));
+                            }
+                            for (r, l) in std::iter::repeat(*right_rest)
+                                .zip(left.iter().skip(right.len()).copied())
+                            {
+                                queue.push_back((l, r));
+                            }
+                            continue;
+                        }
                     }
                 }
                 (

@@ -120,13 +120,18 @@ impl TypeEnv {
                 });
                 self.applicative(arg, ret, first_arg, span)
             }
-            &InferedType::Tuple { ref items, span } => {
+            &InferedType::Tuple {
+                ref items,
+                rest,
+                span,
+            } => {
                 let items = items
                     .clone()
                     .into_iter()
                     .map(|item| self.extrude_inner(item, polarity, level, cache))
                     .collect();
-                self.tuple(items, span)
+                let rest = rest.map(|rest| self.extrude_inner(rest, polarity, level, cache));
+                self.tuple(items, rest, span)
             }
             &InferedType::Record {
                 ref fields,

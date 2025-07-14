@@ -194,7 +194,7 @@ macro_rules! build_tuple {
                 source.append(")");
                 let to =source.point();
                 let span = source.span(from, to);
-                env.add_infered(InferedType::Tuple { items: vec![$($item),*], span })
+                env.add_infered(InferedType::Tuple { items: vec![$($item),*], rest: None, span })
             }
         }
     }

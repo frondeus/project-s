@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, rc::Rc};
+use std::rc::Rc;
 
 pub use env::Env;
 use env::Envs;
@@ -67,43 +67,59 @@ impl Runtime {
         pattern: Pattern,
         value: Value,
         with: &impl Fn(&mut Self, &str, Value),
-    ) -> Result<Value, String> {
+    ) -> Result<(), String> {
         match pattern {
+            Pattern::Hole(_, _) => Ok(()),
+            Pattern::Splice(_s, _, _) => Err("Splice pattern not implemented".to_string()),
             Pattern::Single(key, _, _) => {
-                with(self, &key, value.clone());
-                Ok(value)
+                with(self, &key, value);
+                Ok(())
             }
-            Pattern::List(patterns, _, _) => match value.eager_rec(self, true) {
+            Pattern::List(mut patterns, _, _) => match value.eager_rec(self, true) {
                 Value::List(items) => {
-                    let mut result = vec![];
-                    for (pattern, item) in patterns.into_iter().zip(items.into_iter()) {
-                        let value = self.destruct_with(pattern, item, with)?;
-                        result.push(value);
+                    let rest = patterns
+                        .extract_if(.., |pat| matches!(pat, Pattern::Splice(_, _, _)))
+                        .next()
+                        .map(|pat| match pat {
+                            Pattern::Splice(s, _, _) => *s,
+                            _ => unreachable!(),
+                        });
+
+                    let mut items = items.into_iter();
+
+                    for pattern in patterns.into_iter() {
+                        let Some(item) = items.next() else {
+                            break;
+                        };
+                        self.destruct_with(pattern, item, with)?;
                     }
-                    Ok(Value::List(result))
+                    if let Some(rest) = rest {
+                        let rest_items = items.collect::<Vec<_>>();
+                        self.destruct_with(rest, Value::List(rest_items), with)?;
+                    }
+
+                    Ok(())
                 }
                 value => Err(format!("Destructing. Expected list, found: {value:?}")),
             },
             Pattern::Object(patterns, _, _) => match value.eager_rec(self, true) {
                 Value::Object(mut map) => {
-                    let mut result = BTreeMap::new();
                     for (key, pattern) in patterns {
                         let value = map.remove(&key).unwrap_or_else(|| {
                             Value::Error(format!("Field :{key} not found in {map:?} "))
                         });
 
-                        let value = self.destruct_with(pattern, value, with)?;
-                        result.insert(key, value);
+                        self.destruct_with(pattern, value, with)?;
                     }
 
-                    Ok(Value::Object(result))
+                    Ok(())
                 }
                 value => Err(format!("Destructing. Expected object, found: {value:?}")),
             },
         }
     }
 
-    pub(crate) fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<Value, String> {
+    pub(crate) fn destruct_(&mut self, pattern: Pattern, value: Value) -> Result<(), String> {
         self.destruct_with(pattern, value, &|this, key, value| {
             tracing::debug!("Adding to env: {:?}", this.envs.last());
             this.envs.set(key, value);
@@ -125,6 +141,10 @@ impl Runtime {
 
     fn _let_rec_pre_destruct(&mut self, pattern: Pattern) {
         match pattern {
+            Pattern::Hole(_, _) => {}
+            Pattern::Splice(s, _, _) => {
+                self._let_rec_pre_destruct(*s);
+            }
             Pattern::Single(key, _, _) => {
                 self.envs.set(&key, Value::Thunk(Thunk::new_for_let()));
             }
@@ -145,7 +165,7 @@ impl Runtime {
         &mut self,
         pattern: Pattern,
         value: Value,
-    ) -> Result<Value, String> {
+    ) -> Result<(), String> {
         self.destruct_with(pattern, value, &|this, key, value| {
             let thunk = this.envs.get(key).unwrap().as_thunk().unwrap();
 
