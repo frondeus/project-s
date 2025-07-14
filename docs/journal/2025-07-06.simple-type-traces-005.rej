@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:849
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:845
 ```s
 (let :id (fn (:x) x))
 
@@ -11,19 +11,76 @@ mono
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ simple-type-traces-005
-@@ -932,7 +932,6 @@
- TRACE project_s::simple_types::type_term: Infering `(let :id (fn (:x) x))` level 0
+@@ -952,13 +952,28 @@
+ TRACE project_s::simple_types::type_term: Infering `(let :mono (id (fn (:x) x)))` level 0
  TRACE project_s::simple_types::type_term: Infering let expression
- TRACE project_s::simple_types::type_term: Infering `(fn (:x) x)` level 1
--TRACE project_s::simple_types::type_term: Infering function expression
- TRACE project_s::simple_types::type_term: Infering pattern: List([Single("x")]) - 1 lvl Monomorphic
- TRACE project_s::simple_types::type_term: Infering pattern: Single("x") - 1 lvl Monomorphic
- TRACE project_s::simple_types::utils: Adding fresh variable 9 with level 1
-@@ -965,7 +964,6 @@
+ TRACE project_s::simple_types::type_term: Infering `(id (fn (:x) x))` level 1
++TRACE project_s::simple_types::type_term: Infering application call
+ TRACE project_s::simple_types::type_term: Infering `id` level 1
++TRACE project_s::simple_types::freshen_above: Freshen above: Limit: 0 ; TY: N60 ; LVL 1
++TRACE project_s::simple_types::freshen_above: Freshening N60 - lvl 1 ; limit 0 ; level 1
++TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(10) }
+ TRACE project_s::simple_types::utils: Adding fresh variable 11 with level 1
+ TRACE project_s::simple_types::utils: Adding infered variable as N62: Variable { id: VarId(11) }
++TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 62
++TRACE project_s::simple_types::freshen_above: Freshening N59 - lvl 1 ; limit 0 ; level 1
++TRACE project_s::simple_types::freshen_above: Freshening Function { lhs: InferedTypeId(58), rhs: InferedTypeId(57) }
++TRACE project_s::simple_types::freshen_above: Freshening N58 - lvl 1 ; limit 0 ; level 1
++TRACE project_s::simple_types::freshen_above: Freshening Tuple { items: [InferedTypeId(57)], rest: None }
++TRACE project_s::simple_types::freshen_above: Freshening N57 - lvl 1 ; limit 0 ; level 1
++TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(9) }
+ TRACE project_s::simple_types::utils: Adding fresh variable 12 with level 1
+ TRACE project_s::simple_types::utils: Adding infered variable as N63: Variable { id: VarId(12) }
++TRACE project_s::simple_types::freshen_above: Creating new fresh variable: 63
+ TRACE project_s::simple_types::utils: Adding infered tuple as N64: Tuple { items: [InferedTypeId(63)], rest: None }
++TRACE project_s::simple_types::freshen_above: Freshening N57 - lvl 1 ; limit 0 ; level 1
++TRACE project_s::simple_types::freshen_above: Freshening Variable { id: VarId(9) }
  TRACE project_s::simple_types::utils: Adding infered function as N65: Function { lhs: InferedTypeId(64), rhs: InferedTypeId(63) }
++TRACE project_s::simple_types::freshen_above: Freshened: 60 -> 62
  TRACE project_s::simple_types::utils: `id` with type N62
  TRACE project_s::simple_types::type_term: Infering `(fn (:x) x)` level 1
--TRACE project_s::simple_types::type_term: Infering function expression
- TRACE project_s::simple_types::type_term: Infering pattern: List([Single("x")]) - 1 lvl Monomorphic
- TRACE project_s::simple_types::type_term: Infering pattern: Single("x") - 1 lvl Monomorphic
- TRACE project_s::simple_types::utils: Adding fresh variable 13 with level 1
+ TRACE project_s::simple_types::type_term: Infering function expression
+@@ -989,6 +1004,7 @@
+ TRACE project_s::simple_types::constrain: Constraining (68 <: 63): function <: variable
+ TRACE project_s::simple_types::constrain: LHS LVL: 1 <= RHS LVL: 1
+ TRACE project_s::simple_types::constrain: Pushing 68 to lower bounds of RHS: 63
++TRACE project_s::simple_types::constrain: Constraint by extension of upper bound: 68 :< 69
+ TRACE project_s::simple_types::constrain: Constraining (68 <: 69): function <: variable
+ TRACE project_s::simple_types::constrain: LHS LVL: 1 <= RHS LVL: 1
+ TRACE project_s::simple_types::constrain: Pushing 68 to lower bounds of RHS: 69
+@@ -1007,6 +1023,7 @@
+ TRACE project_s::simple_types::utils: Adding infered tuple as N73: Tuple { items: [], rest: None }
+ TRACE project_s::simple_types::utils: `(let :mono (id (fn (:x) x)))` with type N73
+ TRACE project_s::simple_types::type_term: Infering `(mono 4)` level 0
++TRACE project_s::simple_types::type_term: Infering application call
+ TRACE project_s::simple_types::type_term: Infering `mono` level 0
+ TRACE project_s::simple_types::utils: `mono` with type N72
+ TRACE project_s::simple_types::type_term: Infering `4` level 0
+@@ -1030,6 +1047,7 @@
+ TRACE project_s::simple_types::constrain: Constraining (74 <: 66): 4 <: variable
+ TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 1
+ TRACE project_s::simple_types::constrain: Pushing 74 to lower bounds of RHS: 66
++TRACE project_s::simple_types::constrain: Constraint by extension of upper bound: 74 :< 76
+ TRACE project_s::simple_types::constrain: Constraining (74 <: 76): 4 <: variable
+ TRACE project_s::simple_types::constrain: LHS LVL: 0 <= RHS LVL: 0
+ TRACE project_s::simple_types::constrain: Pushing 74 to lower bounds of RHS: 76
+@@ -1073,6 +1091,7 @@
+         ),
+     ],
+ }
++TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+ TRACE project_s::simple_types::coalesce: Bounds: [
+     InferedTypeId(
+         76,
+@@ -1088,8 +1107,11 @@
+     ],
+     upper_bounds: [],
+ }
++TRACE project_s::simple_types::coalesce: Polarity negative. Using upper bounds
+ TRACE project_s::simple_types::coalesce: Bounds: []
+ TRACE project_s::simple_types::coalesce: Bound types: []
++TRACE project_s::simple_types::coalesce: Bounds are empty. PolarVariable { polarity: Negative, id: VarId(16) }
++TRACE project_s::simple_types::coalesce: Creating new type var: 'a
+ TRACE project_s::simple_types::utils: Adding Variable { name: "'a" } as 0
+ TRACE project_s::simple_types::coalesce: Bound types: [
+     TypeId(

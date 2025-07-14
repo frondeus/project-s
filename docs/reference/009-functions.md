@@ -89,6 +89,44 @@ val f : forall (number, number) → number = "<Function: LispFn>"
 - : number = 3.0
 ```
 
+# Ascriptions
+
+Of course just like with primitives and tuples we can explicitly type our functions
+with type ascriptions:
+
+```s
+(let :f (:
+    (fn (:number) :number)
+    (fn (:a) a)
+))
+```
+
+```eval
+val f : (number) → number = "<Function: LispFn>"
+- : () = []
+```
+
+## Type holes
+
+Since we introduced complex types, we can also introduce a new type acription: `_`.
+`_` allows you to say "i dont know". That allows us to only partially define the shape of a function and
+leave the rest to the inferer. For example in the previous example we defined a function that took one number and returned a number. We can also re-define it by writing:
+
+
+```s
+(let :f (:
+    (fn (:number) _)
+    (fn (:a) a)
+))
+```
+
+We let the compiler to infer that, returned type is the same as the input type, so the result is precisely the same:
+
+```eval
+val f : (number) → number = "<Function: LispFn>"
+- : () = []
+```
+
 # Let polymorphism
 
 You may notice that the type of `f` has `forall` prefix - it is a polymorphic function (although in that particular case it is not very useful, since all parameters are constrained to be numbers).

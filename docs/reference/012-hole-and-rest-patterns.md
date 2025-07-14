@@ -104,3 +104,5 @@ val rest : [2 ∨ 3] = [
 ]
 - : () = []
 ```
+
+You may wonder what the hekc is `[2 v 3]` syntax?. Well it is a **list**. But that, is a topic for another chapter.
