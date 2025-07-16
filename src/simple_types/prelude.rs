@@ -29,7 +29,8 @@ impl TypeEnv {
         let builtin = sources.add("<builtin>", "");
         let mut source = SourceBuilder::new(builtin);
 
-        self.with_mono(&mut source, "+", bin_op(number(), number(), number()));
+        self.with_mono(&mut source, "+", function(list(number()), number()));
+        // self.with_mono(&mut source, "+", bin_op(number(), number(), number()));
         self.with_mono(&mut source, "-", bin_op(number(), number(), number()));
         self.with_mono(&mut source, "*", bin_op(number(), number(), number()));
         self.with_mono(&mut source, ">", bin_op(number(), number(), boolean()));

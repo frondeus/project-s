@@ -10,24 +10,24 @@ It is because of function application.
 Okay, let's start with that, we can call abound defining function later.
 
 Fortunately, S-Lang provides a basic prelude that includes useful functions.
-One of them is `+` that adds two numbers together.
+One of them is `-` that subtracts two numbers.
 
 ```s
-+
+-
 ```
 
 ```eval
 - : (number, number) → number = "<Function: RustFn>"
 ```
 
-Since it is LISP-like language, in order to call such a function we are using `(+ 1 2)` expression:
+Since it is LISP-like language, in order to call such a function we are using `(- 2 1)` expression:
 
 ```s
-(+ 1 2)
+(- 2 1)
 ```
 
 ```eval
-- : number = 3.0
+- : number = 1.0
 ```
 
 That leads to the most important part - currently there is no way to call a function and pass anything else than a tuple.
@@ -35,7 +35,7 @@ That leads to the most important part - currently there is no way to call a func
 If that was ml-like language we would have it as:
 
 ```ocaml
-+ (1, 2)
+- (2, 1)
 ```
 
 So technically we could do
@@ -67,10 +67,10 @@ Okay, now that we handled calling, we can finally talk about defining!
 To define a function, we use `fn` special form:
 
 ```s
-(fn (:a :b) (+ a b))
+(fn (:a :b) (- a b))
 ```
 
-Here, we defined an anonymous function that takes two numbers and returns their sum. It's basically an alias of `+`.
+Here, we defined an anonymous function that takes two numbers and returns their sub. It's basically an alias of `-`.
 
 ```eval
 - : (number, number) → number = "<Function: LispFn>"
@@ -79,14 +79,14 @@ Here, we defined an anonymous function that takes two numbers and returns their 
 So now we can call it:
 
 ```s
-(let :f (fn (:a :b) (+ a b)))
+(let :f (fn (:a :b) (- a b)))
 
-(f 1 2)
+(f 2 1)
 ```
 
 ```eval
 val f : forall (number, number) → number = "<Function: LispFn>"
-- : number = 3.0
+- : number = 1.0
 ```
 
 # Ascriptions

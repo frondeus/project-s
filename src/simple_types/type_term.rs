@@ -426,9 +426,8 @@ impl TypeEnv {
                         source_id: span.source_id,
                     };
 
-                    let arg_types = args
-                        .iter()
-                        .map(|arg| self.type_term(asts, *arg, diagnostics, modules, level))
+                    let arg_types = self
+                        .handle_splice(asts, args.iter().copied(), diagnostics, modules, level)
                         .collect::<Vec<_>>();
 
                     let ret_type = self.fresh_var(span, level);
@@ -444,6 +443,44 @@ impl TypeEnv {
             },
             SExp::Error => self.error(span),
         }
+    }
+
+    pub(crate) fn handle_splice(
+        &mut self,
+        asts: &mut ASTS,
+        args: impl Iterator<Item = SExpId>,
+        diagnostics: &mut Diagnostics,
+        modules: &mut dyn ModuleProvider,
+        level: usize,
+    ) -> impl Iterator<Item = InferedTypeId> {
+        args.flat_map(move |arg| {
+            if let Some(list) = Self::as_special_form(asts, arg, "splice") {
+                if let Some(first) = list.get(1) {
+                    let infered = self.type_term(asts, *first, diagnostics, modules, level);
+                    let infered = self.get(infered);
+
+                    // let first = asts.get(*first);
+                    // if let SExp::List(l) = &**first {
+                    //     return l.clone();
+                    // }
+                }
+            }
+            let ty = self.type_term(asts, arg, diagnostics, modules, level);
+            vec![ty]
+        })
+    }
+
+    pub(crate) fn as_special_form<'a>(
+        asts: &'a ASTS,
+        list_id: SExpId,
+        name: &str,
+    ) -> Option<&'a [SExpId]> {
+        let list = asts.get(list_id);
+        let list = list.as_list()?;
+        let first = list.first()?;
+        let first = asts.get(*first);
+        let first = first.as_symbol()?;
+        if first == name { Some(list) } else { None }
     }
 
     fn is_worth_generalizing(sexp: SExpId, asts: &ASTS) -> bool {

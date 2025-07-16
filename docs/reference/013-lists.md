@@ -164,3 +164,23 @@ val rest : [number] = [
 ]
 - : () = []
 ```
+
+> [!TODO]
+> This is not very safe. What if we provide a list that is empty?
+> In other functional languages (or Rust) that kind of binding would be forbidden.
+> In Rust particularly, you would have to use either:
+> * match
+> * if let
+> * let [first, rest @ ..] = list else { };
+
+In other words binding would be introduced **only** if the list matches it in the runtime, but we would have to provide an alternative branch.
+
+```s
+(let (:first .._) [])
+first
+```
+
+```eval
+val first : 'a
+- : 'a = "<Error: Undefined variable: first>"
+```
