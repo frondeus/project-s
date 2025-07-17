@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:524
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:473
 ```
 (let :g ((fn () (fn (:x) x))))
 
@@ -9,7 +9,7 @@ g
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
 +++ type-006
-@@ -530,7 +530,7 @@
+@@ -479,7 +479,7 @@
  ```
  
  ```type

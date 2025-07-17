@@ -18,7 +18,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-011
-@@ -217,17 +217,43 @@
+@@ -217,17 +217,44 @@
  ```
  
  ```json
@@ -33,42 +33,43 @@
 -    "d": "left side d"
 -  }
 -}
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:1:1 ]
++Error: Undefined variable: self
++    ╭─[ <input>:11:11 ]
 +    │
-+  1 │ ╭─▶ {
-+    ┆ ┆   
-+ 14 │ ├─▶ }
-+    │ │      
-+    │ ╰────── Used here
++ 11 │       :c (self :a)
++    │           ──┬─  
++    │             ╰─── Used here
 +────╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:3:9 ]
-+   │
-+ 3 │ ╭─▶   :b (+ {
-+   ┆ ┆   
-+ 6 │ ├─▶   }
-+   │ │         
-+   │ ╰───────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:7:3 ]
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:7:3 ]
 +    │
 +  7 │ ╭─▶   {
 +    ┆ ┆   
 + 12 │ ├─▶     }
 +    │ │           
-+    │ ╰─────────── Used here
++    │ ╰─────────── But got struct
 +────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:9:8 ]
-+    │
-+  9 │ ╭─▶     :b {
-+    ┆ ┆   
-+ 12 │ ├─▶     }
-+    │ │           
-+    │ ╰─────────── Used here
-+────╯
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:3:9 ]
++   │
++ 3 │ ╭─▶   :b (+ {
++   ┆ ┆   
++ 6 │ ├─▶   }
++   │ │         
++   │ ╰───────── But got struct
++───╯
 +
  ```
  

@@ -7,24 +7,25 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/017-destructing.md
 +++ json-005
-@@ -81,7 +81,21 @@
+@@ -81,7 +81,22 @@
  
  
  ```json
 -4.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:23 ]
++Error: Unreadable pattern: Expected keyword or list, found: Symbol("obj/plain")
++Error: Undefined variable: b
++   ╭─[ <input>:3:4 ]
 +   │
-+ 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
-+   │                       ─────────┬─────────  
-+   │                                ╰─────────── Used here
++ 3 │ (+ b c)
++   │    ┬  
++   │    ╰── Used here
 +───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:28 ]
++Error: Undefined variable: c
++   ╭─[ <input>:3:6 ]
 +   │
-+ 1 │ (let { :a { :b } :c } { :a { :b 1 } :c 3})
-+   │                            ────┬───  
-+   │                                ╰───── Used here
++ 3 │ (+ b c)
++   │      ┬  
++   │      ╰── Used here
 +───╯
 +
  ```

@@ -6,7 +6,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-08.md
 +++ json-002
-@@ -35,13 +35,21 @@
+@@ -35,13 +35,14 @@
  ```
  
  ```json
@@ -17,19 +17,12 @@
 -    "b": 4.0
 -  }
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:11 ]
++Error: Undefined variable: root
++   ╭─[ <input>:1:22 ]
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
-+   │           ──────────┬──────────  
-+   │                     ╰──────────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:2:1 ]
-+   │
-+ 2 │ { :b 10 :c foo }
-+   │ ────────┬───────  
-+   │         ╰───────── Used here
++   │                      ──┬─  
++   │                        ╰─── Used here
 +───╯
 +
  ```

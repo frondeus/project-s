@@ -456,7 +456,7 @@ impl SExpParser {
                 let mut child = node.named_child(0);
                 let mut children = Vec::new();
                 children.push(self.ast.add_node(
-                    SExp::Symbol("obj/struct".to_string()),
+                    SExp::Symbol("obj/plain".to_string()),
                     span,
                     Some(node),
                 ));

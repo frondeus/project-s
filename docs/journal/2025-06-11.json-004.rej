@@ -7,17 +7,18 @@ b
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-004
-@@ -310,7 +310,14 @@
+@@ -310,7 +310,15 @@
  ```
  
  ```json
 -1.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:15 ]
++Error: Unreadable pattern: Expected keyword or list, found: Symbol("obj/plain")
++Error: Undefined variable: b
++   ╭─[ <input>:3:1 ]
 +   │
-+ 1 │ (let { :a b } { :a 1 :b 2 :c 3})
-+   │               ────────┬────────  
-+   │                       ╰────────── Used here
++ 3 │ b
++   │ ┬  
++   │ ╰── Used here
 +───╯
 +
  ```

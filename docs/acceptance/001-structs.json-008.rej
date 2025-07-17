@@ -8,20 +8,11 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-008
-@@ -125,7 +125,23 @@
+@@ -125,7 +125,14 @@
  ```
  
  ```json
 -false
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:9 ]
-+   │
-+ 1 │ ╭─▶ (let :x {
-+   ┆ ┆   
-+ 3 │ ├─▶ })
-+   │ │        
-+   │ ╰──────── Used here
-+───╯
 +Error: Undefined variable: has?
 +   ╭─[ <input>:4:4 ]
 +   │

@@ -66,16 +66,71 @@ impl TypeEnv {
         &mut self.vars[var.0]
     }
 
-    pub(crate) fn find_non_var(&self, id: InferedTypeId) -> Option<&InferedType> {
+    pub(crate) fn find_in_relatives_inner<'a, O, F>(
+        &'a self,
+        id: InferedTypeId,
+        polarity: Polarity,
+        filter: &F,
+    ) -> Option<O>
+    where
+        F: Fn(&'a InferedType) -> Option<O>,
+        O: 'a,
+    {
         match self.get(id) {
             InferedType::Variable {
                 id: var_id,
                 span: _,
             } => self
-                .predecessors(id, *var_id)
-                .find_map(|bound| self.find_non_var(bound)),
-            t => Some(t),
+                .relatives(id, *var_id, polarity)
+                .find_map(move |bound| self.find_in_relatives_inner(bound, polarity, filter)),
+            t => filter(t),
         }
+    }
+    pub(crate) fn find_in_relatives<'a, O, F>(
+        &'a self,
+        id: InferedTypeId,
+        polarity: Polarity,
+        filter: F,
+    ) -> Option<O>
+    where
+        F: Fn(&'a InferedType) -> Option<O>,
+        O: 'a,
+    {
+        self.find_in_relatives_inner(id, polarity, &filter)
+    }
+
+    //-----
+    pub(crate) fn find_in_predecessors<'a, O, F>(
+        &'a self,
+        id: InferedTypeId,
+        filter: F,
+    ) -> Option<O>
+    where
+        F: Fn(&'a InferedType) -> Option<O>,
+        O: 'a,
+    {
+        self.find_in_relatives(id, Polarity::Negative, &filter)
+    }
+
+    pub(crate) fn find_in_successors<'a, O, F>(&'a self, id: InferedTypeId, filter: F) -> Option<O>
+    where
+        F: Fn(&'a InferedType) -> Option<O>,
+        O: 'a,
+    {
+        self.find_in_relatives(id, Polarity::Positive, &filter)
+    }
+
+    pub(crate) fn find_in_all_relatives<'a, O, F>(
+        &'a self,
+        id: InferedTypeId,
+        filter: F,
+    ) -> Option<O>
+    where
+        F: Fn(&'a InferedType) -> Option<O>,
+        O: 'a,
+    {
+        self.find_in_relatives(id, Polarity::Positive, &filter)
+            .or_else(|| self.find_in_relatives(id, Polarity::Negative, &filter))
     }
 
     pub(crate) fn fresh_var(&mut self, span: Span, level: usize) -> InferedTypeId {
@@ -124,33 +179,31 @@ impl TypeEnv {
             .map(|(idx, ty)| (InferedTypeId(idx), ty))
     }
 
-    pub(crate) fn predecessors(
+    pub(crate) fn relatives(
         &self,
         id: InferedTypeId,
         var: VarId,
+        polarity: Polarity,
     ) -> impl Iterator<Item = InferedTypeId> {
-        let ub = self.vars[var.0].upper_bounds.iter().copied();
+        let direct = self.vars[var.0].following_bounds(polarity).iter().copied();
 
-        let lb = self
+        let indirect = self
             .vars
             .iter()
             .enumerate()
             .filter_map(|(from_var, var)| {
-                let from_var = VarId(from_var);
-                if var.lower_bounds.contains(&id) {
-                    Some(from_var)
-                } else {
-                    None
-                }
+                var.preceding_bounds(polarity)
+                    .contains(&id)
+                    .then_some(VarId(from_var))
             })
             .collect::<HashSet<_>>();
 
-        let lb = self.iter().filter_map(move |(id, ty)| match ty {
+        let indirect = self.iter().filter_map(move |(id, ty)| match ty {
             InferedType::Variable {
                 id: var_id,
                 span: _,
             } => {
-                if lb.contains(var_id) {
+                if indirect.contains(var_id) {
                     Some(id)
                 } else {
                     None
@@ -159,6 +212,22 @@ impl TypeEnv {
             _ => None,
         });
 
-        ub.chain(lb)
+        direct.chain(indirect)
+    }
+
+    pub(crate) fn predecessors(
+        &self,
+        id: InferedTypeId,
+        var: VarId,
+    ) -> impl Iterator<Item = InferedTypeId> {
+        self.relatives(id, var, Polarity::Negative)
+    }
+
+    pub(crate) fn successors(
+        &self,
+        id: InferedTypeId,
+        var: VarId,
+    ) -> impl Iterator<Item = InferedTypeId> {
+        self.relatives(id, var, Polarity::Positive)
     }
 }

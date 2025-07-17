@@ -1,0 +1,66 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-31.md:88
+```
+(( (+ {
+  :a 42.0
+}
+
+(thunk () {
+  :a (fn () (+ (super :a) 10.0))
+})) :a))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-31.md
++++ json-004
+@@ -96,23 +96,42 @@
+ ```
+ 
+ ```json
+-Error: Undefined variable: obj/con
+-   ╭─[ <input>:1:7 ]
++Error: Undefined variable: super
++   ╭─[ <input>:6:17 ]
+    │
+- 1 │ ╭─▶ (( (+ {
+-   ┆ ┆   
+- 3 │ ├─▶ }
+-   │ │       
+-   │ ╰─────── Used here
++ 6 │   :a (fn () (+ (super :a) 10.0))
++   │                 ──┬──  
++   │                   ╰──── Used here
+ ───╯
+-Error: Undefined variable: obj/con
+-   ╭─[ <input>:5:11 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:5:11 ]
+    │
+  5 │ ╭─▶ (thunk () {
+    ┆ ┆   
+  7 │ ├─▶ })) :a))
+    │ │             
+-   │ ╰───────────── Used here
++   │ ╰───────────── But got struct
++───╯
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:1:7 ]
++   │
++ 1 │ ╭─▶ (( (+ {
++   ┆ ┆   
++ 3 │ ├─▶ }
++   │ │       
++   │ ╰─────── But got struct
+ ───╯
+ Error: Incompatible types
+    ╭─[ <input>:1:2 ]

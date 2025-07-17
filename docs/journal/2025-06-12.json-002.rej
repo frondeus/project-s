@@ -9,7 +9,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
 +++ json-002
-@@ -42,11 +42,16 @@
+@@ -42,11 +42,21 @@
  ```
  
  ```json
@@ -18,14 +18,19 @@
 -  "b": 4.0,
 -  "c": 7.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++Error: Undefined variable: self
++   ╭─[ <input>:4:12 ]
 +   │
-+ 1 │ ╭─▶ {
-+   ┆ ┆   
-+ 5 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
++ 4 │     :c (+ (self :a) (self :b))
++   │            ──┬─  
++   │              ╰─── Used here
++───╯
++Error: Undefined variable: self
++   ╭─[ <input>:4:22 ]
++   │
++ 4 │     :c (+ (self :a) (self :b))
++   │                      ──┬─  
++   │                        ╰─── Used here
 +───╯
 +
  ```

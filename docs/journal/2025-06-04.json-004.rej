@@ -16,44 +16,75 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-004
-@@ -134,7 +134,54 @@
+@@ -134,7 +134,85 @@
  And technically, :x doesnt need to be a thunk.
  
  ```json
 -15.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:12 ]
++Error: Undefined variable: super
++   ╭─[ <input>:8:12 ]
 +   │
-+ 1 │ ╭─▶ (let :base {
-+   ┆ ┆   
-+ 3 │ ├─▶ })
-+   │ │        
-+   │ ╰──────── Used here
++ 8 │     :a (+ (super :a) 10.0)
++   │            ──┬──  
++   │              ╰──── Used here
 +───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:5:9 ]
-+    │
-+  5 │ ╭─▶ (let :x {
-+    ┆ ┆   
-+ 10 │ ├─▶ })
-+    │ │        
-+    │ ╰──────── Used here
-+────╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:7:18 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:7:18 ]
 +   │
 + 7 │ ╭─▶   :value (+ base {
 +   ┆ ┆   
 + 9 │ ├─▶   })
 +   │ │          
-+   │ ╰────────── Used here
++   │ ╰────────── But got struct
 +───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:12:6 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:1:12 ]
++   │
++ 1 │ ╭─▶ (let :base {
++   ┆ ┆   
++ 3 │ ├─▶ })
++   │ │        
++   │ ╰──────── But got struct
++───╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:5:9 ]
++    │
++  5 │ ╭─▶ (let :x {
++    ┆ ┆   
++ 10 │ ├─▶ })
++    │ │        
++    │ ╰──────── But got struct
++────╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:12:6 ]
 +    │
 + 12 │ (((+ {:d 1 } x) :value) :a)
 +    │      ───┬───  
-+    │         ╰───── Used here
++    │         ╰───── But got struct
 +────╯
 +Error: Incompatible types
 +    ╭─[ <input>:12:2 ]

@@ -77,7 +77,10 @@ impl TypeEnv {
                 lit
             }
             SExp::Symbol(s) => match self.envs.get(s).copied() {
-                Some(ty) => ty.instantiate(self, level),
+                Some(ty) => {
+                    tracing::warn!("Found symbol: {ty:?}");
+                    ty.instantiate(self, level)
+                }
                 None => {
                     diagnostics
                         .add_sexp(asts, id, format!("Undefined variable: {s}"))
@@ -117,9 +120,8 @@ impl TypeEnv {
                 [first, path_id] if Self::is_symbol(asts, first, "import") => {
                     let path = self.type_term(asts, path_id, diagnostics, modules, level);
                     let path_span = Self::span_of(path_id, asts);
-                    let Some(path) = self
-                        .find_non_var(path)
-                        .and_then(|path| path.as_string_literal())
+                    let Some(path) =
+                        self.find_in_predecessors(path, InferedType::as_string_literal)
                     else {
                         diagnostics
                             .add(span, "Expected string literal")
@@ -368,8 +370,17 @@ impl TypeEnv {
                     tracing::trace!("Infering record expression");
                     let mut fields = IndexMap::new();
                     for (key, value) in args.to_vec().into_iter().tuples() {
-                        let Some(key) = Self::as_keyword(asts, key) else {
-                            diagnostics.add_sexp(asts, key, "Expected keyword");
+                        let key_type = self.type_term(asts, key, diagnostics, modules, level);
+                        let ty = self.get(key_type);
+                        tracing::warn!("TY: {ty:?}");
+                        let Some(key) =
+                            self.find_in_successors(key_type, InferedType::as_keyword_literal)
+                        else {
+                            let key_span = Self::span_of(key, asts);
+                            diagnostics
+                                .add_sexp(asts, key, "obj/plain: Expected keyword literal")
+                                // .add_extra("Record is created here", Some(span))
+                                .add_extra("This is not a keyword literal", Some(key_span));
                             return self.error(Self::span_of(key, asts));
                         };
                         let key = key.to_string();
@@ -386,8 +397,11 @@ impl TypeEnv {
                     let args = args.to_vec();
                     let proto = self.type_term(asts, proto, diagnostics, modules, level);
                     for (key, value) in args.into_iter().tuples() {
-                        let Some(key) = Self::as_keyword(asts, key) else {
-                            diagnostics.add_sexp(asts, key, "Expected keyword");
+                        let key_type = self.type_term(asts, key, diagnostics, modules, level);
+                        let Some(key) =
+                            self.find_in_successors(key_type, InferedType::as_keyword_literal)
+                        else {
+                            diagnostics.add_sexp(asts, key, "obj/extend: Expected keyword");
                             return self.error(Self::span_of(key, asts));
                         };
                         let key = key.to_string();

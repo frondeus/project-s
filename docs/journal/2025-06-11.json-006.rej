@@ -5,19 +5,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-11.md
 +++ json-006
-@@ -333,7 +333,15 @@
+@@ -333,7 +333,8 @@
  ```
  
  ```json
 -3.0
-+Error: Unreadable pattern: Expected keyword or list, found: Symbol("obj/con")
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:25 ]
-+   │
-+ 1 │ ((fn ({:a :b}) (+ a b)) { :a 1 :b 2 })
-+   │                         ──────┬──────  
-+   │                               ╰──────── Used here
-+───╯
++Error: Unreadable pattern: Expected keyword or list, found: Symbol("obj/plain")
 +
  ```
  

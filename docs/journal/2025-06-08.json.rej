@@ -14,12 +14,12 @@ foo
 -  "a": 4.0,
 -  "b": 4.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:11 ]
++Error: Undefined variable: root
++   ╭─[ <input>:1:22 ]
 +   │
 + 1 │ (let :foo { :b 4 :a (root :b )})
-+   │           ──────────┬──────────  
-+   │                     ╰──────────── Used here
++   │                      ──┬─  
++   │                        ╰─── Used here
 +───╯
 +
  ```

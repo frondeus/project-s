@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:576
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:525
 ```
 (let :f (ref 4))
 f
@@ -6,7 +6,7 @@ f
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
 +++ type-008
-@@ -579,7 +579,7 @@
+@@ -528,7 +528,7 @@
  ```
  
  ```type

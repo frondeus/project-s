@@ -10,7 +10,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json-002
-@@ -36,10 +36,23 @@
+@@ -36,10 +36,42 @@
  ```
  
  ```json
@@ -18,21 +18,40 @@
 -  "key": 42.0,
 -  "value": 15.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:9 ]
++Error: Undefined variable: super
++   ╭─[ <input>:3:14 ]
++   │
++ 3 │   :value (+ (super :value) 10.0)
++   │              ──┬──  
++   │                ╰──── Used here
++───╯
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:1:9 ]
 +   │
 + 1 │ ╭─▶ (let :x {
 +   ┆ ┆   
 + 4 │ ├─▶ })
 +   │ │        
-+   │ ╰──────── Used here
++   │ ╰──────── But got struct
 +───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:6:4 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:6:4 ]
 +   │
 + 6 │ (+ {:value 5} x)
 +   │    ─────┬────  
-+   │         ╰────── Used here
++   │         ╰────── But got struct
 +───╯
 +
  ```

@@ -17,7 +17,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
 +++ json-003
-@@ -76,10 +76,43 @@
+@@ -76,10 +76,23 @@
  ```
  
  ```json
@@ -25,41 +25,21 @@
 -  "another": 9.0,
 -  "key": 10.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:4 ]
-+   │
-+ 1 │ ╭─▶ (+ {
-+   ┆ ┆   
-+ 8 │ ├─▶ }
-+   │ │       
-+   │ ╰─────── Used here
-+───╯
-+Error: Undefined variable: obj/eval
-+   ╭─[ <input>:1:4 ]
-+   │
-+ 1 │ ╭─▶ (+ {
-+   ┆ ┆   
-+ 8 │ ├─▶ }
-+   │ │       
-+   │ ╰─────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:4:8 ]
-+   │
-+ 4 │ ╭─▶   :key {
-+   ┆ ┆   
-+ 7 │ ├─▶   }
-+   │ │         
-+   │ ╰───────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:10:1 ]
++Error: Expected keyword
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:10:1 ]
 +    │
 + 10 │ ╭─▶ {
 +    ┆ ┆   
 + 13 │ ├─▶ })
 +    │ │       
-+    │ ╰─────── Used here
++    │ ╰─────── But got struct
 +────╯
 +
  ```

@@ -8,20 +8,11 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-25.md
 +++ json-007
-@@ -151,7 +151,23 @@
+@@ -151,7 +151,14 @@
  ```
  
  ```json
 -true
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:9 ]
-+   │
-+ 1 │ ╭─▶ (let :x {
-+   ┆ ┆   
-+ 3 │ ├─▶ })
-+   │ │        
-+   │ ╰──────── Used here
-+───╯
 +Error: Undefined variable: has?
 +   ╭─[ <input>:4:2 ]
 +   │

@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:699
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:648
 ```
 (let :t (ref (obj/plain )))
 
@@ -7,7 +7,7 @@ t
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
 +++ type-014
-@@ -703,7 +703,7 @@
+@@ -652,7 +652,7 @@
  ```
  
  ```type

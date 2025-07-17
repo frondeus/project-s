@@ -10,28 +10,17 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
 +++ json-006
-@@ -141,6 +141,24 @@
+@@ -141,6 +141,13 @@
  ```
  
  ```json
 -4.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:3 ]
++Error: Undefined variable: root
++   ╭─[ <input>:3:9 ]
 +   │
-+ 1 │ ╭─▶ (({
-+   ┆ ┆   
-+ 6 │ ├─▶ } :b) :c)
-+   │ │              
-+   │ ╰────────────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:2:6 ]
-+   │
-+ 2 │ ╭─▶   :b {
-+   ┆ ┆   
-+ 4 │ ├─▶   }
-+   │ │         
-+   │ ╰───────── Used here
++ 3 │     :c (root :a)
++   │         ──┬─  
++   │           ╰─── Used here
 +───╯
 +
  ```

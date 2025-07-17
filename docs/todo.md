@@ -8,6 +8,33 @@
 * [x] Imports
 * [x] If else in normal places
 
+* [/] Reference
+  * [x] Primitives
+  * [x] Let exprs
+  * [x] Ascription
+  * [x] If exprs
+  * [x] Do exprs
+  * [x] Errors
+  * [x] Laziness
+  * [x] Tuples
+  * [x] Functions
+  * [x] Closures
+  * [x] Holes, rest patterns
+  * [x] Lists
+  * [x] Splices
+  * [ ] Modules
+  * [ ] Importing
+  * [ ] Recursive lets
+  * [ ] Refs
+  * [ ] Plain records
+  * [ ] Record extensions
+  * [ ] Objects & constructors
+  * [ ] Optional keys in records
+  * [ ] Enums
+  * [ ] Pattern matching
+
+
+
 Nice to have
 * [x] Destructuring
 * [x] Arrays
@@ -23,8 +50,8 @@ Nice to have
 * [ ] Enums
 * [ ] Named types
 * [ ] Match expression
-* [ ] Spread/splices in destructing
-* [ ] "infinite" tuples
+* [x] Spread/splices in destructing
+* [x] "infinite" tuples
 * [ ] Arrays
 
 Probably a lot of more lol.

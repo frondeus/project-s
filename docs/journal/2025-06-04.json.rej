@@ -8,19 +8,17 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-04.md
 +++ json
-@@ -16,7 +16,16 @@
+@@ -16,7 +16,14 @@
  its bit too early to enable thunk pass everywhere, so lets do a hack
  
  ```json lazy
 -"<Constructor: Constructor { constructor: LispFn }>"
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
++Error: Undefined variable: super
++   ╭─[ <input>:3:14 ]
 +   │
-+ 1 │ ╭─▶ {
-+   ┆ ┆   
-+ 4 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
++ 3 │   :value (+ (super :value) 10.0)
++   │              ──┬──  
++   │                ╰──── Used here
 +───╯
 +
  ```

@@ -14,7 +14,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-10.md
 +++ json-003
-@@ -91,12 +91,34 @@
+@@ -91,12 +91,44 @@
  I mean... maybe it is what we want?
  
  ```json
@@ -24,33 +24,43 @@
 -    "b": 10.0
 -  }
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:4 ]
++Error: Undefined variable: root
++   ╭─[ <input>:4:14 ]
 +   │
-+ 1 │ ╭─▶ (+ {
-+   ┆ ┆   
-+ 6 │ ├─▶ }
-+   │ │       
-+   │ ╰─────── Used here
++ 4 │     :b (+ 1 (root :another))
++   │              ──┬─  
++   │                ╰─── Used here
 +───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:3:8 ]
-+   │
-+ 3 │ ╭─▶   :key {
-+   ┆ ┆   
-+ 5 │ ├─▶   }
-+   │ │         
-+   │ ╰───────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:8:1 ]
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:8:1 ]
 +    │
 +  8 │ ╭─▶ {
 +    ┆ ┆   
 + 10 │ ├─▶ })
 +    │ │       
-+    │ ╰─────── Used here
++    │ ╰─────── But got struct
 +────╯
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:1:4 ]
++   │
++ 1 │ ╭─▶ (+ {
++   ┆ ┆   
++ 6 │ ├─▶ }
++   │ │       
++   │ ╰─────── But got struct
++───╯
 +
  ```
  

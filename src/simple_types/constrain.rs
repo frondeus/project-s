@@ -152,10 +152,9 @@ impl TypeEnv {
                         span: _,
                     },
                 ) => {
-                    let Some(field) = first_arg
-                        .and_then(|first| self.find_non_var(first))
-                        .and_then(|first| first.as_keyword_literal())
-                    else {
+                    let Some(field) = first_arg.and_then(|first| {
+                        self.find_in_all_relatives(first, InferedType::as_keyword_literal)
+                    }) else {
                         diagnostics
                             .add(rhs_span, "expected a keyword literal")
                             .add_extra("This is a record", Some(lhs_span))
@@ -190,10 +189,9 @@ impl TypeEnv {
                         span: _,
                     },
                 ) => {
-                    let Some(member) = first_arg
-                        .and_then(|first| self.find_non_var(first))
-                        .and_then(|first| first.as_keyword_literal())
-                    else {
+                    let Some(member) = first_arg.and_then(|first| {
+                        self.find_in_predecessors(first, InferedType::as_keyword_literal)
+                    }) else {
                         diagnostics
                             .add(rhs_span, "expected a keyword literal")
                             .add_extra("This is a module", Some(lhs_span))
@@ -229,10 +227,9 @@ impl TypeEnv {
                         span: _,
                     },
                 ) => {
-                    let Some(index) = first_arg
-                        .and_then(|first| self.find_non_var(first))
-                        .and_then(|first| first.as_number_literal())
-                    else {
+                    let Some(index) = first_arg.and_then(|first| {
+                        self.find_in_predecessors(first, InferedType::as_number_literal)
+                    }) else {
                         diagnostics
                             .add(rhs_span, "expected a number literal")
                             .add_extra("This is a tuple", Some(lhs_span))
@@ -278,10 +275,9 @@ impl TypeEnv {
                         span: _,
                     },
                 ) => {
-                    let Some(_index) = first_arg
-                        .and_then(|first| self.find_non_var(first))
-                        .and_then(|first| first.as_number_literal())
-                    else {
+                    let Some(_index) = first_arg.and_then(|first| {
+                        self.find_in_predecessors(first, InferedType::as_number_literal)
+                    }) else {
                         diagnostics
                             .add(rhs_span, "expected a number literal")
                             .add_extra("This is a list", Some(lhs_span))

@@ -26,7 +26,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json-002
-@@ -48,14 +48,59 @@
+@@ -48,14 +48,23 @@
  ```
  
  ```json
@@ -38,58 +38,22 @@
 -    "c": 3.0
 -  }
 -}
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:7:12 ]
++Error: Expected keyword
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
 +    │
-+  7 │ ╭─▶ (let :left {
-+    ┆ ┆   
-+ 14 │ ├─▶   })
-+    │ │          
-+    │ ╰────────── Used here
-+────╯
-+Error: Undefined variable: obj/eval
-+    ╭─[ <input>:7:12 ]
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
 +    │
-+  7 │ ╭─▶ (let :left {
-+    ┆ ┆   
-+ 14 │ ├─▶   })
-+    │ │          
-+    │ ╰────────── Used here
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:10:10 ]
-+    │
-+ 10 │ ╭─▶     :key {
-+    ┆ ┆   
-+ 13 │ ├─▶     }
-+    │ │           
-+    │ ╰─────────── Used here
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:16:23 ]
++    ├─[ <input>:16:23 ]
 +    │
 + 16 │ ╭─▶ (let :right (thunk () {
 +    ┆ ┆   
 + 20 │ ├─▶ }))
 +    │ │         
-+    │ ╰───────── Used here
++    │ ╰───────── But got struct
 +────╯
-+Error: Undefined variable: obj/eval
-+    ╭─[ <input>:16:23 ]
-+    │
-+ 16 │ ╭─▶ (let :right (thunk () {
-+    ┆ ┆   
-+ 20 │ ├─▶ }))
-+    │ │         
-+    │ ╰───────── Used here
-+────╯
-+Error: Undefined variable: has?
-+   ╭─[ <input>:2:9 ]
-+   │
-+ 2 │   `(if (has? super ,key)
-+   │         ──┬─  
-+   │           ╰─── Used here
-+───╯
 +
  ```
  

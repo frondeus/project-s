@@ -416,6 +416,21 @@ pub(crate) struct VarState {
     upper_bounds: Vec<InferedTypeId>,
 }
 
+impl VarState {
+    pub(crate) fn following_bounds(&self, polarity: Polarity) -> &[InferedTypeId] {
+        match polarity {
+            Polarity::Negative => &self.upper_bounds,
+            Polarity::Positive => &self.lower_bounds,
+        }
+    }
+    pub(crate) fn preceding_bounds(&self, polarity: Polarity) -> &[InferedTypeId] {
+        match polarity {
+            Polarity::Negative => &self.lower_bounds,
+            Polarity::Positive => &self.upper_bounds,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum InferedTypeScheme {
     Monomorphic(InferedTypeId),
@@ -659,7 +674,8 @@ mod tests {
 
                 let root = ast.root_id().unwrap();
 
-                let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
+                let mut env = TypeEnv::new();
+                // .with_prelude(modules.sources_mut());
                 // let mut env = TypeEnv::new(modules).with_prelude();
 
                 let prelude = prelude();

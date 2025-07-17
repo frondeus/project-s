@@ -1,0 +1,28 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-17.md:68
+```s
+(let :l [1 2 3])
+(+ ..l)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-17.md
++++ simple-type-traces
+@@ -152,6 +152,7 @@
+ TRACE project_s::simple_types::type_term: Infering `(list 1 2 3)` level 1
+ TRACE project_s::simple_types::type_term: Infering application call
+ TRACE project_s::simple_types::type_term: Infering `list` level 1
++ WARN project_s::simple_types::type_term: Found symbol: Polymorphic(InferedPolymorphicType { level: 0, body: InferedTypeId(40) })
+ TRACE project_s::simple_types::freshen_above: Freshen above: Limit: 0 ; TY: N40 ; LVL 1
+ TRACE project_s::simple_types::freshen_above: Freshening N40 - lvl 1 ; limit 0 ; level 1
+ TRACE project_s::simple_types::freshen_above: Freshening Function { lhs: InferedTypeId(38), rhs: InferedTypeId(39) }
+@@ -222,9 +223,11 @@
+ TRACE project_s::simple_types::type_term: Infering `(+ (splice l))` level 0
+ TRACE project_s::simple_types::type_term: Infering application call
+ TRACE project_s::simple_types::type_term: Infering `+` level 0
++ WARN project_s::simple_types::type_term: Found symbol: Monomorphic(InferedTypeId(3))
+ TRACE project_s::simple_types::utils: `+` with type N3
+ TRACE project_s::simple_types::type_term: Found splice
+ TRACE project_s::simple_types::type_term: Infering `l` level 0
++ WARN project_s::simple_types::type_term: Found symbol: Monomorphic(InferedTypeId(69))
+ TRACE project_s::simple_types::utils: `l` with type N69
+ TRACE project_s::simple_types::type_term: Args: []; Rest: Some(InferedTypeId(69))
+ TRACE project_s::simple_types::utils: Adding fresh variable 12 with level 0

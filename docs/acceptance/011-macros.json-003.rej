@@ -9,30 +9,12 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/011-macros.md
 +++ json-003
-@@ -63,7 +63,23 @@
+@@ -63,7 +63,5 @@
  ```
  
  ```json
 -{
 -  "key": 42.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:3:3 ]
-+   │
-+ 3 │ ╭─▶   {
-+   ┆ ┆   
-+ 5 │ ├─▶   }
-+   │ │        
-+   │ ╰──────── Used here
-+───╯
-+Error: Undefined variable: obj/eval
-+   ╭─[ <input>:3:3 ]
-+   │
-+ 3 │ ╭─▶   {
-+   ┆ ┆   
-+ 5 │ ├─▶   }
-+   │ │        
-+   │ ╰──────── Used here
-+───╯
-+
++"<Error: Expected even number of arguments>"
  ```

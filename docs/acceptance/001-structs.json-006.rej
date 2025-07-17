@@ -12,7 +12,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/001-structs.md
 +++ json-006
-@@ -95,13 +95,34 @@
+@@ -95,13 +95,8 @@
  ```
  
  ```json
@@ -23,33 +23,7 @@
 -    "b": 5.0
 -  }
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ ╭─▶ {
-+   ┆ ┆   
-+ 8 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
-+───╯
-+Error: Undefined variable: obj/eval
-+   ╭─[ <input>:1:1 ]
-+   │
-+ 1 │ ╭─▶ {
-+   ┆ ┆   
-+ 8 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
-+───╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:4:8 ]
-+   │
-+ 4 │ ╭─▶   :key {
-+   ┆ ┆   
-+ 7 │ ├─▶   }
-+   │ │         
-+   │ ╰───────── Used here
-+───╯
++Error: Expected keyword
 +
  ```
  

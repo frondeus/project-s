@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-12.md
 +++ json
-@@ -24,11 +24,25 @@
+@@ -24,11 +24,7 @@
  ```
  
  ```json
@@ -25,25 +25,7 @@
 -  "b": 4.0,
 -  "c": 7.0
 -}
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:6:24 ]
-+    │
-+  6 │ ╭─▶ (let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
-+    ┆ ┆   
-+ 10 │ ├─▶ }))
-+    │ │         
-+    │ ╰───────── Used here
-+────╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:6:24 ]
-+    │
-+  6 │ ╭─▶ (let :pkgs (fn (:this) { # self is a keyword, lets use `this` instead.
-+    ┆ ┆   
-+ 10 │ ├─▶ }))
-+    │ │         
-+    │ ╰───────── Used here
-+────╯
-+
++<Thread panicked>
  ```
  
  But do we need this fix?

@@ -59,7 +59,9 @@ impl TypeEnv {
                     let ret = self.ascribe(asts, ret, diagnostics, vars, level);
                     self.function(pattern, ret, span)
                 }
-                [first, ref fields_exprs @ ..] if Self::is_symbol(asts, first, "record") => {
+                [first, ref fields_exprs @ ..]
+                    if Self::is_symbols(asts, first, &["record", "obj/plain"]) =>
+                {
                     let mut fields = IndexMap::new();
 
                     let (tuples, remainder) = fields_exprs.as_chunks::<2>();

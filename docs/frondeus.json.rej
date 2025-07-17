@@ -37,27 +37,27 @@
 
 --- /Users/frondeus/Code/project-s/docs/frondeus.md
 +++ json
-@@ -38,42 +38,68 @@
- Error: Undefined variable: obj/con
-     ╭─[ <input>:1:13 ]
-     │
+@@ -35,45 +35,85 @@
+ ```
+ 
+ ```json
+-Error: Undefined variable: obj/con
+-    ╭─[ <input>:1:13 ]
 -    │
-+  1 │ ╭─▶ (let :dwarf {
-+    ┆ ┆   
-+ 14 │ ├─▶ })
-+    │ │        
-+    │ ╰──────── Used here
- ────╯
- Error: Undefined variable: obj/con
-     ╭─[ <input>:4:15 ]
-     │
 -    │
-+  4 │ ╭─▶     :features {
-+    ┆ ┆   
-+ 13 │ ├─▶     }
-+    │ │           
-+    │ ╰─────────── Used here
- ────╯
+-────╯
+-Error: Undefined variable: obj/con
+-    ╭─[ <input>:4:15 ]
+-    │
+-    │
+-────╯
++Error: Undefined variable: origin
++   ╭─[ <input>:8:18 ]
++   │
++ 8 │             (set origin (obj/new (+ origin {
++   │                  ───┬──  
++   │                     ╰──── Used here
++───╯
  Error: Undefined variable: obj/new
     ╭─[ <input>:8:26 ]
     │
@@ -65,15 +65,30 @@
 +   │                          ───┬───  
 +   │                             ╰───── Used here
  ───╯
- Error: Undefined variable: obj/con
-     ╭─[ <input>:8:44 ]
-     │
+-Error: Undefined variable: obj/con
+-    ╭─[ <input>:8:44 ]
 -    │
++Error: Undefined variable: origin
++   ╭─[ <input>:8:37 ]
++   │
++ 8 │             (set origin (obj/new (+ origin {
++   │                                     ───┬──  
++   │                                        ╰──── Used here
++───╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
+     │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:8:44 ]
++    │
 +  8 │ ╭─▶             (set origin (obj/new (+ origin {
 +    ┆ ┆   
 + 10 │ ├─▶             })))
 +    │ │                      
-+    │ ╰────────────────────── Used here
++    │ ╰────────────────────── But got struct
  ────╯
  Error: Undefined variable: obj/new
      ╭─[ <input>:21:15 ]
@@ -82,25 +97,43 @@
 +    │               ───┬───  
 +    │                  ╰───── Used here
  ────╯
- Error: Undefined variable: obj/con
-     ╭─[ <input>:21:26 ]
-     │
+-Error: Undefined variable: obj/con
+-    ╭─[ <input>:21:26 ]
 -    │
+-    │
+-────╯
+-Error: Undefined variable: obj/con
+-    ╭─[ <input>:22:12 ]
+-    │
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
+     │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:1:13 ]
++    │
++  1 │ ╭─▶ (let :dwarf {
++    ┆ ┆   
++ 14 │ ├─▶ })
++    │ │        
++    │ ╰──────── But got struct
++────╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:21:26 ]
++    │
 + 21 │ ╭─▶ (let :result (obj/new (+ {
 +    ┆ ┆   
 + 30 │ ├─▶ } dwarf)))
 +    │ │                
-+    │ ╰──────────────── Used here
- ────╯
- Error: Undefined variable: obj/con
-     ╭─[ <input>:22:12 ]
-     │
--    │
-+ 22 │ ╭─▶     :stats {
-+    ┆ ┆   
-+ 29 │ ├─▶     }
-+    │ │           
-+    │ ╰─────────── Used here
++    │ ╰──────────────── But got struct
  ────╯
  Error: Undefined variable: deep-eager
      ╭─[ <input>:33:2 ]

@@ -8,19 +8,17 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-07.md
 +++ json
-@@ -16,7 +16,16 @@
+@@ -16,7 +16,14 @@
  ```
  
  ```json
 -4.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: self
++   ╭─[ <input>:2:21 ]
 +   │
-+ 1 │ ╭─▶ ({
-+   ┆ ┆   
-+ 4 │ ├─▶ } :b)
-+   │ │          
-+   │ ╰────────── Used here
++ 2 │   :b (thunk (self) (self :a))
++   │                     ──┬─  
++   │                       ╰─── Used here
 +───╯
 +
  ```

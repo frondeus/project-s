@@ -16,7 +16,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-10.md
 +++ json-004
-@@ -181,13 +181,41 @@
+@@ -181,13 +181,72 @@
  ```
  
  
@@ -29,39 +29,70 @@
 -  }
 -}
 +```json
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:12 ]
++Error: Undefined variable: super
++   ╭─[ <input>:8:12 ]
 +   │
-+ 1 │ ╭─▶ (let :base {
-+   ┆ ┆   
-+ 3 │ ├─▶ })
-+   │ │        
-+   │ ╰──────── Used here
++ 8 │     :a (+ (super :a) 10.0)
++   │            ──┬──  
++   │              ╰──── Used here
 +───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:5:9 ]
-+    │
-+  5 │ ╭─▶ (let :x {
-+    ┆ ┆   
-+ 10 │ ├─▶ })
-+    │ │        
-+    │ ╰──────── Used here
-+────╯
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:7:18 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:7:18 ]
 +   │
 + 7 │ ╭─▶   :value (+ base {
 +   ┆ ┆   
 + 9 │ ├─▶   })
 +   │ │          
-+   │ ╰────────── Used here
++   │ ╰────────── But got struct
 +───╯
-+Error: Undefined variable: obj/con
-+    ╭─[ <input>:12:4 ]
++Error: Incompatible types
++   ╭─[ <builtin>:1:7 ]
++   │
++ 1 │ "+": [number] -> number
++   │       ───┬──  
++   │          ╰──── Expected number
++   │
++   ├─[ <input>:1:12 ]
++   │
++ 1 │ ╭─▶ (let :base {
++   ┆ ┆   
++ 3 │ ├─▶ })
++   │ │        
++   │ ╰──────── But got struct
++───╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:5:9 ]
++    │
++  5 │ ╭─▶ (let :x {
++    ┆ ┆   
++ 10 │ ├─▶ })
++    │ │        
++    │ ╰──────── But got struct
++────╯
++Error: Incompatible types
++    ╭─[ <builtin>:1:7 ]
++    │
++  1 │ "+": [number] -> number
++    │       ───┬──  
++    │          ╰──── Expected number
++    │
++    ├─[ <input>:12:4 ]
 +    │
 + 12 │ (+ {:d 1} x)
 +    │    ───┬──  
-+    │       ╰──── Used here
++    │       ╰──── But got struct
 +────╯
 +
  ```

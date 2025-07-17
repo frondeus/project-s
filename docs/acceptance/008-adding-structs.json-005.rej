@@ -8,19 +8,17 @@
 
 --- /Users/frondeus/Code/project-s/docs/acceptance/008-adding-structs.md
 +++ json-005
-@@ -126,7 +126,16 @@
+@@ -126,7 +126,14 @@
  ```
  
  ```json
 -4.0
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:1:2 ]
++Error: Undefined variable: self
++   ╭─[ <input>:2:7 ]
 +   │
-+ 1 │ ╭─▶ ({
-+   ┆ ┆   
-+ 4 │ ├─▶ } :b)
-+   │ │          
-+   │ ╰────────── Used here
++ 2 │   :b (self :a)
++   │       ──┬─  
++   │         ╰─── Used here
 +───╯
 +
  ```

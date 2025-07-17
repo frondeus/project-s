@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:716
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:665
 ```
 (let :t (ref (obj/plain)))
 
@@ -9,7 +9,7 @@ t
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
 +++ type-015
-@@ -724,7 +724,18 @@
+@@ -673,7 +673,18 @@
  This type is bit weird, but makes sense. We are not "merging" different use heads into one.
  
  ```type

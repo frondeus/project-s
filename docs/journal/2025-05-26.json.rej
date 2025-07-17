@@ -10,32 +10,14 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-05-26.md
 +++ json
-@@ -14,9 +14,25 @@
+@@ -14,9 +14,7 @@
  ```
  
  ```json
 -{
 -  "key": 42.0
 -}
-+Error: Undefined variable: obj/con
-+   ╭─[ <input>:4:1 ]
-+   │
-+ 4 │ ╭─▶ {
-+   ┆ ┆   
-+ 6 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
-+───╯
-+Error: Undefined variable: obj/eval
-+   ╭─[ <input>:4:1 ]
-+   │
-+ 4 │ ╭─▶ {
-+   ┆ ┆   
-+ 6 │ ├─▶ }
-+   │ │      
-+   │ ╰────── Used here
-+───╯
-+
++"<Error: Expected even number of arguments>"
  ```
  
  Great!
