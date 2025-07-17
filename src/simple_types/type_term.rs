@@ -426,14 +426,13 @@ impl TypeEnv {
                         source_id: span.source_id,
                     };
 
-                    let arg_types = self
-                        .handle_splice(asts, args.iter().copied(), diagnostics, modules, level)
-                        .collect::<Vec<_>>();
+                    let (arg_types, rest_type) =
+                        self.handle_splice(asts, args.iter().copied(), diagnostics, modules, level);
 
                     let ret_type = self.fresh_var(span, level);
 
                     let first_arg = arg_types.first().copied();
-                    let args = self.tuple(arg_types, None, args_span);
+                    let args = self.tuple(arg_types, rest_type, args_span);
                     let bound = self.applicative(args, ret_type, first_arg, span);
 
                     self.constrain(callee_type, bound, diagnostics);
@@ -452,22 +451,27 @@ impl TypeEnv {
         diagnostics: &mut Diagnostics,
         modules: &mut dyn ModuleProvider,
         level: usize,
-    ) -> impl Iterator<Item = InferedTypeId> {
-        args.flat_map(move |arg| {
-            if let Some(list) = Self::as_special_form(asts, arg, "splice") {
-                if let Some(first) = list.get(1) {
-                    let infered = self.type_term(asts, *first, diagnostics, modules, level);
-                    let infered = self.get(infered);
+    ) -> (Vec<InferedTypeId>, Option<InferedTypeId>) {
+        let mut rest = None;
+        let r = &mut rest;
 
-                    // let first = asts.get(*first);
-                    // if let SExp::List(l) = &**first {
-                    //     return l.clone();
-                    // }
+        let args = args
+            .flat_map(move |arg| {
+                if let Some(list) = Self::as_special_form(asts, arg, "splice") {
+                    if let Some(first) = list.get(1) {
+                        tracing::trace!("Found splice");
+                        let infered = self.type_term(asts, *first, diagnostics, modules, level);
+                        *r = Some(infered);
+                        return vec![];
+                    }
                 }
-            }
-            let ty = self.type_term(asts, arg, diagnostics, modules, level);
-            vec![ty]
-        })
+                let ty = self.type_term(asts, arg, diagnostics, modules, level);
+                vec![ty]
+            })
+            .collect();
+
+        tracing::trace!("Args: {args:?}; Rest: {rest:?}");
+        (args, rest)
     }
 
     pub(crate) fn as_special_form<'a>(

@@ -81,17 +81,33 @@ Yeah, not what we wanted.
 So the `splice` operator known as `..` is coming here for to a rescue:
 
 ```s
-(let :l [1 2 3])
+(let :l (: [:number] [1 2 3]))
 (+ ..l)
 ```
 
 ```eval
-Error: Undefined variable: splice
-   ╭─[ <input>:2:4 ]
-   │
- 2 │ (+ ..l)
-   │    ─┬─  
-   │     ╰─── Used here
-───╯
-
+val l : [number] = [
+  1.0,
+  2.0,
+  3.0
+]
+- : number = 6.0
 ```
+
+Note, that splices can:
+* Only be used when creating a new tuple or calling a function.
+* Only be used as a last argument of the call/tuple creation.
+
+About the latter, you may as "why?"
+
+The reason is quite simple - if we allow having two splices in a call, it would be ambiguous to determine the size of the second splice.
+
+For example, if we have a function:
+
+```s
+(let :f (fn (:x :y)
+    (tuple ..x ..y)
+))
+```
+
+At that point we cannot determine the size of result tuple, and we cannot constraint `y` to have any shape.

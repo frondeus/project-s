@@ -1,10 +1,7 @@
 // CLIPPY: It is necessary to use `to_owned` here because `items` is borrowed
 #![allow(clippy::unnecessary_to_owned)]
 
-use crate::{
-    ast::{SExp, SExpId},
-    patterns::Pattern,
-};
+use crate::{ast::SExpId, patterns::Pattern};
 
 use super::{
     Runtime,
@@ -84,27 +81,37 @@ impl Runtime {
         }
     }
 
-    pub(crate) fn handle_splice(&self, args: &[SExpId]) -> impl Iterator<Item = SExpId> {
-        args.iter().flat_map(|arg| {
-            if let Some(list) = self.as_special_form(*arg, "splice") {
-                if let Some(first) = list.get(1) {
-                    let first = self.asts.get(*first);
-                    if let SExp::List(l) = &**first {
-                        return l.clone();
+    pub(crate) fn handle_splice(&mut self, args: &[SExpId]) -> Vec<Value> {
+        args.to_vec()
+            .into_iter()
+            .flat_map(|arg| {
+                if let Some(list) = self.as_special_form(arg, "splice") {
+                    if let Some(first) = list.get(1) {
+                        let value = self.eval(*first);
+                        return match value {
+                            Value::List(l) => l,
+                            got => vec![Value::Error(format!(
+                                "Splice: Expected a list, got {got:?}"
+                            ))],
+                        };
+                    } else {
+                        return vec![Value::Error(
+                            "Splice: expected at least one argument".into(),
+                        )];
                     }
                 }
-            }
-            vec![*arg]
-        })
+                let value = self.eval(arg);
+                vec![value]
+            })
+            .collect()
     }
 
     pub(crate) fn closure_call(&mut self, function: Function, args: &[SExpId]) -> Value {
-        let args = self
-            .handle_splice(args)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .map(|arg| self.eval(arg))
-            .collect::<Vec<_>>();
+        let args = self.handle_splice(args);
+        // .collect::<Vec<_>>()
+        // .into_iter()
+        // .map(|arg| self.eval(arg))
+        // .collect::<Vec<_>>();
 
         self.closure_call_inner(function, args)
     }

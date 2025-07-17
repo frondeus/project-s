@@ -219,7 +219,7 @@ impl TypeEnv {
                 (
                     Tuple {
                         items: left,
-                        rest: left_rest,
+                        rest: left_splice,
                         span: _,
                     },
                     &Applicative {
@@ -244,7 +244,7 @@ impl TypeEnv {
                     };
                     // TODO : Make it more safe
                     let index = index as usize;
-                    if index >= left.len() && left_rest.is_none() {
+                    if index >= left.len() && left_splice.is_none() {
                         diagnostics
                             .add(rhs_span, "index out of bounds")
                             .add_extra(
@@ -258,7 +258,7 @@ impl TypeEnv {
                             .add_extra("Note, tuples are zero-indexed", None);
                         continue;
                     } else if index >= left.len()
-                        && let Some(rest) = left_rest
+                        && let Some(rest) = left_splice
                     {
                         queue.push_back((*rest, ret));
                         continue;
@@ -269,7 +269,6 @@ impl TypeEnv {
                 (
                     &List {
                         item: left,
-                        // rest: left_rest,
                         span: _,
                     },
                     &Applicative {
@@ -320,7 +319,7 @@ impl TypeEnv {
                     // Every tuple can be treated as a list if it has the same type for every element.
                     Tuple {
                         items: left,
-                        rest: left_rest,
+                        rest: left_splice,
                         span: _,
                     },
                     &List {
@@ -331,8 +330,8 @@ impl TypeEnv {
                     for left in left {
                         queue.push_back((*left, right));
                     }
-                    if let Some(rest) = left_rest {
-                        queue.push_back((*rest, right));
+                    if let Some(rest) = left_splice {
+                        queue.push_back((*rest, rhs_id));
                     }
                     continue;
                 }
@@ -368,20 +367,24 @@ impl TypeEnv {
                     continue;
                 }
                 (
-                    Tuple {
-                        items: left,
-                        rest: left_rest,
+                    &Tuple {
+                        items: ref left,
+                        rest: left_splice,
                         span: _,
                     },
-                    Tuple {
-                        items: right,
+                    &Tuple {
+                        items: ref right,
                         rest: right_rest,
                         span: _,
                     },
                 ) => {
                     let cmp = left.len().cmp(&right.len());
                     use Ordering::*;
-                    match (left_rest, right_rest, cmp) {
+                    tracing::trace!("Tuple vs Tuple");
+                    tracing::trace!("Left: {left:?}..{left_splice:?}");
+                    tracing::trace!("Right: {right:?}..{right_rest:?}");
+
+                    match (left_splice, right_rest, cmp) {
                         (None, None, Equal) => {
                             for (l, r) in left.iter().copied().zip(right.iter().copied()) {
                                 queue.push_back((l, r));
@@ -416,13 +419,13 @@ impl TypeEnv {
                                 .iter()
                                 .copied()
                                 .skip(right.len())
-                                .zip(std::iter::repeat(*right_rest))
+                                .zip(std::iter::repeat(right_rest))
                             {
                                 queue.push_back((l, r));
                             }
                             continue;
                         }
-                        (Some(left_rest), None, Less | Equal) => {
+                        (Some(left_splice), None, Less | Equal) => {
                             for (l, r) in left
                                 .iter()
                                 .copied()
@@ -430,14 +433,12 @@ impl TypeEnv {
                             {
                                 queue.push_back((l, r));
                             }
-                            for (l, r) in std::iter::repeat(*left_rest)
-                                .zip(right.iter().copied().skip(left.len()))
-                            {
-                                queue.push_back((l, r));
-                            }
+                            let right_rest = right.iter().skip(left.len()).copied().collect();
+                            let new_tuple = self.tuple(right_rest, None, rhs_span);
+                            queue.push_back((left_splice, new_tuple));
                             continue;
                         }
-                        (Some(left_rest), Some(right_rest), _) => {
+                        (Some(left_splice), Some(right_rest), _) => {
                             for (l, r) in left
                                 .iter()
                                 .take(right.len())
@@ -446,16 +447,18 @@ impl TypeEnv {
                             {
                                 queue.push_back((l, r));
                             }
-                            for (l, r) in std::iter::repeat(*left_rest)
-                                .zip(right.iter().skip(left.len()).copied())
-                            {
-                                queue.push_back((l, r));
-                            }
-                            for (r, l) in std::iter::repeat(*right_rest)
+                            for (r, l) in std::iter::repeat(right_rest)
                                 .zip(left.iter().skip(right.len()).copied())
                             {
                                 queue.push_back((l, r));
                             }
+                            let new_right: Vec<_> =
+                                right.iter().skip(left.len()).copied().collect();
+                            tracing::error!("new_right: {:?}", new_right);
+                            let new_tuple = self.tuple(new_right, Some(right_rest), rhs_span);
+
+                            queue.push_back((left_splice, new_tuple));
+
                             continue;
                         }
                     }

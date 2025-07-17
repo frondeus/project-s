@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1151
+/Users/frondeus/Code/project-s/docs/journal/2025-07-06.md:1319
 ```s
 (let :id (fn (:x) x))
 
@@ -12,7 +12,7 @@
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-07-06.md
 +++ simple-type-013
-@@ -1161,7 +1161,7 @@
+@@ -1329,7 +1329,7 @@
  
  Now we should get an error, right?
  ```simple-type
