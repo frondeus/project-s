@@ -27,7 +27,7 @@
   * [ ] Recursive lets
   * [ ] Refs
   * [x] Plain records
-  * [ ] Record extensions
+  * [x] Record extensions
   * [ ] Objects & constructors
   * [ ] Optional keys in records
   * [ ] Enums

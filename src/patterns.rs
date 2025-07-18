@@ -44,7 +44,7 @@ impl Pattern {
             SExp::List(items) if items.is_empty() => Ok(Pattern::List(vec![], span, id)),
             SExp::List(items) => {
                 let first = items[0];
-                if Self::is_special_case(asts, first, "obj/struct") {
+                if Self::is_special_case(asts, first, "obj/plain") {
                     let mut patterns = HashMap::new();
                     let mut items = items.into_iter().skip(1).peekable();
                     while let Some(item) = items.next() {

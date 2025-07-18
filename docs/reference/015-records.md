@@ -31,7 +31,7 @@ Each field (just like a variable binding) must start with `:` prefix:
 }
 ```
 
-## Indirect key
+# Indirect key
 
 A cool feature is to instead providing `:key` as a literal, to provide a variable instead.
 As long as the variable points to statically known, const literal we are good to go:
@@ -49,7 +49,7 @@ val mykey : :key = ":key"
 }
 ```
 
-## String syntax sugar
+# String syntax sugar
 
 Since records are popular, S-lang provides a syntax sugar with `{}` brackets.
 
@@ -65,7 +65,7 @@ Since records are popular, S-lang provides a syntax sugar with `{}` brackets.
 }
 ```
 
-## Accessing fields
+# Accessing fields
 
 Just like with tuples and lists, we can get the field value by using application.
 You just need to pass the field name as a keyword:
@@ -186,3 +186,42 @@ Even though, we provided a record with more fields than expected, the function c
 In a way you could say that `{ :a :number :b :number }` is a subtype of `{ :a :number }` because whenever `{ :a :number }` is needed, `{ :a :number :b :number }` can be also used as a substitute.
 
 This also gives us an extra important property of S-lang - it is all about **structural typing** in the contrast to nominal typing
+
+# Record destruction
+
+Both in let expressions and function declarations we can also destruct records.
+
+```s
+(let { :a } { :a 1 })
+```
+
+```eval
+val a : 1 = 1.0
+- : () = []
+```
+
+However, sometimes one might want to rename the field
+
+```s
+(let { :a b } {:a 1 })
+```
+
+```eval
+val b : 1 = 1.0
+- : () = []
+```
+
+> [!TODO]
+> This is a bit inconsitent since `b` is not a keyword here...
+
+And of course we can destruct multiple fields at once:
+
+```s
+(let { :a b :c } { :a 1 :b 2 :c 3})
+```
+
+```eval
+val b : 1 = 1.0
+val c : 3 = 3.0
+- : () = []
+```
