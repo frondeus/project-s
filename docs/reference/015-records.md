@@ -122,3 +122,67 @@ val o : {a: number, b: number} = {
 }
 - : () = []
 ```
+
+# Record as function parameter
+
+What if we want to pass record as a function parameter?
+It is possible of course, as long as the parameter is a member of a tuple (otherwise there is no way to call that function!):
+
+```s
+(let :f (:
+    (fn ({:a :number}) :number)
+    (fn (:obj)
+        (obj :a)
+    )
+))
+```
+
+```eval
+val f : ({a: number}) → number = "<Function: LispFn>"
+- : () = []
+```
+
+Now we can call such a function:
+
+
+```s
+(let :f (:
+    (fn ({:a :number}) :number)
+    (fn (:obj)
+        (obj :a)
+    )
+))
+
+(f { :a 1 })
+```
+
+```eval
+val f : ({a: number}) → number = "<Function: LispFn>"
+- : number = 1.0
+```
+
+But what if we want to pass a record that has more fields? Is that allowed?
+
+
+```s
+(let :f (:
+    (fn ({:a :number}) :number)
+    (fn (:obj)
+        (obj :a)
+    )
+))
+
+(f { :a 1 :b 2 })
+```
+
+```eval
+val f : ({a: number}) → number = "<Function: LispFn>"
+- : number = 1.0
+```
+
+As you can see, yes it is!
+Even though, we provided a record with more fields than expected, the function call is still valid because the function only is interested in the existence of `:a`.
+
+In a way you could say that `{ :a :number :b :number }` is a subtype of `{ :a :number }` because whenever `{ :a :number }` is needed, `{ :a :number :b :number }` can be also used as a substitute.
+
+This also gives us an extra important property of S-lang - it is all about **structural typing** in the contrast to nominal typing

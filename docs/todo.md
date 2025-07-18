@@ -26,7 +26,7 @@
   * [ ] Importing
   * [ ] Recursive lets
   * [ ] Refs
-  * [ ] Plain records
+  * [x] Plain records
   * [ ] Record extensions
   * [ ] Objects & constructors
   * [ ] Optional keys in records
