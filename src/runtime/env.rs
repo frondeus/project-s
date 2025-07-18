@@ -5,6 +5,7 @@ use crate::{
     ast::{ASTS, SExpId},
     builder::{ASTBuilder, error},
     source::{Span, Spanned},
+    try_err,
 };
 
 use super::value::{Function, Macro, Value};
@@ -53,7 +54,12 @@ impl Env {
         self.vars.insert(
             name.to_string(),
             Value::Function(Function::Rust {
-                body: Rc::new(move |rt, values| body.call(rt, values)),
+                body: Rc::new(move |rt, values| {
+                    for v in &values {
+                        try_err!(v);
+                    }
+                    body.call(rt, values)
+                }),
             }),
         );
         self

@@ -27,7 +27,7 @@ pub mod value;
 macro_rules! try_err {
     ($val: expr) => {
         if let $crate::runtime::value::Value::Error(e) = $val {
-            return $crate::runtime::value::Value::Error(e);
+            return $crate::runtime::value::Value::error(e);
         };
     };
 }

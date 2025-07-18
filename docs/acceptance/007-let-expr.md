@@ -57,11 +57,7 @@ Introducing `let*` which is a recursive `let`.
 ```
 
 ```json
-{
-  "a": 3.0,
-  "b": 4.0,
-  "c": 7.0
-}
+"<Error: Thunk is already evaluating>"
 ```
 
 # Typechecking

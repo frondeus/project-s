@@ -55,7 +55,7 @@ impl Runtime {
                 }
                 InnerThunk::Evaluating => {
                     tracing::error!("Thunk is already evaluating");
-                    panic!("Thunk is already evaluating");
+                    return Value::error("Thunk is already evaluating");
                 }
                 _ => tracing::trace!("To Evaluate"),
             }

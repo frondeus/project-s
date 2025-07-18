@@ -158,6 +158,9 @@ pub struct Constructor {
 }
 
 impl Value {
+    pub fn error(s: impl ToString) -> Self {
+        Value::Error(s.to_string())
+    }
     pub fn ok(self) -> Result<Self, String> {
         if let Value::Error(e) = self {
             Err(e)

@@ -26,7 +26,7 @@ val old : {a: 1, b: 2} = {
 - : () = []
 ```
 
-However, this is a bit tediouso
+However, this is a bit tedious
 
 That's why S-lang has an additional special form `obj/extend`:
 
