@@ -534,7 +534,7 @@ mod tests {
         let prelude = prelude();
         let envs = [prelude];
         let (root_id, diag, modules) =
-            crate::process_with_simple_typechk(modules, &mut asts, root_id, &envs);
+            crate::process_with_typechk(modules, &mut asts, root_id, &envs);
 
         if diag.has_errors() {
             return Err((diag, Box::new(modules)));

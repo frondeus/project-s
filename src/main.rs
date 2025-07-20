@@ -5,8 +5,8 @@ use project_s::{
     process_ast,
     runtime::Runtime,
     s_std::prelude,
-    simple_types::TypeEnv,
     source::Sources,
+    types::TypeEnv,
 };
 use tower_lsp_server::{LspService, Server};
 

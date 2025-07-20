@@ -19,7 +19,7 @@ pub mod lambda_lifting;
 pub mod macro_expansion;
 
 pub mod patterns;
-pub mod simple_types;
+pub mod types;
 
 pub mod diagnostics;
 
@@ -47,14 +47,14 @@ pub fn process_ast(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diag
     (root, diagnostics)
 }
 
-pub fn process_with_simple_typechk<M: ModuleProvider>(
+pub fn process_with_typechk<M: ModuleProvider>(
     mut modules: M,
     asts: &mut ASTS,
     root: SExpId,
     envs: &[Env],
 ) -> (SExpId, Diagnostics, M) {
     let (root, mut diagnostics) = process_ast(asts, root, envs);
-    let mut type_env = simple_types::TypeEnv::new().with_prelude(modules.sources_mut());
+    let mut type_env = types::TypeEnv::new().with_prelude(modules.sources_mut());
     type_env.type_term(asts, root, &mut diagnostics, &mut modules, 0);
     (root, diagnostics, modules)
 }
@@ -90,7 +90,7 @@ mod tests {
         modules::{MemoryModules, ModuleProvider},
         runtime::Runtime,
         s_std::prelude,
-        simple_types::{InferedPolymorphicType, InferedTypeScheme},
+        types::{InferedPolymorphicType, InferedTypeScheme},
     };
 
     #[test]
@@ -123,8 +123,7 @@ mod tests {
                 let prelude = prelude();
                 let envs = [prelude];
                 let (root_id, mut diagnostics) = crate::process_ast(&mut asts, root_id, &envs);
-                let mut type_env =
-                    crate::simple_types::TypeEnv::new().with_prelude(modules.sources_mut());
+                let mut type_env = crate::types::TypeEnv::new().with_prelude(modules.sources_mut());
                 let infered =
                     type_env.type_term(&mut asts, root_id, &mut diagnostics, &mut modules, 0);
 

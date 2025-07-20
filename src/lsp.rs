@@ -53,8 +53,8 @@ use crate::{
     modules::{FileModules, ModuleProvider},
     process_ast,
     s_std::prelude,
-    simple_types::TypeEnv,
     source::{SourceId, Sources},
+    types::TypeEnv,
 };
 
 mod highlights;
