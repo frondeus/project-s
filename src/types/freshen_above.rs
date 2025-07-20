@@ -149,6 +149,17 @@ impl InferedPolymorphicType {
                     type_env.reference(read, write, span)
                 }
                 &InferedType::Module { .. } => ty,
+                &InferedType::Enum { ref variants, span } => {
+                    let variants = variants
+                        .clone()
+                        .into_iter()
+                        .map(|(name, ty)| {
+                            let ty = Self::freshen(type_env, ty, limit, level, freshened);
+                            (name.clone(), ty)
+                        })
+                        .collect();
+                    type_env.enum_(variants, span)
+                }
             }
         }
     }

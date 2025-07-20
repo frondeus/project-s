@@ -532,6 +532,34 @@ impl TypeEnv {
                     }
                     continue;
                 }
+
+                (
+                    Enum {
+                        variants: lhs,
+                        span: _,
+                    },
+                    Enum {
+                        variants: rhs,
+                        span: _,
+                    },
+                ) => {
+                    for (lhs_name, lhs) in lhs {
+                        match rhs.get(lhs_name) {
+                            Some(rhs) => {
+                                queue.push_back((*lhs, *rhs));
+                            }
+                            None => {
+                                diagnostics
+                                    .add(lhs_span, format!("Missing variant '{lhs_name}'"))
+                                    .add_extra("Used here", Some(lhs_span))
+                                    .add_extra("Expected here", Some(rhs_span));
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                //------------------
                 (
                     &Variable {
                         id: lhs_var_id,

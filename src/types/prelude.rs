@@ -32,7 +32,7 @@ impl TypeEnv {
         self.with_mono(&mut source, "+", function(list(number()), number()));
         // self.with_mono(&mut source, "+", bin_op(number(), number(), number()));
         self.with_mono(&mut source, "-", bin_op(number(), number(), number()));
-        self.with_mono(&mut source, "*", bin_op(number(), number(), number()));
+        self.with_mono(&mut source, "*", function(list(number()), number()));
         self.with_mono(&mut source, ">", bin_op(number(), number(), boolean()));
         self.with_mono(&mut source, "<=", bin_op(number(), number(), boolean()));
 

@@ -273,6 +273,18 @@ impl TypeEnv {
 
                 self.add_type(Type::Module { members })
             }
+            InferedType::Enum { variants, span: _ } => {
+                let variants = variants
+                    .clone()
+                    .into_iter()
+                    .map(|(name, ty)| {
+                        let ty = self.coalesce_inner(ty, polarity, recursive, in_process, vars);
+                        (name, ty)
+                    })
+                    .collect();
+
+                self.add_type(Type::Enum { variants })
+            }
         }
     }
 }

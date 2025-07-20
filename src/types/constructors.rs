@@ -90,4 +90,12 @@ impl TypeEnv {
     ) -> InferedTypeId {
         self.add_infered(InferedType::Module { members, span })
     }
+
+    pub(crate) fn enum_(
+        &mut self,
+        variants: IndexMap<String, InferedTypeId>,
+        span: Span,
+    ) -> InferedTypeId {
+        self.add_infered(InferedType::Enum { variants, span })
+    }
 }

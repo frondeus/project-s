@@ -150,6 +150,19 @@ impl TypeEnv {
             } => {
                 write!(buf, "<invalid ref>")
             }
+            Type::Enum { variants } => {
+                write!(buf, "enum ")?;
+                write!(buf, " {{")?;
+                for (i, (name, type_id)) in variants.iter().enumerate() {
+                    if i > 0 {
+                        write!(buf, " | ")?;
+                    }
+                    write!(buf, "{name}: ")?;
+                    self.fmt(*type_id, buf)?;
+                }
+                write!(buf, "}}")?;
+                Ok(())
+            }
         }
     }
 }

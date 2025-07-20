@@ -53,6 +53,11 @@ impl WithLevel for InferedTypeId {
                 write.max(read)
             }
             InferedType::Module { .. } => 0,
+            InferedType::Enum { variants, span: _ } => variants
+                .values()
+                .map(|variant| variant.level(type_env))
+                .max()
+                .unwrap_or(0),
         }
     }
 }

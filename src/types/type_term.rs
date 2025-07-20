@@ -430,7 +430,88 @@ impl TypeEnv {
 
                     self.unit(span)
                 }
+                [first, lhs, ref branches @ ..] if Self::is_symbol(asts, first, "match") => {
+                    let (branches, rest) = branches.as_chunks::<2>();
+                    let branches = branches.to_vec();
+                    if let &[rest, ..] = rest {
+                        diagnostics.add_sexp(
+                            asts,
+                            rest,
+                            "Expected pairs of pattern and expression",
+                        );
+                        return self.error(span);
+                    }
+                    let lhs = self.type_term(asts, lhs, diagnostics, modules, level);
 
+                    let mut cache = HashSet::new();
+
+                    let result = self.fresh_var(span, level);
+
+                    let mut variants = IndexMap::new();
+                    for [pattern_id, branch] in branches {
+                        match self.type_match_pattern(asts, pattern_id, diagnostics) {
+                            Some((variant_name, pattern)) => {
+                                if cache.contains(&variant_name) {
+                                    diagnostics.add_sexp(
+                                        asts,
+                                        pattern_id,
+                                        "Duplicate pattern in match",
+                                    );
+                                }
+                                cache.insert(variant_name.clone());
+                                let pattern_ty = self.type_pattern(
+                                    asts,
+                                    pattern,
+                                    level + 1,
+                                    TypeSchemeKind::Monomorphic, // For now
+                                    &mut Default::default(),
+                                );
+
+                                let branch_ty =
+                                    self.type_term(asts, branch, diagnostics, modules, level);
+
+                                self.constrain(branch_ty, result, diagnostics);
+
+                                variants.insert(variant_name, pattern_ty);
+                            }
+                            None => {
+                                todo!()
+                            }
+                        }
+                    }
+                    let enum_ = self.enum_(variants, span);
+                    self.constrain(lhs, enum_, diagnostics);
+
+                    result
+                }
+
+                [first, name, ref fields @ ..] if Self::is_symbol(asts, first, "enum") => {
+                    let fields = fields.to_vec();
+                    let name_type = self.type_term(asts, name, diagnostics, modules, level);
+                    let Some(name) =
+                        self.find_in_successors(name_type, InferedType::as_keyword_literal)
+                    else {
+                        let name_span = Self::span_of(name, asts);
+                        diagnostics
+                            .add(name_span, "enum: Expected keyword literal")
+                            // .add_extra("Record is created here", Some(span))
+                            .add_extra("This is not a keyword literal", Some(name_span));
+                        return self.error(name_span);
+                    };
+                    let name = name.to_string();
+
+                    let mut enum_fields = Vec::new();
+                    for field in fields {
+                        let ty = self.type_term(asts, field, diagnostics, modules, level);
+                        enum_fields.push(ty);
+                    }
+
+                    let fields = self.tuple(enum_fields, None, span);
+                    let mut variants = IndexMap::new();
+                    variants.insert(name, fields);
+
+                    self.enum_(variants, span)
+                }
                 [callee, ref args @ ..] => {
                     tracing::trace!("Infering application call");
                     let args = args.to_vec();
@@ -459,6 +540,50 @@ impl TypeEnv {
                 }
             },
             SExp::Error => self.error(span),
+        }
+    }
+
+    pub(crate) fn type_match_pattern(
+        &mut self,
+        asts: &mut ASTS,
+        pattern: SExpId,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<(String, Pattern)> {
+        let sexp = asts.get(pattern);
+
+        match &**sexp {
+            SExp::Symbol(_) => todo!(),
+            SExp::Keyword(_) => todo!(),
+            SExp::List(sexp_ids) => match sexp_ids[..] {
+                [] => {
+                    diagnostics.add(
+                        sexp.span,
+                        "Expected a match expression pattern in the form of (:variant_name :field_name..)"
+                    );
+                    None
+                }
+                [name, ref fields @ ..] => {
+                    let Some(keyword) = Self::as_keyword(asts, name) else {
+                        diagnostics.add(sexp.span, format!("Expected a keyword, found {name:?}"));
+                        return None;
+                    };
+
+                    let fields = fields.to_vec();
+                    let Ok(pattern) = Pattern::parse_list(fields, asts, sexp.span, pattern) else {
+                        diagnostics.add(sexp.span, "Failed to parse pattern");
+                        return None;
+                    };
+
+                    Some((keyword.to_string(), pattern))
+                }
+            },
+            other => {
+                diagnostics.add(
+                    sexp.span,
+                    format!("Expected _, :name or list, found {other:?}"),
+                );
+                None
+            }
         }
     }
 

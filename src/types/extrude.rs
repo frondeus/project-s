@@ -171,6 +171,17 @@ impl TypeEnv {
                     .collect();
                 self.module(members, span)
             }
+            &InferedType::Enum { ref variants, span } => {
+                let variants = variants
+                    .clone()
+                    .into_iter()
+                    .map(|(name, ty)| {
+                        let ty = self.extrude_inner(ty, polarity, level, cache);
+                        (name, ty)
+                    })
+                    .collect();
+                self.enum_(variants, span)
+            }
         }
     }
 }

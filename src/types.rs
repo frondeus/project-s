@@ -99,6 +99,9 @@ pub enum Type {
     Module {
         members: IndexMap<String, TypeScheme>,
     },
+    Enum {
+        variants: IndexMap<String, TypeId>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -165,6 +168,10 @@ pub enum InferedType {
         members: IndexMap<String, InferedTypeScheme>,
         span: Span,
     },
+    Enum {
+        variants: IndexMap<String, InferedTypeId>,
+        span: Span,
+    },
 }
 
 impl std::fmt::Debug for InferedType {
@@ -225,6 +232,9 @@ impl std::fmt::Debug for InferedType {
             Self::Module { members, span: _ } => {
                 f.debug_struct("Module").field("members", members).finish()
             }
+            Self::Enum { variants, span: _ } => {
+                f.debug_struct("Enum").field("variants", variants).finish()
+            }
         }
     }
 }
@@ -243,6 +253,7 @@ impl InferedType {
             InferedType::List { span, .. } => span,
             InferedType::Ref { span, .. } => span,
             InferedType::Module { span, .. } => span,
+            InferedType::Enum { span, .. } => span,
         }
     }
 
@@ -333,6 +344,11 @@ impl InferedType {
                     }
                 }
             }
+            InferedType::Enum { variants, span: _ } => {
+                for variant in variants.values() {
+                    ids.push(*variant);
+                }
+            }
         }
 
         ids.into_iter()
@@ -353,6 +369,7 @@ impl std::fmt::Display for InferedType {
             InferedType::List { .. } => write!(f, "list"),
             InferedType::Ref { .. } => write!(f, "ref"),
             InferedType::Module { .. } => write!(f, "module"),
+            InferedType::Enum { .. } => write!(f, "enum"),
         }
     }
 }
