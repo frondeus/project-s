@@ -202,9 +202,10 @@ But type-safe ;-)
 
 (let :base (fn (:self :super) { :a 1 :b 2 }))
 
-(let :obj  (fn (:self :super) (obj/extend super
+(let :obj  (fn (:self :super) { ..super
     :c (thunk () (+ (super :a) (super :b) ))
-)))
+    :d 4
+}))
 
 (extend base obj)
 ```
@@ -212,10 +213,14 @@ But type-safe ;-)
 ```eval
 val extend : forall (('a, {}) -?-> 'b, ('c, 'b) -?-> 'a ∧ 'c) → 'd = "<Function: LispFn>"
 val base : forall ('a, 'b) → {a: 1, b: 2} = "<Function: LispFn>"
-val obj : forall ('a, (:a) -?-> number ∧ (:b) -?-> number) → 'b extends {c: number} = "<Function: LispFn>"
-- : {a: 1, b: 2, c: number} = {
+val obj : forall ('a, (:a) -?-> number ∧ (:b) -?-> number) → 'b extends {c: number, d: 4} = "<Function: LispFn>"
+- : {a: 1, b: 2, c: number, d: 4} = {
   "a": 1.0,
   "b": 2.0,
-  "c": 3.0
+  "c": 3.0,
+  "d": 4.0
 }
 ```
+
+As you can see, we use mutually recursive let expression to initialize both base object and extended object. By doing it, we gain an access to `:self` and `:super`. Where `:super` points to `:base` object.
+We are also using `..super` to extend the object with base objects properties.

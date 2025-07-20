@@ -87,7 +87,7 @@ impl Runtime {
             .flat_map(|arg| {
                 if let Some(list) = self.as_special_form(arg, "splice") {
                     if let Some(first) = list.get(1) {
-                        let value = self.eval(*first);
+                        let value = self.eval_eager_rec(*first, true);
                         return match value {
                             Value::List(l) => l,
                             Value::Object(o) => o
