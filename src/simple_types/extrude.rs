@@ -156,7 +156,7 @@ impl TypeEnv {
             &InferedType::Ref { write, read, span } => {
                 let write = write.map(|write| self.extrude_inner(write, polarity, level, cache));
                 let read = read.map(|read| self.extrude_inner(read, polarity, level, cache));
-                self.reference(write, read, span)
+                self.reference(read, write, span)
             }
             &InferedType::Module { ref members, span } => {
                 let members = members

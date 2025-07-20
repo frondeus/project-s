@@ -417,9 +417,11 @@ impl TypeEnv {
                     tracing::trace!("Infering set reference");
                     let ref_mut = self.type_term(asts, ref_mut, diagnostics, modules, level);
                     let value = self.type_term(asts, value_id, diagnostics, modules, level);
-                    let bound = self.reference(Some(value), None, Self::span_of(value_id, asts));
-                    self.constrain(ref_mut, bound, diagnostics);
-                    value
+
+                    let must_be_writable = self.reference(None, Some(value), span);
+                    self.constrain(ref_mut, must_be_writable, diagnostics);
+
+                    self.unit(span)
                 }
 
                 [callee, ref args @ ..] => {

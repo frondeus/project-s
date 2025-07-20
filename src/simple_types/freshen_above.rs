@@ -146,7 +146,7 @@ impl InferedPolymorphicType {
                         write.map(|write| Self::freshen(type_env, write, limit, level, freshened));
                     let read =
                         read.map(|read| Self::freshen(type_env, read, limit, level, freshened));
-                    type_env.reference(write, read, span)
+                    type_env.reference(read, write, span)
                 }
                 &InferedType::Module { .. } => ty,
             }

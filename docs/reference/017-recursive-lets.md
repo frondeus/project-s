@@ -24,8 +24,8 @@ In order to use recursive let, one has to use `let*` special form.
 ```
 
 ```eval
-val f : forall ('a ∧ number ∧ number) → 1 ∨ number = "<Function: LispFn>"
-- : 1 ∨ number = 120.0
+val f : forall ('a ∧ number) → number ∨ 1 = "<Function: LispFn>"
+- : number ∨ 1 = 120.0
 ```
 
 We can of course define the type explicitly:
@@ -76,7 +76,7 @@ Comparing to classic `let`, recursive one allows to define multiple bindings at 
 
 ```eval
 val is-odd : forall ('a ∧ number) → false ∨ true = "<Function: LispFn>"
-val is-even : forall ('a ∧ number) → true ∨ false = "<Function: LispFn>"
+val is-even : forall ('a ∧ number) → false ∨ true = "<Function: LispFn>"
 - : false ∨ true = true
 ```
 

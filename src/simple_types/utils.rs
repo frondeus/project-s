@@ -166,6 +166,10 @@ impl TypeEnv {
     }
 
     pub(crate) fn add_type(&mut self, ty: Type) -> TypeId {
+        let pos = self.types.iter().position(|t| *t == ty);
+        if let Some(pos) = pos {
+            return TypeId(pos);
+        }
         let id = self.types.len();
         tracing::trace!("Adding {ty:?} as {id}");
         self.types.push(ty);

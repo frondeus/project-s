@@ -56,14 +56,8 @@ What if we ascribe both branches?
 (if true yes no)
 ```
 
-> [!TODO]
-> This should probably be `- : string` instead of `- : string ∨ string`
-
-> [!TODO]
-> Modules should use IndexMap instead of BTree
-
 ```eval
 val yes : string = "yes"
 val no : string = "no"
-- : string ∨ string = "yes"
+- : string = "yes"
 ```

@@ -502,21 +502,32 @@ impl TypeEnv {
                     },
                 ) => {
                     if lhs_read.is_none() && lhs_write.is_none() {
-                        diagnostics.add(lhs_span, "Reference is not readable or writable");
+                        diagnostics
+                            .add(lhs_span, "Reference is not readable or writable")
+                            .add_extra(
+                                "This reference is not readable nor writable",
+                                Some(lhs_span),
+                            );
                         continue;
                     }
                     if let Some(rhs_read) = rhs_read {
                         if let Some(lhs_read) = lhs_read {
                             queue.push_back((lhs_read, rhs_read));
                         } else {
-                            diagnostics.add(lhs_span, "Reference is not readable");
+                            diagnostics
+                                .add(lhs_span, "Reference is not readable")
+                                .add_extra("This reference is not readable", Some(lhs_span))
+                                .add_extra("Expected here", Some(rhs_span));
                         }
                     }
                     if let Some(rhs_write) = rhs_write {
                         if let Some(lhs_write) = lhs_write {
-                            queue.push_back((lhs_write, rhs_write));
+                            queue.push_back((rhs_write, lhs_write));
                         } else {
-                            diagnostics.add(rhs_span, "Reference is not writable");
+                            diagnostics
+                                .add(lhs_span, "Reference is not writable")
+                                .add_extra("This reference is not writable", Some(lhs_span))
+                                .add_extra("Expected here", Some(rhs_span));
                         }
                     }
                     continue;

@@ -77,6 +77,11 @@ impl TypeEnv {
                 list(vars.var("'b", 1)),
             )
         });
+        self.with_poly(&mut source, "get", {
+            let vars = Vars::default();
+
+            function((reference(vars.var("'a", 1)),), vars.var("'a", 1))
+        });
 
         sources.get_mut(builtin).set(&source.finalize());
         self

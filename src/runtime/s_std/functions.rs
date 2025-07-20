@@ -173,6 +173,10 @@ pub fn set(key: Ref, value: Value) -> Value {
     value
 }
 
+pub fn get(key: Ref) -> Value {
+    key.borrow().clone()
+}
+
 pub fn new_ref(one: Value) -> Value {
     Value::ref_(one)
 }

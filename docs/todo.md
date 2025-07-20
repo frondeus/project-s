@@ -22,10 +22,10 @@
   * [x] Holes, rest patterns
   * [x] Lists
   * [x] Splices
-  * [ ] Modules
-  * [ ] Importing
+  * [x] Modules
+  * [x] Importing
   * [x] Recursive lets
-  * [ ] Refs
+  * [x] Refs
   * [x] Plain records
   * [x] Record extensions
   * [ ] Objects & constructors

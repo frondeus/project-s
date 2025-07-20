@@ -36,7 +36,7 @@ pub struct VarId(usize);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TypeId(usize);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Type {
     /// ⊤ - Any type
     Top,
@@ -101,7 +101,7 @@ pub enum Type {
     },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TypeScheme {
     Monomorphic(TypeId),
     Polymorphic(PolymorphicType),

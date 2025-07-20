@@ -166,6 +166,22 @@ pub fn function(args: impl TypeBuilder, ret: impl TypeBuilder) -> impl TypeBuild
     }
 }
 
+pub fn reference(arg: impl TypeBuilder) -> impl TypeBuilder {
+    move |env: &mut TypeEnv, source: &mut SourceBuilder| {
+        let from = source.point();
+        source.append("ref ");
+        let item = arg.build(env, source);
+        let to = source.point();
+        let span = source.span(from, to);
+
+        InferedType::Ref {
+            write: None,
+            read: Some(item),
+            span,
+        }
+    }
+}
+
 pub fn list(arg: impl TypeBuilder) -> impl TypeBuilder {
     move |env: &mut TypeEnv, source: &mut SourceBuilder| {
         let from = source.point();

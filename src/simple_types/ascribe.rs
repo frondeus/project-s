@@ -108,13 +108,19 @@ impl TypeEnv {
                     let proto = self.fresh_var(span, level);
                     self.record(fields, Some(proto), span)
                 }
-                [first, mut_, inner]
+                [first, inner1, mut_, inner2]
                     if Self::is_symbol(asts, first, "ref")
                         && Self::is_symbol(asts, mut_, "mut") =>
                 {
+                    let read = self.ascribe(asts, inner1, diagnostics, vars, level);
+                    let write = self.ascribe(asts, inner2, diagnostics, vars, level);
+                    self.reference(Some(read), Some(write), span)
+                }
+                [first, inner] if Self::is_symbol(asts, first, "mut") => {
                     let write = self.ascribe(asts, inner, diagnostics, vars, level);
                     self.reference(None, Some(write), span)
                 }
+
                 [first, inner] if Self::is_symbol(asts, first, "ref") => {
                     let read = self.ascribe(asts, inner, diagnostics, vars, level);
                     self.reference(Some(read), None, span)

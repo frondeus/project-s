@@ -23,6 +23,7 @@ pub fn prelude() -> Env {
         .with_fn("=", eq)
         .with_fn("ref", new_ref)
         .with_fn("set", set)
+        .with_fn("get", get)
         .with_fn("list", make_list)
         .with_fn("tuple", make_tuple)
         .with_fn("obj/insert", insert_to_struct)
