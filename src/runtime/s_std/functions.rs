@@ -47,7 +47,7 @@ fn add_numbers(
 
 #[derive(Clone, Debug)]
 pub enum ObjectOrConstructor {
-    Object(BTreeMap<String, (Value, SExpId)>),
+    Object(BTreeMap<String, (Value, Option<SExpId>)>),
     Constructor(Constructor),
 }
 
@@ -177,7 +177,7 @@ pub fn new_ref(one: Value) -> Value {
     Value::ref_(one)
 }
 
-pub struct StructKey(String, SExpId);
+pub struct StructKey(String, Option<SExpId>);
 impl FromValue for StructKey {
     fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
         match value {
@@ -200,7 +200,7 @@ impl FromValue for StructKey {
             _ => return Err("Expected keyword".into()),
         };
 
-        Ok(Self(key, id))
+        Ok(Self(key, Some(id)))
     }
 }
 
@@ -301,7 +301,7 @@ impl FromValue for SymbolOrKeyword {
 }
 
 pub fn obj_has(
-    obj: EagerRec<BTreeMap<String, (Value, SExpId)>, WithConstructor>,
+    obj: EagerRec<BTreeMap<String, (Value, Option<SExpId>)>, WithConstructor>,
     key: EagerRec<SymbolOrKeyword, WithConstructor>,
 ) -> Result<Value, String> {
     let obj = obj.value;
@@ -319,7 +319,7 @@ pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
     for (key, value) in args.into_iter().tuples() {
         let key_id = *key.as_sexp().ok_or("Expected keyword")?;
         let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
-        inner.insert(key.to_string(), (value, key_id));
+        inner.insert(key.to_string(), (value, Some(key_id)));
     }
 
     Ok(Value::Object(inner))
@@ -327,15 +327,15 @@ pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
 
 pub fn obj_extend(
     rt: &mut Runtime,
-    obj: EagerRec<BTreeMap<String, (Value, SExpId)>, WithConstructor>,
+    obj: EagerRec<BTreeMap<String, (Value, Option<SExpId>)>, WithConstructor>,
     args: Rest<Value>,
-) -> Result<BTreeMap<String, (Value, SExpId)>, String> {
+) -> Result<BTreeMap<String, (Value, Option<SExpId>)>, String> {
     let mut obj = obj.value;
 
     for (key, value) in args.into_iter().tuples() {
         let id = *key.as_sexp().ok_or("Expected keyword")?;
         let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
-        obj.insert(key.to_string(), (value, id));
+        obj.insert(key.to_string(), (value, Some(id)));
     }
 
     Ok(obj)

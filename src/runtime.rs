@@ -214,6 +214,23 @@ impl Runtime {
         result.unwrap_or_else(|| Value::Error("DO: Expected at least one argument".to_string()))
     }
 
+    fn module(&mut self, items: &[SExpId]) -> Value {
+        self.envs.push();
+        for item in items {
+            let value = self.eval(*item);
+
+            if let Err(e) = value.ok() {
+                self.envs.pop();
+                return Value::Error(e);
+            }
+        }
+        let Some(env) = self.envs.pop() else {
+            return Value::Object(Default::default());
+        };
+        let env = env.into_iter().map(|(k, v)| (k, (v, None))).collect();
+        Value::Object(env)
+    }
+
     fn top_level(&mut self, items: &[SExpId]) -> Value {
         let mut result = None;
         self.envs.push();
@@ -384,6 +401,7 @@ impl Runtime {
                         item
                     }
                     SExp::Symbol(tag) if tag == "do" => self.do_(&items[1..]),
+                    SExp::Symbol(tag) if tag == "module" => self.module(&items[1..]),
                     SExp::Symbol(tag) if tag == "top-level" => self.top_level(&items[1..]),
                     SExp::Symbol(tag) if tag == "thunk" => {
                         self.thunk_def(&items[1..]).unwrap_or_else(Value::Error)

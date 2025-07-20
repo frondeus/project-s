@@ -24,7 +24,7 @@
   * [x] Splices
   * [ ] Modules
   * [ ] Importing
-  * [ ] Recursive lets
+  * [x] Recursive lets
   * [ ] Refs
   * [x] Plain records
   * [x] Record extensions

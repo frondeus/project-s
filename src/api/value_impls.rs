@@ -123,7 +123,7 @@ impl IntoValue for Ref {
     }
 }
 
-impl FromValue for BTreeMap<String, (Value, SExpId)> {
+impl FromValue for BTreeMap<String, (Value, Option<SExpId>)> {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Object(map) => Ok(map),
@@ -136,7 +136,7 @@ impl FromValue for BTreeMap<String, (Value, SExpId)> {
     }
 }
 
-impl IntoValue for BTreeMap<String, (Value, SExpId)> {
+impl IntoValue for BTreeMap<String, (Value, Option<SExpId>)> {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Object(self))
     }

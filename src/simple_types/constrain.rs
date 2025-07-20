@@ -181,6 +181,36 @@ impl TypeEnv {
                     continue;
                 }
                 (
+                    Module {
+                        members: lhs,
+                        span: _,
+                    },
+                    &Record {
+                        fields: ref rhs,
+                        proto: rhs_proto,
+                        span: _,
+                    },
+                ) => {
+                    let rhs = rhs.clone();
+                    let lhs = lhs.clone();
+                    for (key, r) in rhs {
+                        if let Some(l) = lhs.get(&key).copied() {
+                            let level = r.level(self);
+                            let l = l.instantiate(self, level);
+                            queue.push_back((l, r));
+                        } else {
+                            diagnostics
+                                .add(rhs_span, "Field not found")
+                                .add_extra("Accessed here", Some(rhs_span))
+                                .add_extra("Module defined here", Some(lhs_span));
+                        }
+                    }
+                    if let Some(rhs_proto) = rhs_proto {
+                        queue.push_back((lhs_id, rhs_proto));
+                    }
+                    continue;
+                }
+                (
                     Module { members, span: _ },
                     &Applicative {
                         arg: _,

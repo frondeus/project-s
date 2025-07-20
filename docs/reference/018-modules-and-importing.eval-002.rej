@@ -1,0 +1,17 @@
+/Users/frondeus/Code/project-s/docs/reference/018-modules-and-importing.md:38
+```s
+(let { :foo :bar } (import "a.s"))
+```
+
+--- /Users/frondeus/Code/project-s/docs/reference/018-modules-and-importing.md
++++ eval-002
+@@ -47,8 +47,8 @@
+ ```
+ 
+ ```eval
+-val foo : 1 = 1.0
+ val bar : "2" = "2"
++val foo : 1 = 1.0
+ - : () = []
+ ```
+ 

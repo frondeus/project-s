@@ -92,7 +92,7 @@ impl Runtime {
                             Value::List(l) => l,
                             Value::Object(o) => o
                                 .into_iter()
-                                .flat_map(|(_, (v, id))| [Value::SExp(id), v])
+                                .flat_map(|(_, (v, id))| [Value::SExp(id.expect("ID")), v])
                                 .collect(),
                             got => vec![Value::Error(format!(
                                 "Splice: Expected a list or record, got {got:?}"

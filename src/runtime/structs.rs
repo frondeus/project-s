@@ -55,7 +55,7 @@ impl Runtime {
         // ret
     }
 
-    pub fn new_ref_obj(&self, obj: BTreeMap<String, (Value, SExpId)>) -> Value {
+    pub fn new_ref_obj(&self, obj: BTreeMap<String, (Value, Option<SExpId>)>) -> Value {
         let self_ = Value::Object(obj);
         Value::ref_(self_)
     }
