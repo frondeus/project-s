@@ -1,6 +1,9 @@
 use std::{collections::BTreeMap, marker::PhantomData};
 
-use crate::runtime::{Function, Runtime, Value, value::Ref};
+use crate::{
+    ast::SExpId,
+    runtime::{Function, Runtime, Value, value::Ref},
+};
 
 use super::{FromValue, IntoValue};
 
@@ -120,7 +123,7 @@ impl IntoValue for Ref {
     }
 }
 
-impl FromValue for BTreeMap<String, Value> {
+impl FromValue for BTreeMap<String, (Value, SExpId)> {
     fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
             Value::Object(map) => Ok(map),
@@ -133,7 +136,7 @@ impl FromValue for BTreeMap<String, Value> {
     }
 }
 
-impl IntoValue for BTreeMap<String, Value> {
+impl IntoValue for BTreeMap<String, (Value, SExpId)> {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         Ok(Value::Object(self))
     }

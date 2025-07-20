@@ -105,7 +105,7 @@ impl Runtime {
             Pattern::Object(patterns, _, _) => match value.eager_rec(self, true) {
                 Value::Object(mut map) => {
                     for (key, pattern) in patterns {
-                        let value = map.remove(&key).unwrap_or_else(|| {
+                        let value = map.remove(&key).map(|(value, _)| value).unwrap_or_else(|| {
                             Value::Error(format!("Field :{key} not found in {map:?} "))
                         });
 
@@ -434,9 +434,12 @@ impl Runtime {
                                     ));
                                 };
 
-                                map.get(key).cloned().unwrap_or_else(|| {
-                                    Value::Error(format!("Undefined key: {key} in {map:?}"))
-                                })
+                                map.get(key)
+                                    .cloned()
+                                    .map(|(value, _)| value)
+                                    .unwrap_or_else(|| {
+                                        Value::Error(format!("Undefined key: {key} in {map:?}"))
+                                    })
                             }
                             Value::Constructor(constructor) => {
                                 self.constructor_call(constructor, None)

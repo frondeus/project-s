@@ -13,7 +13,7 @@ pub enum Value {
     Number(f64),
     String(String),
     Bool(bool),
-    Object(BTreeMap<String, Value>),
+    Object(BTreeMap<String, (Value, SExpId)>),
     List(Vec<Value>),
     SExp(SExpId),
     Macro(Macro),
@@ -233,14 +233,14 @@ impl Value {
         }
     }
 
-    pub fn as_object_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
+    pub fn as_object_mut(&mut self) -> Option<&mut BTreeMap<String, (Value, SExpId)>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,
         }
     }
 
-    pub fn as_object(&self) -> Option<&BTreeMap<String, Value>> {
+    pub fn as_object(&self) -> Option<&BTreeMap<String, (Value, SExpId)>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,
@@ -261,7 +261,7 @@ impl Value {
         }
     }
 
-    pub fn into_object(self) -> Option<BTreeMap<String, Value>> {
+    pub fn into_object(self) -> Option<BTreeMap<String, (Value, SExpId)>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,

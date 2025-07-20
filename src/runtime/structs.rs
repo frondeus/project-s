@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::runtime::value::Value;
+use crate::{ast::SExpId, runtime::value::Value};
 
 use super::{
     Runtime, // value::{Closure, Constructor},
@@ -55,7 +55,7 @@ impl Runtime {
         // ret
     }
 
-    pub fn new_ref_obj(&self, obj: BTreeMap<String, Value>) -> Value {
+    pub fn new_ref_obj(&self, obj: BTreeMap<String, (Value, SExpId)>) -> Value {
         let self_ = Value::Object(obj);
         Value::ref_(self_)
     }

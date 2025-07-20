@@ -25,7 +25,7 @@ impl Runtime {
             Value::Bool(b) => serde_json::Value::Bool(b),
             Value::Object(map) => {
                 let mut obj = serde_json::Map::new();
-                for (k, v) in map {
+                for (k, (v, _)) in map {
                     obj.insert(k, self.to_json_inner(v, eager, depth - 1));
                 }
                 serde_json::Value::Object(obj)

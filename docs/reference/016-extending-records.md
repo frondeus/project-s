@@ -36,7 +36,30 @@ That's why S-lang has an additional special form `obj/extend`:
 ```
 
 ```eval
-val new : {c: 3, a: 1, b: 2} = {
+val new : {a: 1, b: 2, c: 3} = {
+  "a": 1.0,
+  "b": 2.0,
+  "c": 3.0
+}
+val old : {a: 1, b: 2} = {
+  "a": 1.0,
+  "b": 2.0
+}
+- : () = []
+```
+
+# Syntax sugar
+
+Since the extending records is common, S-lang provides a syntax sugar using the same notation as with splices:
+
+```s
+(let :old { :a 1 :b 2 })
+(let :new { :c 3 ..old })
+```
+
+
+```eval
+val new : {a: 1, b: 2, c: 3} = {
   "a": 1.0,
   "b": 2.0,
   "c": 3.0

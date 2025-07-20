@@ -90,8 +90,12 @@ impl Runtime {
                         let value = self.eval(*first);
                         return match value {
                             Value::List(l) => l,
+                            Value::Object(o) => o
+                                .into_iter()
+                                .flat_map(|(_, (v, id))| [Value::SExp(id), v])
+                                .collect(),
                             got => vec![Value::Error(format!(
-                                "Splice: Expected a list, got {got:?}"
+                                "Splice: Expected a list or record, got {got:?}"
                             ))],
                         };
                     } else {

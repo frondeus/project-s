@@ -215,46 +215,34 @@ impl TypeEnv {
                     .map(|rest| self.coalesce_inner(rest, polarity, recursive, in_process, vars));
                 self.add_type(Type::Tuple { items, rest })
             }
-            InferedType::Record {
-                fields,
-                proto,
+            &InferedType::Record {
+                fields: ref input_fields,
+                proto: input_proto,
                 span: _,
             } => {
-                let proto = *proto;
-                let mut fields: IndexMap<String, TypeId> = fields
-                    .clone()
-                    .into_iter()
-                    .map(|(name, ty)| {
-                        let ty = self.coalesce_inner(ty, polarity, recursive, in_process, vars);
-                        (name, ty)
-                    })
-                    .collect();
+                let mut fields: IndexMap<String, TypeId> = IndexMap::new();
+                let mut proto = None;
 
-                if let Some(proto) = proto {
-                    let proto = self.coalesce_inner(proto, polarity, recursive, in_process, vars);
-                    let p_fields = match &self.types[proto.0] {
-                        Type::Record {
-                            fields: p_fields,
-                            proto: _,
-                        } => p_fields,
-                        _ => {
-                            return self.add_type(Type::Record {
-                                fields,
-                                proto: Some(proto),
-                            });
-                        }
-                    };
-                    for (field_name, field_ty) in p_fields {
-                        if fields.iter().all(|(n, _)| n != field_name) {
-                            fields.insert(field_name.clone(), *field_ty);
-                        }
+                let input_fields = input_fields.clone();
+                if let Some(input_proto) = input_proto {
+                    let proto_type =
+                        self.coalesce_inner(input_proto, polarity, recursive, in_process, vars);
+                    if let Type::Record {
+                        fields: p_fields,
+                        proto: _,
+                    } = &self.types[proto_type.0]
+                    {
+                        fields = p_fields.clone();
+                    } else {
+                        proto = Some(proto_type);
                     }
                 }
+                input_fields.into_iter().for_each(|(name, ty)| {
+                    let ty = self.coalesce_inner(ty, polarity, recursive, in_process, vars);
+                    fields.insert(name, ty);
+                });
 
-                self.add_type(Type::Record {
-                    fields,
-                    proto: None,
-                })
+                self.add_type(Type::Record { fields, proto })
             }
             &InferedType::List { item, span: _ } => {
                 let item = self.coalesce_inner(item, polarity, recursive, in_process, vars);

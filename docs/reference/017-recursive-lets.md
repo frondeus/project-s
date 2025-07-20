@@ -213,7 +213,7 @@ But type-safe ;-)
 val base : forall ('a, 'b) → {a: 1, b: 2} = "<Function: LispFn>"
 val extend : forall (('a, {}) -?-> 'b, ('c, 'b) -?-> 'a ∧ 'c) → 'd = "<Function: LispFn>"
 val obj : forall ('a, (:a) -?-> number ∧ (:b) -?-> number) → 'b extends {c: number} = "<Function: LispFn>"
-- : {c: number, a: 1, b: 2} = {
+- : {a: 1, b: 2, c: number} = {
   "a": 1.0,
   "b": 2.0,
   "c": 3.0

@@ -175,6 +175,22 @@ impl Span {
             source_id,
         }
     }
+
+    pub fn reduce(self, other: Span) -> Span {
+        assert_eq!(self.source_id, other.source_id);
+        let a = self.range;
+        let b = other.range;
+        let range = Range {
+            start_byte: a.start_byte.min(b.start_byte),
+            start_point: a.start_point.min(b.start_point),
+            end_byte: a.end_byte.max(b.end_byte),
+            end_point: a.end_point.max(b.end_point),
+        };
+        Span {
+            range,
+            source_id: self.source_id,
+        }
+    }
 }
 
 // impl Default for Span {

@@ -369,26 +369,29 @@ impl TypeEnv {
                 [first, ref args @ ..] if Self::is_symbol(asts, first, "obj/plain") => {
                     tracing::trace!("Infering record expression");
                     let mut fields = IndexMap::new();
-                    for (key, value) in args.to_vec().into_iter().tuples() {
-                        let key_type = self.type_term(asts, key, diagnostics, modules, level);
+                    let args = args.to_vec();
+                    let (args, rest) =
+                        self.handle_splice(asts, args.into_iter(), diagnostics, modules, level);
+
+                    for ((key_type, key_span), (value, _)) in args.into_iter().tuples() {
+                        // let key_type = self.type_term(asts, key, diagnostics, modules, level);
                         let ty = self.get(key_type);
                         tracing::warn!("TY: {ty:?}");
                         let Some(key) =
                             self.find_in_successors(key_type, InferedType::as_keyword_literal)
                         else {
-                            let key_span = Self::span_of(key, asts);
                             diagnostics
-                                .add_sexp(asts, key, "obj/plain: Expected keyword literal")
+                                .add(key_span, "obj/plain: Expected keyword literal")
                                 // .add_extra("Record is created here", Some(span))
                                 .add_extra("This is not a keyword literal", Some(key_span));
-                            return self.error(Self::span_of(key, asts));
+                            return self.error(key_span);
                         };
                         let key = key.to_string();
-                        let value = self.type_term(asts, value, diagnostics, modules, level);
+                        // let value = self.type_term(asts, value, diagnostics, modules, level);
                         fields.insert(key, value);
                     }
 
-                    self.record(fields, None, span)
+                    self.record(fields, rest, span)
                 }
                 [first, proto, ref args @ ..] if Self::is_symbol(asts, first, "obj/extend") => {
                     tracing::trace!("Infering record extension expression");
@@ -425,23 +428,16 @@ impl TypeEnv {
                     let args = args.to_vec();
                     let callee_type = self.type_term(asts, callee, diagnostics, modules, level);
 
-                    let args_range = args
-                        .iter()
-                        .map(|arg| Self::span_of(*arg, asts).range)
-                        .reduce(|a, b| Range {
-                            start_byte: a.start_byte.min(b.start_byte),
-                            start_point: a.start_point.min(b.start_point),
-                            end_byte: a.end_byte.max(b.end_byte),
-                            end_point: a.end_point.max(b.end_point),
-                        })
-                        .unwrap_or(span.range);
-                    let args_span = Span {
-                        range: args_range,
-                        source_id: span.source_id,
-                    };
-
                     let (arg_types, rest_type) =
                         self.handle_splice(asts, args.iter().copied(), diagnostics, modules, level);
+
+                    let args_span = arg_types
+                        .iter()
+                        .map(|(_, span)| *span)
+                        .reduce(Span::reduce)
+                        .unwrap_or(span);
+
+                    let arg_types: Vec<_> = arg_types.into_iter().map(|(arg, _)| arg).collect();
 
                     let ret_type = self.fresh_var(span, level);
 
@@ -465,12 +461,13 @@ impl TypeEnv {
         diagnostics: &mut Diagnostics,
         modules: &mut dyn ModuleProvider,
         level: usize,
-    ) -> (Vec<InferedTypeId>, Option<InferedTypeId>) {
+    ) -> (Vec<(InferedTypeId, Span)>, Option<InferedTypeId>) {
         let mut rest = None;
         let r = &mut rest;
 
         let args = args
             .flat_map(move |arg| {
+                let span = Self::span_of(arg, asts);
                 if let Some(list) = Self::as_special_form(asts, arg, "splice") {
                     if let Some(first) = list.get(1) {
                         tracing::trace!("Found splice");
@@ -480,7 +477,7 @@ impl TypeEnv {
                     }
                 }
                 let ty = self.type_term(asts, arg, diagnostics, modules, level);
-                vec![ty]
+                vec![(ty, span)]
             })
             .collect();
 

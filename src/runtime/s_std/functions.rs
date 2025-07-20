@@ -7,7 +7,7 @@ use crate::{
         CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Rest, WithConstructor,
         WithoutConstructor,
     },
-    ast::SExp,
+    ast::{SExp, SExpId},
     builder::ASTBuilder,
     runtime::{
         Function, Runtime, Value,
@@ -47,7 +47,7 @@ fn add_numbers(
 
 #[derive(Clone, Debug)]
 pub enum ObjectOrConstructor {
-    Object(BTreeMap<String, Value>),
+    Object(BTreeMap<String, (Value, SExpId)>),
     Constructor(Constructor),
 }
 
@@ -91,8 +91,12 @@ impl ObjectOrConstructor {
             }
             ObjectOrConstructor::Object(left) => {
                 let ref_self = self_.as_ref().cloned().unwrap();
-                for (key, value) in left {
-                    insert_to_struct(ref_self.clone(), StructKey(key), CalledConstructor(value))?;
+                for (key, (value, id)) in left {
+                    insert_to_struct(
+                        ref_self.clone(),
+                        StructKey(key, id),
+                        CalledConstructor(value),
+                    )?;
                 }
                 self_
             }
@@ -173,7 +177,7 @@ pub fn new_ref(one: Value) -> Value {
     Value::ref_(one)
 }
 
-pub struct StructKey(String);
+pub struct StructKey(String, SExpId);
 impl FromValue for StructKey {
     fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
         match value {
@@ -187,17 +191,16 @@ impl FromValue for StructKey {
     }
 
     fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
-        let key = match value {
-            Value::String(s) => s,
-            Value::SExp(id) => match &**rt.asts.get(id) {
-                SExp::Symbol(s) => s.to_string(),
-                SExp::Keyword(s) => s.to_string(),
-                SExp::String(s) => s.to_string(),
-                _ => return Err("Expected keyword, symbol or string".into()),
-            },
-            _ => return Err("Expected keyword, symbol or string".into()),
+        let Value::SExp(id) = value else {
+            return Err("Expected keyword".into());
         };
-        Ok(Self(key))
+
+        let key = match &**rt.asts.get(id) {
+            SExp::Keyword(s) => s.to_string(),
+            _ => return Err("Expected keyword".into()),
+        };
+
+        Ok(Self(key, id))
     }
 }
 
@@ -216,11 +219,11 @@ pub fn insert_to_struct(
 
     tracing::debug!("Inserting to struct({:?}): {} - {:?}", this, key.0, value);
 
-    let old = this.insert(key.0, value);
+    let old = this.insert(key.0, (value, key.1));
 
     tracing::debug!("After insertion: {this:?}");
 
-    Ok(old.unwrap_or_else(|| Value::List(vec![])))
+    Ok(old.map(|old| old.0).unwrap_or_else(|| Value::List(vec![])))
 }
 
 pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
@@ -238,11 +241,11 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
             while let Some(key) = iter.next() {
                 let key = &**rt.asts.get(key);
                 let Some(key) = key.as_keyword() else {
-                    return Err("Expected keyword".into());
+                    return Err("ObjEval: Expected keyword".into());
                 };
 
                 let Some(value) = iter.next() else {
-                    return Err("Expected value".into());
+                    return Err("ObjEval: Expected value".into());
                 };
 
                 let value = Spanned::new(value, span);
@@ -251,7 +254,8 @@ pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
                 // let expr = expr.build(&mut rt.asts, span);
                 last = Some(rt.eval(expr.inner()));
             }
-            Ok(last.unwrap_or_else(|| Value::Error("Expected at least one argument".into())))
+            Ok(last
+                .unwrap_or_else(|| Value::Error("ObjEval: Expected at least one argument".into())))
         }
         rest => Ok(rest),
     }
@@ -270,7 +274,7 @@ pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
     tracing::debug!("Deep eager: {:?}", eager_value);
 
     if let Value::Object(map) = &eager_value {
-        for value in map.values() {
+        for (value, _id) in map.values() {
             deep_eager(rt, value.clone());
         }
     }
@@ -297,7 +301,7 @@ impl FromValue for SymbolOrKeyword {
 }
 
 pub fn obj_has(
-    obj: EagerRec<BTreeMap<String, Value>, WithConstructor>,
+    obj: EagerRec<BTreeMap<String, (Value, SExpId)>, WithConstructor>,
     key: EagerRec<SymbolOrKeyword, WithConstructor>,
 ) -> Result<Value, String> {
     let obj = obj.value;
@@ -313,8 +317,9 @@ pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
     let mut inner = BTreeMap::new();
 
     for (key, value) in args.into_iter().tuples() {
+        let key_id = *key.as_sexp().ok_or("Expected keyword")?;
         let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
-        inner.insert(key.to_string(), value);
+        inner.insert(key.to_string(), (value, key_id));
     }
 
     Ok(Value::Object(inner))
@@ -322,14 +327,15 @@ pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
 
 pub fn obj_extend(
     rt: &mut Runtime,
-    obj: EagerRec<BTreeMap<String, Value>, WithConstructor>,
+    obj: EagerRec<BTreeMap<String, (Value, SExpId)>, WithConstructor>,
     args: Rest<Value>,
-) -> Result<BTreeMap<String, Value>, String> {
+) -> Result<BTreeMap<String, (Value, SExpId)>, String> {
     let mut obj = obj.value;
 
     for (key, value) in args.into_iter().tuples() {
+        let id = *key.as_sexp().ok_or("Expected keyword")?;
         let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
-        obj.insert(key.to_string(), value);
+        obj.insert(key.to_string(), (value, id));
     }
 
     Ok(obj)
