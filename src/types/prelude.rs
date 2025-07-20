@@ -41,7 +41,7 @@ impl TypeEnv {
             "=",
             bin_op(var("'a", 1), var("'b", 1), boolean()),
         );
-        self.with_poly(&mut source, "print", function((var("'a", 1),), number()));
+        self.with_poly(&mut source, "print", function(var("'a", 1), number()));
         self.with_poly(&mut source, "debug", {
             let vars = Vars::default();
             let lhs = vars.var("'a", 1);

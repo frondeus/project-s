@@ -274,6 +274,59 @@ impl Runtime {
         }
     }
 
+    pub fn match_(&mut self, items: &[SExpId]) -> Result<Value, String> {
+        match items {
+            &[expr, ref branches @ ..] => {
+                let branches = branches.to_vec();
+                let (branches, rest) = branches.as_chunks::<2>();
+                let expr = self.eval(expr);
+                let Some(expr) = expr.as_enum() else {
+                    return Err("Match: Expected enum".to_string());
+                };
+                if !rest.is_empty() {
+                    return Err("Match: Expected odd number of arguments".into());
+                };
+                for [pattern, body] in branches {
+                    let sexp = self.asts.get(*pattern).clone();
+                    let span = sexp.span;
+                    match sexp.inner() {
+                        SExp::Symbol(_) => todo!(),
+                        SExp::Keyword(_) => todo!(),
+                        SExp::List(sexp_ids) => match sexp_ids[..] {
+                            [] => return Err("Match: Expected at least one element".to_string()),
+                            [tag, ref fields @ ..] => {
+                                let fields = fields.to_vec();
+                                let tag = self.eval(tag);
+                                let Some(tag) = self.as_keyword(&tag) else {
+                                    return Err("Match: Expected keyword".to_string());
+                                };
+                                if expr.variant == tag {
+                                    let Ok(pattern) =
+                                        Pattern::parse_list(fields, &self.asts, span, *pattern)
+                                    else {
+                                        return Err("Match: Expected pattern".to_string());
+                                    };
+                                    self.envs.push();
+                                    self.destruct_(pattern, Value::List(expr.fields.clone()))?;
+                                    let body = self.eval(*body);
+                                    self.envs.pop();
+
+                                    return Ok(body);
+                                }
+                            }
+                        },
+                        _ => return Err("Match: Expected symbol, keyword, or list".to_string()),
+                    }
+                }
+                Err("Match: Unexpected - match did not match any pattern".into())
+            }
+            _ => Err(format!(
+                "Match: Expected at least two arguments, found: {}",
+                items.len()
+            )),
+        }
+    }
+
     pub fn new(asts: ASTS, modules: Box<dyn ModuleProvider>) -> Self {
         Self {
             asts,
@@ -435,6 +488,9 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "if" => {
                         self.if_(&items[1..]).unwrap_or_else(Value::Error)
                     }
+                    SExp::Symbol(tag) if tag == "match" => {
+                        self.match_(&items[1..]).unwrap_or_else(Value::Error)
+                    }
                     _first => {
                         let first = self.eval_eager_rec(first_id, true);
 
@@ -497,6 +553,10 @@ impl Runtime {
 
     pub fn top_env(&self) -> &Env {
         self.envs.last()
+    }
+
+    pub fn asts(&self) -> &ASTS {
+        &self.asts
     }
 }
 

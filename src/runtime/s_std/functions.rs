@@ -4,14 +4,14 @@ use itertools::Itertools;
 
 use crate::{
     api::{
-        CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Rest, WithConstructor,
+        CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Keyword, Rest, WithConstructor,
         WithoutConstructor,
     },
     ast::{SExp, SExpId},
     builder::ASTBuilder,
     runtime::{
         Function, Runtime, Value,
-        value::{Constructor, Ref},
+        value::{Constructor, Enum, Ref},
     },
     source::Spanned,
 };
@@ -434,4 +434,11 @@ pub fn list_find_or(rt: &mut Runtime, list: Vec<Value>, f: Function, or: Value) 
         }
     }
     or
+}
+
+pub fn construct_enum(name: Keyword, fields: Rest<Value>) -> Result<Value, String> {
+    Ok(Value::Enum(Enum {
+        variant: name.0,
+        fields: fields.into_iter().collect(),
+    }))
 }

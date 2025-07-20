@@ -47,6 +47,7 @@ pub fn prelude() -> Env {
         .with_fn("list/map", list_map)
         .with_fn("list/find-or", list_find_or)
         .with_fn("error", error)
+        .with_fn("enum", construct_enum)
         .with_fn("debug", |args: Rest<Value>| {
             tracing::info!("Debug: {:#?}", &*args);
 

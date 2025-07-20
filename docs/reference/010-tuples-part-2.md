@@ -12,8 +12,6 @@ But what about the first point?
 
 Besides destructuring (which for now enforces us to define precise size of a tuple, we can't destruct only first two elements of triple), we haven't got support for accessing random element of a tuple.
 
-> [!TODO]
-> We should add support for destructuring with rest pattern.
 
 S-lang takes an inspiration from other LISP languages and adds support for accessing by index using the same form as function call.
 

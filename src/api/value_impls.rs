@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, marker::PhantomData};
 
 use crate::{
-    ast::SExpId,
+    ast::{SExp, SExpId},
     runtime::{Function, Runtime, Value, value::Ref},
 };
 
@@ -255,5 +255,25 @@ where
         let first = first.try_into_value(rt)?;
         let second = second.try_into_value(rt)?;
         Ok(Value::List(vec![first, second]))
+    }
+}
+
+pub struct Keyword(pub String);
+
+impl FromValue for Keyword {
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let sexp = value.as_sexp().ok_or("Expected symbol or keyword")?;
+        let sexp = rt.asts().get(*sexp);
+        match &**sexp {
+            SExp::Keyword(s) => Ok(Self(s.to_string())),
+            _ => Err("Expected symbol or keyword".into()),
+        }
+    }
+
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        match value {
+            Value::SExp(id) => matches!(&**rt.asts().get(*id), SExp::Keyword(_)),
+            _ => false,
+        }
     }
 }

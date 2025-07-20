@@ -20,6 +20,7 @@ pub enum Value {
     Function(Function),
     Thunk(Thunk),
     Constructor(Constructor),
+    Enum(Enum),
     /// Mutable reference that lives on a heap
     Ref(Ref),
     /// For error handling
@@ -157,6 +158,12 @@ pub struct Constructor {
     pub(crate) constructor: Function,
 }
 
+#[derive(Clone, Debug)]
+pub struct Enum {
+    pub variant: String,
+    pub fields: Vec<Value>,
+}
+
 impl Value {
     pub fn error(s: impl ToString) -> Self {
         Value::Error(s.to_string())
@@ -261,6 +268,13 @@ impl Value {
         }
     }
 
+    pub fn as_enum(&self) -> Option<&Enum> {
+        match self {
+            Value::Enum(enum_) => Some(enum_),
+            _ => None,
+        }
+    }
+
     pub fn into_object(self) -> Option<BTreeMap<String, (Value, Option<SExpId>)>> {
         match self {
             Value::Object(map) => Some(map),
@@ -314,6 +328,9 @@ impl Value {
             }
             Value::Constructor(constructor) => {
                 todo!("Could not convert Constructor to SExp: {:?}", constructor)
+            }
+            Value::Enum(_enum) => {
+                todo!("Could not convert Enum to SExp: {:?}", _enum)
             }
         }
     }

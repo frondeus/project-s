@@ -30,8 +30,11 @@
   * [x] Record extensions
   * [ ] Objects & constructors
   * [ ] Optional keys in records
-  * [ ] Enums
-  * [ ] Pattern matching
+  * [x] Enums
+  * [x] Pattern matching
+    * [ ] Nested
+    * [ ] Exhaustive
+    * [ ] Useful
   * [ ] Operators & n-ary operators
 
 What we lost by switching to static types:
@@ -53,9 +56,15 @@ Nice to have
 * [ ] Unscope from janet
 
 # After adding types
-* [ ] Enums
+* [ ] Type aliases
+* [ ] Type constructors
+* [x] Enums
 * [ ] Named types
-* [ ] Match expression
+* [x] Match expression
+* [ ] Pattern matching:
+  * [ ] Nested patterns
+  * [ ] Exhaustive match
+  * [ ] Usefulness match
 * [ ] Arrays
 * [ ] JIT
 * [ ] REPL

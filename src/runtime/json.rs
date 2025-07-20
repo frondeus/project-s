@@ -52,6 +52,22 @@ impl Runtime {
                 let sexp = ast.get(id).fmt(&self.asts).to_string();
                 serde_json::Value::String(sexp)
             }
+            Value::Enum(_enum) => {
+                let mut map = serde_json::Map::new();
+                let fields = _enum.fields;
+                let value = match &fields[..] {
+                    [] => serde_json::Value::Null,
+                    [field] => self.to_json_inner(field.clone(), eager, depth - 1),
+                    _ => serde_json::Value::Array(
+                        fields
+                            .into_iter()
+                            .map(|field| self.to_json_inner(field, eager, depth - 1))
+                            .collect(),
+                    ),
+                };
+                map.insert(_enum.variant.clone(), value);
+                serde_json::Value::Object(map)
+            }
         }
     }
 }

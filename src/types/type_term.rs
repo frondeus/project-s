@@ -459,6 +459,7 @@ impl TypeEnv {
                                     );
                                 }
                                 cache.insert(variant_name.clone());
+                                self.envs.push();
                                 let pattern_ty = self.type_pattern(
                                     asts,
                                     pattern,
@@ -473,6 +474,7 @@ impl TypeEnv {
                                 self.constrain(branch_ty, result, diagnostics);
 
                                 variants.insert(variant_name, pattern_ty);
+                                self.envs.pop();
                             }
                             None => {
                                 todo!()

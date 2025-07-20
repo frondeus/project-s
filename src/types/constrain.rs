@@ -174,7 +174,7 @@ impl TypeEnv {
                         queue.push_back((proto, rhs_id));
                     } else {
                         diagnostics
-                            .add(rhs_span, "Undefined field: {field}")
+                            .add(rhs_span, format!("Undefined field: {field}"))
                             .add_extra("Used here", Some(rhs_span))
                             .add_extra("Record defined here", Some(lhs_span));
                     }
