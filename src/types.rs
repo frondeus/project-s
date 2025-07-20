@@ -606,8 +606,7 @@ mod tests {
 
                         let prelude = prelude();
                         let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                        let infered =
-                            env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
+                        let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
                         env.coalesce(infered);
                     });
@@ -640,7 +639,7 @@ mod tests {
 
             let prelude = prelude();
             let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-            let infered = env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
+            let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
             // let infered = env.check(&mut asts, root, &mut diagnostics);
             if diagnostics.has_errors() {
@@ -683,7 +682,7 @@ mod tests {
 
                 let prelude = prelude();
                 let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                let infered = env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
+                let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
                 env.debug_dot(&asts, infered)
             },

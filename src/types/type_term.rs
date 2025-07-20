@@ -30,7 +30,19 @@ impl PartOf {
 }
 
 impl TypeEnv {
-    pub fn type_term(
+    pub fn infer(
+        &mut self,
+        asts: &mut ASTS,
+        id: SExpId,
+        diagnostics: &mut Diagnostics,
+        modules: &mut dyn ModuleProvider,
+    ) -> InferedTypeId {
+        let ty = self.type_term(asts, id, diagnostics, modules, 0);
+        self.add_sexp(asts, id, ty);
+        ty
+    }
+
+    fn type_term(
         &mut self,
         asts: &mut ASTS,
         id: SExpId,
@@ -77,10 +89,7 @@ impl TypeEnv {
                 lit
             }
             SExp::Symbol(s) => match self.envs.get(s).copied() {
-                Some(ty) => {
-                    tracing::warn!("Found symbol: {ty:?}");
-                    ty.instantiate(self, level)
-                }
+                Some(ty) => ty.instantiate(self, level),
                 None => {
                     diagnostics
                         .add_sexp(asts, id, format!("Undefined variable: {s}"))
@@ -374,8 +383,6 @@ impl TypeEnv {
 
                     for ((key_type, key_span), (value, _)) in args.into_iter().tuples() {
                         // let key_type = self.type_term(asts, key, diagnostics, modules, level);
-                        let ty = self.get(key_type);
-                        tracing::warn!("TY: {ty:?}");
                         let Some(key) =
                             self.find_in_successors(key_type, InferedType::as_keyword_literal)
                         else {

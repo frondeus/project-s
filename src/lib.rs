@@ -55,7 +55,7 @@ pub fn process_with_typechk<M: ModuleProvider>(
 ) -> (SExpId, Diagnostics, M) {
     let (root, mut diagnostics) = process_ast(asts, root, envs);
     let mut type_env = types::TypeEnv::new().with_prelude(modules.sources_mut());
-    type_env.type_term(asts, root, &mut diagnostics, &mut modules, 0);
+    type_env.infer(asts, root, &mut diagnostics, &mut modules);
     (root, diagnostics, modules)
 }
 
@@ -124,8 +124,7 @@ mod tests {
                 let envs = [prelude];
                 let (root_id, mut diagnostics) = crate::process_ast(&mut asts, root_id, &envs);
                 let mut type_env = crate::types::TypeEnv::new().with_prelude(modules.sources_mut());
-                let infered =
-                    type_env.type_term(&mut asts, root_id, &mut diagnostics, &mut modules, 0);
+                let infered = type_env.infer(&mut asts, root_id, &mut diagnostics, &mut modules);
 
                 if diagnostics.has_errors() {
                     return diagnostics.pretty_print(modules.sources());

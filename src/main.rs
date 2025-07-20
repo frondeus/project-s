@@ -44,7 +44,7 @@ fn run(filename: &str) {
     let (root, mut diagnostics) = process_ast(&mut asts, root, envs);
     let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
     eprintln!("Type checking..");
-    type_env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
+    type_env.infer(&mut asts, root, &mut diagnostics, &mut modules);
     if diagnostics.has_errors() {
         eprintln!("Errors occurred during type checking");
         let err = diagnostics.pretty_print(modules.sources());
