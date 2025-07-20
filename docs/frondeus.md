@@ -35,45 +35,85 @@
 ```
 
 ```json
-Error: Undefined variable: obj/con
-    ╭─[ <input>:1:13 ]
-    │
-    │
-────╯
-Error: Undefined variable: obj/con
-    ╭─[ <input>:4:15 ]
-    │
-    │
-────╯
+Error: Undefined variable: origin
+   ╭─[ <input>:8:18 ]
+   │
+ 8 │             (set origin (obj/new (+ origin {
+   │                  ───┬──  
+   │                     ╰──── Used here
+───╯
 Error: Undefined variable: obj/new
    ╭─[ <input>:8:26 ]
    │
  8 │             (set origin (obj/new (+ origin {
+   │                          ───┬───  
+   │                             ╰───── Used here
 ───╯
-Error: Undefined variable: obj/con
-    ╭─[ <input>:8:44 ]
+Error: Undefined variable: origin
+   ╭─[ <input>:8:37 ]
+   │
+ 8 │             (set origin (obj/new (+ origin {
+   │                                     ───┬──  
+   │                                        ╰──── Used here
+───╯
+Error: Type mismatch
+    ╭─[ <builtin>:1:7 ]
     │
+  1 │ "+": [number] -> number
+    │       ───┬──  
+    │          ╰──── Expected number
     │
+    ├─[ <input>:8:44 ]
+    │
+  8 │ ╭─▶             (set origin (obj/new (+ origin {
+    ┆ ┆   
+ 10 │ ├─▶             })))
+    │ │                      
+    │ ╰────────────────────── But found record
 ────╯
 Error: Undefined variable: obj/new
     ╭─[ <input>:21:15 ]
     │
  21 │ (let :result (obj/new (+ {
+    │               ───┬───  
+    │                  ╰───── Used here
 ────╯
-Error: Undefined variable: obj/con
-    ╭─[ <input>:21:26 ]
+Error: Type mismatch
+    ╭─[ <builtin>:1:7 ]
     │
+  1 │ "+": [number] -> number
+    │       ───┬──  
+    │          ╰──── Expected number
     │
+    ├─[ <input>:21:26 ]
+    │
+ 21 │ ╭─▶ (let :result (obj/new (+ {
+    ┆ ┆   
+ 30 │ ├─▶ } dwarf)))
+    │ │                
+    │ ╰──────────────── But found record
 ────╯
-Error: Undefined variable: obj/con
-    ╭─[ <input>:22:12 ]
+Error: Type mismatch
+    ╭─[ <builtin>:1:7 ]
     │
+  1 │ "+": [number] -> number
+    │       ───┬──  
+    │          ╰──── Expected number
     │
+    ├─[ <input>:1:13 ]
+    │
+  1 │ ╭─▶ (let :dwarf {
+    ┆ ┆   
+ 14 │ ├─▶ })
+    │ │        
+    │ ╰──────── But found record
 ────╯
 Error: Undefined variable: deep-eager
     ╭─[ <input>:33:2 ]
     │
  33 │ (deep-eager result)
+    │  ─────┬────  
+    │       ╰────── Used here
 ────╯
 
 ```

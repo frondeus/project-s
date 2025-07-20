@@ -1,6 +1,11 @@
 use super::*;
 
 impl TypeEnv {
+    pub fn to_string(&self, ty: TypeId) -> String {
+        let mut buf = String::new();
+        self.fmt(ty, &mut buf).unwrap();
+        buf
+    }
     pub fn fmt(&self, ty: TypeId, buf: &mut String) -> Result<(), std::fmt::Error> {
         use std::fmt::Write;
         let ty = &self.types[ty.0];

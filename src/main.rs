@@ -5,8 +5,8 @@ use project_s::{
     process_ast,
     runtime::Runtime,
     s_std::prelude,
+    simple_types::TypeEnv,
     source::Sources,
-    types::TypeEnv,
 };
 use tower_lsp_server::{LspService, Server};
 
@@ -27,7 +27,7 @@ fn run(filename: &str) {
 
     let (sources, source_id) = Sources::single(filename, &document);
     let mut asts = ASTS::new();
-    let modules = FileModules::from(sources);
+    let mut modules = FileModules::from(sources);
 
     eprintln!("Parsing..");
     let Ok(ast) = asts.parse(source_id, modules.sources().get(source_id)) else {
@@ -42,17 +42,16 @@ fn run(filename: &str) {
     let envs = &[prelude];
     eprintln!("Processing..");
     let (root, mut diagnostics) = process_ast(&mut asts, root, envs);
-    let mut type_env = TypeEnv::new(modules).with_prelude();
+    let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
     eprintln!("Type checking..");
-    type_env.check(&mut asts, root, &mut diagnostics);
-    let modules = type_env.finish();
+    type_env.type_term(&mut asts, root, &mut diagnostics, &mut modules, 0);
     if diagnostics.has_errors() {
         eprintln!("Errors occurred during type checking");
         let err = diagnostics.pretty_print(modules.sources());
         eprintln!("{err}");
         return;
     }
-    let mut runtime = Runtime::new(asts, modules);
+    let mut runtime = Runtime::new(asts, Box::new(modules));
     runtime.with_prelude();
     eprintln!("Evaluating...");
     let value = runtime.eval(root);

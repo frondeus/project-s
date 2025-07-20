@@ -469,6 +469,10 @@ impl TypeEnv {
     pub const BOOLEAN: &str = "bool";
     pub const KEYWORD: &str = "keyword";
     pub const SYMBOL: &str = "symbol";
+
+    pub fn get_infered(&self, sexp: SExpId) -> Option<InferedTypeId> {
+        self.sexps.get(&sexp).copied()
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -645,9 +649,8 @@ mod tests {
             }
 
             let ty = env.coalesce(infered);
-            let mut out = String::new();
-            env.fmt(ty, &mut out).expect("Failed to format type");
-            out
+
+            env.to_string(ty)
 
             // env.to_string(infered)
         };

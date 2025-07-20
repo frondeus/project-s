@@ -66,10 +66,10 @@ Error: Type mismatch
    ╭─[ <input>:2:8 ]
    │
  1 │ (let :x (ref 10))
-   │              ─┬
+   │              ─┬  
    │               ╰── Expected 10
  2 │ (set x 20)
-   │        ─┬
+   │        ─┬  
    │         ╰── But found 20
 ───╯
 
@@ -121,11 +121,11 @@ Error: Reference is not writable
    ╭─[ <input>:3:10 ]
    │
  3 │     (fn ((ref :number)) :number)
-   │          ──────┬──────
+   │          ──────┬──────  
    │                ╰──────── This reference is not writable
-   │
+   │ 
  5 │         (set x 20)
-   │         ─────┬────
+   │         ─────┬────  
    │              ╰────── Expected here
 ───╯
 
@@ -207,11 +207,11 @@ Error: Type mismatch
    ╭─[ <input>:7:8 ]
    │
  2 │     (ref :number mut 10)
-   │                      ─┬
+   │                      ─┬  
    │                       ╰── Expected 10
-   │
+   │ 
  7 │ (set r 20)
-   │        ─┬
+   │        ─┬  
    │         ╰── But found 20
 ───╯
 

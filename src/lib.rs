@@ -20,7 +20,6 @@ pub mod macro_expansion;
 
 pub mod patterns;
 pub mod simple_types;
-pub mod types;
 
 pub mod diagnostics;
 
@@ -46,19 +45,6 @@ pub fn process_ast(asts: &mut ASTS, root: SExpId, envs: &[Env]) -> (SExpId, Diag
     root = LambdaPass::pass(asts, root, envs);
 
     (root, diagnostics)
-}
-
-pub fn process_with_typechk(
-    modules: impl ModuleProvider,
-    asts: &mut ASTS,
-    root: SExpId,
-    envs: &[Env],
-) -> (SExpId, Diagnostics, Box<dyn ModuleProvider>) {
-    let (root, mut diagnostics) = process_ast(asts, root, envs);
-    let mut type_env = types::TypeEnv::new(modules).with_prelude();
-    type_env.check(asts, root, &mut diagnostics);
-    let modules = type_env.finish();
-    (root, diagnostics, modules)
 }
 
 pub fn process_with_simple_typechk<M: ModuleProvider>(

@@ -50,11 +50,11 @@ fn ts_range_to_range(range: tree_sitter::Range) -> tower_lsp_server::lsp_types::
 
 use crate::{
     ast::ASTS,
-    modules::FileModules,
+    modules::{FileModules, ModuleProvider},
     process_ast,
     s_std::prelude,
+    simple_types::TypeEnv,
     source::{SourceId, Sources},
-    types::TypeEnv,
 };
 
 mod highlights;
@@ -297,23 +297,23 @@ impl LanguageServer for Backend {
         };
         // let mut env = TypeEnv::default().with_prelude(&mut sources);
         let type_ = {
-            let modules: FileModules = sources.into();
+            let mut modules: FileModules = sources.into();
             // let sources: &mut Sources = &mut sources;
             let asts: &mut ASTS = &mut asts;
             let prelude = prelude();
             let envs = &[prelude];
             let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::new(modules).with_prelude();
-            type_env.check(asts, root, &mut diagnostics);
+            let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
+            type_env.type_term(asts, root, &mut diagnostics, &mut modules, 0);
             // let type_ = type_env.check(asts, selected, &mut diagnostics);
-            let Some(type_) = type_env.get_ty_id(selected) else {
+            let Some(infered) = type_env.get_infered(selected) else {
                 return Ok(None);
             };
 
+            let type_ = type_env.coalesce(infered);
             // for diag in diagnostics.print(sources) {}
 
             let ty_ = type_env.to_string(type_);
-            let modules = type_env.finish();
             if !diagnostics.has_errors() {
                 ty_
             } else {
@@ -408,14 +408,13 @@ impl Backend {
         };
 
         let (modules, diag) = {
-            let modules: FileModules = sources.into();
+            let mut modules: FileModules = sources.into();
             let asts: &mut ASTS = &mut asts;
             let prelude = prelude();
             let envs = &[prelude];
             let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::new(modules).with_prelude();
-            type_env.check(asts, root, &mut diagnostics);
-            let modules = type_env.finish();
+            let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
+            type_env.type_term(asts, root, &mut diagnostics, &mut modules, 0);
             (modules, diagnostics)
         };
         let diag = diag

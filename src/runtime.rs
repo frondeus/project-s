@@ -534,15 +534,15 @@ mod tests {
         let prelude = prelude();
         let envs = [prelude];
         let (root_id, diag, modules) =
-            crate::process_with_typechk(modules, &mut asts, root_id, &envs);
+            crate::process_with_simple_typechk(modules, &mut asts, root_id, &envs);
 
         if diag.has_errors() {
-            return Err((diag, modules));
+            return Err((diag, Box::new(modules)));
         }
 
         let [prelude] = envs;
 
-        let mut runtime = Runtime::new(asts, modules);
+        let mut runtime = Runtime::new(asts, Box::new(modules));
         runtime.with_env(prelude);
         tracing::trace!("Before eval");
         let value = runtime.eval(root_id);
