@@ -75,8 +75,8 @@ Comparing to classic `let`, recursive one allows to define multiple bindings at 
 ```
 
 ```eval
-val is-even : forall ('a ∧ number) → true ∨ false = "<Function: LispFn>"
 val is-odd : forall ('a ∧ number) → false ∨ true = "<Function: LispFn>"
+val is-even : forall ('a ∧ number) → true ∨ false = "<Function: LispFn>"
 - : false ∨ true = true
 ```
 
@@ -210,8 +210,8 @@ But type-safe ;-)
 ```
 
 ```eval
-val base : forall ('a, 'b) → {a: 1, b: 2} = "<Function: LispFn>"
 val extend : forall (('a, {}) -?-> 'b, ('c, 'b) -?-> 'a ∧ 'c) → 'd = "<Function: LispFn>"
+val base : forall ('a, 'b) → {a: 1, b: 2} = "<Function: LispFn>"
 val obj : forall ('a, (:a) -?-> number ∧ (:b) -?-> number) → 'b extends {c: number} = "<Function: LispFn>"
 - : {a: 1, b: 2, c: number} = {
   "a": 1.0,

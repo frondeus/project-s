@@ -73,16 +73,6 @@ Lists are covariant, which means that we can assign a list of a subtype to a lis
 ```
 
 ```eval
-val a : [number] = [
-  1.0,
-  2.0,
-  3.0
-]
-val b : [number] = [
-  1.0,
-  1.0,
-  1.0
-]
 val f : ([number]) → [number] = "<Function: LispFn>"
 val numbers : [number] = [
   1.0,
@@ -90,6 +80,16 @@ val numbers : [number] = [
   3.0
 ]
 val ones : [1] = [
+  1.0,
+  1.0,
+  1.0
+]
+val a : [number] = [
+  1.0,
+  2.0,
+  3.0
+]
+val b : [number] = [
   1.0,
   1.0,
   1.0

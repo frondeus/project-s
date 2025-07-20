@@ -1,5 +1,5 @@
 #![allow(dead_code, clippy::unnecessary_to_owned)]
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -473,7 +473,7 @@ impl TypeEnv {
 
 #[derive(Default, Debug, Clone)]
 pub struct Env {
-    vars: BTreeMap<String, InferedTypeScheme>,
+    vars: IndexMap<String, InferedTypeScheme>,
 }
 
 impl Env {
@@ -524,7 +524,7 @@ impl Envs {
         EnvSavePoint(self.envs.len())
     }
 
-    pub fn pop(&mut self) -> Option<BTreeMap<String, InferedTypeScheme>> {
+    pub fn pop(&mut self) -> Option<IndexMap<String, InferedTypeScheme>> {
         self.envs.pop().map(|env| env.vars)
     }
 

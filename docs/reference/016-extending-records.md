@@ -14,14 +14,14 @@ Theoretically you could use destructing to create a new record like this:
 ```
 
 ```eval
+val old : {a: 1, b: 2} = {
+  "a": 1.0,
+  "b": 2.0
+}
 val new : {a: 1, b: 2, c: 3} = {
   "a": 1.0,
   "b": 2.0,
   "c": 3.0
-}
-val old : {a: 1, b: 2} = {
-  "a": 1.0,
-  "b": 2.0
 }
 - : () = []
 ```
@@ -36,14 +36,14 @@ That's why S-lang has an additional special form `obj/extend`:
 ```
 
 ```eval
+val old : {a: 1, b: 2} = {
+  "a": 1.0,
+  "b": 2.0
+}
 val new : {a: 1, b: 2, c: 3} = {
   "a": 1.0,
   "b": 2.0,
   "c": 3.0
-}
-val old : {a: 1, b: 2} = {
-  "a": 1.0,
-  "b": 2.0
 }
 - : () = []
 ```
@@ -59,14 +59,14 @@ Since the extending records is common, S-lang provides a syntax sugar using the 
 
 
 ```eval
+val old : {a: 1, b: 2} = {
+  "a": 1.0,
+  "b": 2.0
+}
 val new : {a: 1, b: 2, c: 3} = {
   "a": 1.0,
   "b": 2.0,
   "c": 3.0
-}
-val old : {a: 1, b: 2} = {
-  "a": 1.0,
-  "b": 2.0
 }
 - : () = []
 ```

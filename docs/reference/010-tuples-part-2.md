@@ -138,12 +138,12 @@ and functions because both are a subtype of this Applicative type.
 
 ```eval
 val f : forall ((0) -?-> 'a) → 'a = "<Function: LispFn>"
-val id : forall ('a) → 'a = "<Function: LispFn>"
 val t : (1, 2, 3) = [
   1.0,
   2.0,
   3.0
 ]
+val id : forall ('a) → 'a = "<Function: LispFn>"
 - : (1, 0) = [
   1.0,
   0.0

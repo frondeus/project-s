@@ -12,8 +12,8 @@ Let's define our first closure:
 ```
 
 ```eval
-val f : forall () → 1 = "<Function: LispFn>"
 val x : 1 = 1.0
+val f : forall () → 1 = "<Function: LispFn>"
 - : () = []
 ```
 
@@ -34,8 +34,8 @@ But what if `x` is defined in inner scope, is that working as well?
 ```
 
 ```eval
-val f : () → 2 = "<Function: LispFn>"
 val outer : forall () → () → 2 = "<Function: LispFn>"
+val f : () → 2 = "<Function: LispFn>"
 - : 2 = 2.0
 ```
 

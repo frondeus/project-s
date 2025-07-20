@@ -63,7 +63,7 @@ What if we ascribe both branches?
 > Modules should use IndexMap instead of BTree
 
 ```eval
-val no : string = "no"
 val yes : string = "yes"
+val no : string = "no"
 - : string ∨ string = "yes"
 ```

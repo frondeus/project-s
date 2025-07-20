@@ -113,7 +113,6 @@ impl TypeEnv {
                         self.type_term(asts, e, diagnostics, modules, level);
                     }
                     let env = self.envs.pop().unwrap();
-                    let env = env.into_iter().collect();
 
                     self.module(env, span)
                 }
