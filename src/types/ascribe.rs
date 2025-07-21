@@ -59,6 +59,37 @@ impl TypeEnv {
                     let ret = self.ascribe(asts, ret, diagnostics, vars, level);
                     self.function(pattern, ret, span)
                 }
+                [first, ref branches @ ..] if Self::is_symbol(asts, first, "enum") => {
+                    let (branches, remainder) = branches.as_chunks::<2>();
+                    if !remainder.is_empty() {
+                        let remainder = remainder[0];
+                        diagnostics.add_sexp(asts, remainder, "Unexpected token");
+                        return self.error(span);
+                    }
+                    let mut variants = IndexMap::new();
+                    for [tag, fields] in branches.to_vec() {
+                        let Some(tag) = Self::as_keyword(asts, tag) else {
+                            let tag_span = Self::span_of(tag, asts);
+                            diagnostics
+                                .add(tag_span, "Expected keyword")
+                                .add_extra("Got", Some(tag_span));
+                            continue;
+                        };
+                        let tag = tag.to_string();
+                        let fields_id = self.ascribe(asts, fields, diagnostics, vars, level);
+                        let ty = self.get(fields_id);
+                        match ty {
+                            InferedType::Tuple { .. } => {
+                                variants.insert(tag, fields_id);
+                            }
+                            _ => {
+                                let tuple = self.tuple(vec![fields_id], None, span);
+                                variants.insert(tag, tuple);
+                            }
+                        }
+                    }
+                    self.enum_(variants, span)
+                }
                 [first, ref fields_exprs @ ..]
                     if Self::is_symbols(asts, first, &["record", "obj/plain"]) =>
                 {

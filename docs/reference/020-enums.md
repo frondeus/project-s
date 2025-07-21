@@ -128,13 +128,13 @@ Error: Missing variant 'triangle'
     ╭─[ <input>:10:7 ]
     │
   2 │ ╭─▶     (match shape
-    ┆ ┆
+    ┆ ┆   
   7 │ ├─▶     )
-    │ │
+    │ │           
     │ ╰─────────── Expected here
-    │
+    │ 
  10 │     (area (enum :triangle { :bottom 4 :height 2 }))
-    │           ────────────────────┬───────────────────
+    │           ────────────────────┬───────────────────  
     │                               ╰───────────────────── Used here
 ────╯
 
@@ -160,22 +160,22 @@ Error: Undefined field: radius
     ╭─[ <input>:4:15 ]
     │
   4 │            (* (v :radius) (v :radius) 3.14)
-    │               ─────┬─────
+    │               ─────┬─────  
     │                    ╰─────── Used here
-    │
+    │ 
  10 │ (area (enum :circle { :radus 2 }))
-    │                     ──────┬─────
+    │                     ──────┬─────  
     │                           ╰─────── Record defined here
 ────╯
 Error: Undefined field: radius
     ╭─[ <input>:4:27 ]
     │
   4 │            (* (v :radius) (v :radius) 3.14)
-    │                           ─────┬─────
+    │                           ─────┬─────  
     │                                ╰─────── Used here
-    │
+    │ 
  10 │ (area (enum :circle { :radus 2 }))
-    │                     ──────┬─────
+    │                     ──────┬─────  
     │                           ╰─────── Record defined here
 ────╯
 
@@ -185,35 +185,24 @@ Notice how the error points out that `:radius` is expected but `:radus` (with a 
 
 # Ascriptions
 
-> [!TODO]
-> Make it work
-
 Just like other types, we can explicitly type enums:
 
 ```s
 (let :shape (:
-    (enum (:circle {:radius :number})
-          (:rectangle {:width :number :height :number} })
+    (enum :circle {:radius :number}
+          :rectangle {:width :number :height :number }
     )
     (enum :circle { :radius 5 })
 ))
 ```
 
 ```eval
-Error: Unknown type: enum
-Error: Type mismatch
-   ╭─[ <input>:5:5 ]
-   │
- 2 │ ╭─▶     (enum (:circle {:radius :number})
-   ┆ ┆
- 4 │ ├─▶     )
-   │ │
-   │ ╰─────────── Expected tuple
- 5 │         (enum :circle { :radius 5 })
-   │         ──────────────┬─────────────
-   │                       ╰─────────────── But found enum
-───╯
-
+val shape : enum  {circle: ({radius: number}) | rectangle: ({width: number, height: number})} = {
+  "circle": {
+    "radius": 5.0
+  }
+}
+- : () = []
 ```
 
 # Enums with Different Data Types
@@ -307,7 +296,7 @@ During match expression we can always destruct associated data:
 ```
 
 ```eval
-val area : forall (enum  {Circle: ({radius: number}) | Rectangle: ({height: number, width: number})}) → number = "<Function: LispFn>"
+val area : forall (enum  {Circle: ({radius: number}) | Rectangle: ({width: number, height: number})}) → number = "<Function: LispFn>"
 - : number = 78.5
 ```
 
