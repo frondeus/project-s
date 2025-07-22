@@ -59,6 +59,7 @@ fn print_help() {
 
         repl [r] - Run REPL
         helix [hx] - Build grammar for helix editor
+        zed - Build grammar for zed editor
 
         ci - ['gen-syntax', 'test', 'review-tests']
     "

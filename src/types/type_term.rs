@@ -88,7 +88,7 @@ impl TypeEnv {
                 self.constrain(lit, bool, diagnostics);
                 lit
             }
-            SExp::Symbol(s) => match self.envs.get(s).copied() {
+            SExp::Symbol(s) => match self.envs.get(s) {
                 Some(ty) => ty.instantiate(self, level),
                 None => {
                     diagnostics
@@ -112,6 +112,21 @@ impl TypeEnv {
                     self.add_sexp(asts, value, ty);
                     self.constrain(value_ty, ty, diagnostics);
                     ty
+                }
+                [first, name_id, ty] if Self::is_symbol(asts, first, "type") => {
+                    let ty = self.ascribe(asts, ty, diagnostics, &mut Default::default(), level);
+                    let name = self.type_term(asts, name_id, diagnostics, modules, level);
+                    let Some(name) = self.find_in_successors(name, InferedType::as_keyword_literal)
+                    else {
+                        let span = Self::span_of(name_id, asts);
+                        diagnostics
+                            .add(span, "type: Expected keyword literal")
+                            .add_extra("This is not a keyword literal", Some(span));
+                        return self.error(span);
+                    };
+                    let name = name.to_string();
+                    self.envs.set_type(&name, ty);
+                    self.unit(span)
                 }
                 [first] if Self::is_symbol(asts, first, "module") => {
                     self.module(Default::default(), span)

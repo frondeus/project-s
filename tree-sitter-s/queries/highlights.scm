@@ -7,6 +7,7 @@
 (quote _+) @macro
 (quasiquote _+) @macro
 
+
 (list (symbol) @keyword _+
     (#any-of? @keyword
         "if"
@@ -14,6 +15,17 @@
         "let*"
         "do"
         "fn"
+        "error"
+        "thunk"
+        "module"
+        "import"
+        "ref"
+        "mut"
+        "refmut"
+        "enum"
+        "match"
+        "type"
+        "newtype"
     )
 )
 
@@ -39,6 +51,7 @@
     (#any-of? @operator
         "+"
         "-"
+        "*"
     )
 )
 

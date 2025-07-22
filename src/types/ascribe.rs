@@ -39,6 +39,15 @@ impl TypeEnv {
                 lit
             }
             SExp::Symbol(s) if s == "_" => self.fresh_var(span, level),
+            SExp::Symbol(s) => {
+                let Some(ty) = self.envs.get_type(s) else {
+                    diagnostics
+                        .add(span, "Unknown type")
+                        .add_extra("Used here", Some(span));
+                    return self.error(span);
+                };
+                ty
+            }
 
             SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
                 self.primitive(symbol.clone(), span)
@@ -225,10 +234,6 @@ impl TypeEnv {
                 }
             },
             SExp::Error => self.error(span),
-            _ => {
-                diagnostics.add(span, format!("Unknown type: {}", asts.fmt(id)));
-                self.error(span)
-            }
         }
     }
 

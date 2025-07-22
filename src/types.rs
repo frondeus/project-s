@@ -495,6 +495,7 @@ impl TypeEnv {
 #[derive(Default, Debug, Clone)]
 pub struct Env {
     vars: IndexMap<String, InferedTypeScheme>,
+    types: IndexMap<String, InferedTypeId>,
 }
 
 impl Env {
@@ -531,8 +532,28 @@ impl Envs {
             .insert(name.to_string(), value);
     }
 
-    pub fn get(&self, name: &str) -> Option<&InferedTypeScheme> {
-        self.envs.iter().rev().find_map(|env| env.vars.get(name))
+    pub fn set_type(&mut self, name: &str, value: InferedTypeId) {
+        self.envs
+            .last_mut()
+            .unwrap()
+            .types
+            .insert(name.to_string(), value);
+    }
+
+    pub fn get(&self, name: &str) -> Option<InferedTypeScheme> {
+        self.envs
+            .iter()
+            .rev()
+            .find_map(|env| env.vars.get(name))
+            .copied()
+    }
+
+    pub fn get_type(&self, name: &str) -> Option<InferedTypeId> {
+        self.envs
+            .iter()
+            .rev()
+            .find_map(|env| env.types.get(name))
+            .copied()
     }
 
     pub fn push(&mut self) -> EnvSavePoint {

@@ -221,7 +221,7 @@ And of course we can destruct multiple fields at once:
 ```
 
 ```eval
-val c : 3 = 3.0
 val b : 1 = 1.0
+val c : 3 = 3.0
 - : () = []
 ```
