@@ -7,13 +7,38 @@ use super::*;
 const PRIMITIVES: &[&str] = &["number", "string", "bool", "keyword"];
 
 impl TypeEnv {
+    fn is_type_value(
+        &mut self,
+        asts: &mut ASTS,
+        id: SExpId,
+        diagnostics: &mut Diagnostics,
+        level: usize,
+    ) -> Result<Option<TypeValue>, InferedTypeId> {
+        let sexp = asts.get(id);
+        let span = sexp.span;
+
+        Ok(match sexp.deref() {
+            SExp::Symbol(s) if s == "_" => Some(TypeValue::Type(self.fresh_var(span, level))),
+
+            SExp::Symbol(s) => {
+                let Some(ty) = self.envs.get_type(s) else {
+                    diagnostics
+                        .add(span, "Unknown type")
+                        .add_extra("Used here", Some(span));
+                    return Err(self.error(span));
+                };
+                Some(ty)
+            }
+            _ => None,
+        })
+    }
+
     pub(crate) fn ascribe(
         &mut self,
         asts: &mut ASTS,
         id: SExpId,
         diagnostics: &mut Diagnostics,
         vars: &mut HashMap<String, InferedTypeId>,
-        //_modules: &mut dyn ModuleProvider,
         level: usize,
     ) -> InferedTypeId {
         let sexp = asts.get(id);
@@ -38,16 +63,19 @@ impl TypeEnv {
                 self.constrain(lit, bool, diagnostics);
                 lit
             }
-            SExp::Symbol(s) if s == "_" => self.fresh_var(span, level),
-            SExp::Symbol(s) => {
-                let Some(ty) = self.envs.get_type(s) else {
-                    diagnostics
-                        .add(span, "Unknown type")
-                        .add_extra("Used here", Some(span));
-                    return self.error(span);
-                };
-                ty
-            }
+            SExp::Symbol(_) => match self.is_type_value(asts, id, diagnostics, level) {
+                Err(e) => e,
+                Ok(None) => unreachable!(),
+                Ok(Some(ty)) => match ty {
+                    TypeValue::Type(infered_type_id) => infered_type_id,
+                    TypeValue::Constructor { .. } => {
+                        diagnostics
+                            .add(span, "Used type constructor")
+                            .add_extra("Used here", Some(span));
+                        self.error(span)
+                    }
+                },
+            },
 
             SExp::Keyword(symbol) if PRIMITIVES.contains(&symbol.as_str()) => {
                 self.primitive(symbol.clone(), span)
@@ -224,6 +252,38 @@ impl TypeEnv {
                     }
                     self.tuple(items, None, span)
                 }
+                [first, ref rest @ ..] => {
+                    let rest = rest.to_vec();
+                    let first_ty = self.is_type_value(asts, first, diagnostics, level);
+                    match first_ty {
+                        Err(e) => e,
+                        Ok(None) => {
+                            let first_ty = self.ascribe(asts, id, diagnostics, vars, level);
+                            let mut items = vec![first_ty];
+                            for item in rest.to_vec() {
+                                let item = self.ascribe(asts, item, diagnostics, vars, level);
+                                items.push(item);
+                            }
+                            self.tuple(items, None, span)
+                        }
+                        Ok(Some(TypeValue::Type(t))) => {
+                            let mut items = vec![t];
+                            for item in rest.to_vec() {
+                                let item = self.ascribe(asts, item, diagnostics, vars, level);
+                                items.push(item);
+                            }
+                            self.tuple(items, None, span)
+                        }
+
+                        Ok(Some(TypeValue::Constructor { args, ret })) => {
+                            let rest = rest
+                                .into_iter()
+                                .map(|arg| self.ascribe(asts, arg, diagnostics, vars, level))
+                                .collect();
+                            self.constructor_call(args, rest, ret)
+                        }
+                    }
+                }
                 ref rest => {
                     let mut items = Vec::new();
                     for item in rest.to_vec() {
@@ -235,6 +295,154 @@ impl TypeEnv {
             },
             SExp::Error => self.error(span),
         }
+    }
+
+    fn constructor_call(
+        &mut self,
+        generics: Vec<InferedTypeId>,
+        params: Vec<InferedTypeId>,
+        ret: InferedTypeId,
+    ) -> InferedTypeId {
+        let mut to_replace = HashMap::new();
+        for (type_var, arg) in generics.into_iter().zip(params) {
+            to_replace.insert(type_var, arg);
+        }
+        self.replace_vars(&to_replace, ret, &mut false)
+    }
+
+    fn replace_vars(
+        &mut self,
+        to_replace: &HashMap<InferedTypeId, InferedTypeId>,
+        ty: InferedTypeId,
+        replaced: &mut bool,
+    ) -> InferedTypeId {
+        let new = self.replace_vars_inner(to_replace, ty);
+        if new != ty {
+            *replaced = true;
+        }
+        new
+    }
+
+    fn replace_vars_inner(
+        &mut self,
+        to_replace: &HashMap<InferedTypeId, InferedTypeId>,
+        ty: InferedTypeId,
+    ) -> InferedTypeId {
+        if let Some(replacement) = to_replace.get(&ty) {
+            return *replacement;
+        }
+
+        let mut replaced = false;
+
+        let infered = self.get(ty);
+        let new = match *infered {
+            InferedType::Function { lhs, rhs, span } => {
+                let lhs = self.replace_vars(to_replace, lhs, &mut replaced);
+                let rhs = self.replace_vars(to_replace, rhs, &mut replaced);
+
+                InferedType::Function { lhs, rhs, span }
+            }
+            InferedType::Applicative {
+                arg,
+                ret,
+                first_arg,
+                span,
+            } => {
+                let arg = self.replace_vars(to_replace, arg, &mut replaced);
+                let ret = self.replace_vars(to_replace, ret, &mut replaced);
+                let first_arg = first_arg
+                    .map(|first_arg| self.replace_vars(to_replace, first_arg, &mut replaced));
+
+                InferedType::Applicative {
+                    arg,
+                    ret,
+                    first_arg,
+                    span,
+                }
+            }
+            InferedType::Tuple {
+                ref items,
+                rest,
+                span,
+            } => {
+                let items = items
+                    .to_vec()
+                    .into_iter()
+                    .map(|item| self.replace_vars(to_replace, item, &mut replaced))
+                    .collect::<Vec<_>>();
+
+                InferedType::Tuple { items, rest, span }
+            }
+            InferedType::Record {
+                ref fields,
+                proto,
+                span,
+            } => {
+                let fields = fields
+                    .clone()
+                    .into_iter()
+                    .map(|(name, ty)| {
+                        let ty = self.replace_vars(to_replace, ty, &mut replaced);
+                        (name, ty)
+                    })
+                    .collect();
+
+                InferedType::Record {
+                    fields,
+                    proto,
+                    span,
+                }
+            }
+            InferedType::List { item, span } => {
+                let item = self.replace_vars(to_replace, item, &mut replaced);
+                InferedType::List { item, span }
+            }
+            InferedType::Ref { write, read, span } => {
+                let write = write.map(|write| self.replace_vars(to_replace, write, &mut replaced));
+                let read = read.map(|read| self.replace_vars(to_replace, read, &mut replaced));
+                InferedType::Ref { write, read, span }
+            }
+            InferedType::Module { ref members, span } => {
+                let members = members
+                    .clone()
+                    .into_iter()
+                    .map(|(name, ty)| match ty {
+                        InferedTypeScheme::Monomorphic(infered_type_id) => {
+                            let infered_type_id =
+                                self.replace_vars(to_replace, infered_type_id, &mut replaced);
+                            (name, InferedTypeScheme::Monomorphic(infered_type_id))
+                        }
+                        InferedTypeScheme::Polymorphic(InferedPolymorphicType { level, body }) => {
+                            let body = self.replace_vars(to_replace, body, &mut replaced);
+                            (
+                                name,
+                                InferedTypeScheme::Polymorphic(InferedPolymorphicType {
+                                    level,
+                                    body,
+                                }),
+                            )
+                        }
+                    })
+                    .collect();
+
+                InferedType::Module { members, span }
+            }
+            InferedType::Enum { ref variants, span } => {
+                let variants = variants
+                    .clone()
+                    .into_iter()
+                    .map(|(name, ty)| {
+                        let ty = self.replace_vars(to_replace, ty, &mut replaced);
+                        (name, ty)
+                    })
+                    .collect();
+
+                InferedType::Enum { variants, span }
+            }
+            _ => return ty,
+        };
+
+        if replaced { self.add_infered(new) } else { ty }
     }
 
     fn ascribe_quote(

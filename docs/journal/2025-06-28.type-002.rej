@@ -1,0 +1,51 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-28.md:27
+```
+
+(let :f  (: (fn ((extend :a :number :b :number)) :number)
+    (fn (:obj)
+        (- (obj :a) (obj :b))
+    )
+    )
+)
+
+(f (obj/plain
+  :a 1
+  :b 2
+  :c 3
+))
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-28.md
++++ type-002
+@@ -43,5 +43,28 @@
+ ```
+ 
+ ```type
+-('a extends {a: number, b: number}) → number
++Error: Type mismatch
++   ╭─[ <input>:2:17 ]
++   │
++ 2 │ (let :f  (: (fn ((extend :a :number :b :number)) :number)
++   │                 ────────────────┬───────────────  
++   │                                 ╰───────────────── But found tuple of length 0
++ 3 │     (fn (:obj)
++   │         ───┬──  
++   │            ╰──── Expected tuple of length 1
++───╯
++Error: Type mismatch
++    ╭─[ <input>:9:4 ]
++    │
++  2 │     (let :f  (: (fn ((extend :a :number :b :number)) :number)
++    │                     ────────────────┬───────────────  
++    │                                     ╰───────────────── Expected tuple of length 0
++    │ 
++  9 │ ╭─▶ (f (obj/plain
++    ┆ ┆   
++ 13 │ ├─▶ ))
++    │ │        
++    │ ╰──────── But found tuple of length 1
++────╯
++
+ ```

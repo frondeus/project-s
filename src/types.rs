@@ -415,6 +415,16 @@ pub struct PolarVariable {
     id: VarId,
 }
 
+/// Used to represent a type in the type ascription and aliases.
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+pub enum TypeValue {
+    Type(InferedTypeId),
+    Constructor {
+        args: Vec<InferedTypeId>,
+        ret: InferedTypeId,
+    },
+}
+
 #[derive(Default)]
 pub struct TypeEnv {
     infered: Vec<InferedType>,
@@ -495,7 +505,7 @@ impl TypeEnv {
 #[derive(Default, Debug, Clone)]
 pub struct Env {
     vars: IndexMap<String, InferedTypeScheme>,
-    types: IndexMap<String, InferedTypeId>,
+    types: IndexMap<String, TypeValue>,
 }
 
 impl Env {
@@ -532,7 +542,7 @@ impl Envs {
             .insert(name.to_string(), value);
     }
 
-    pub fn set_type(&mut self, name: &str, value: InferedTypeId) {
+    pub fn set_type(&mut self, name: &str, value: TypeValue) {
         self.envs
             .last_mut()
             .unwrap()
@@ -548,12 +558,12 @@ impl Envs {
             .copied()
     }
 
-    pub fn get_type(&self, name: &str) -> Option<InferedTypeId> {
+    pub fn get_type(&self, name: &str) -> Option<TypeValue> {
         self.envs
             .iter()
             .rev()
             .find_map(|env| env.types.get(name))
-            .copied()
+            .cloned()
     }
 
     pub fn push(&mut self) -> EnvSavePoint {
@@ -596,70 +606,65 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_type_traces() -> test_runner::Result {
+    fn types_traces() -> test_runner::Result {
         use std::io::Read;
         unsafe { std::env::set_var("NO_COLOR", "1") }
-        test_runner::test_snapshots(
-            "docs/",
-            &["s", ""],
-            "simple-type-traces",
-            |input, _deps, args| {
-                let mut reader = tempfile::NamedTempFile::new().unwrap();
+        test_runner::test_snapshots("docs/", &["s", ""], "type-traces", |input, _deps, args| {
+            let mut reader = tempfile::NamedTempFile::new().unwrap();
 
-                let writer = reader.reopen().unwrap();
-                {
-                    let level = level_from_args(args);
-                    let (writer, _guard) = tracing_appender::non_blocking(writer);
+            let writer = reader.reopen().unwrap();
+            {
+                let level = level_from_args(args);
+                let (writer, _guard) = tracing_appender::non_blocking(writer);
 
-                    let file_layer = tracing_subscriber::fmt::Layer::new()
-                        // .compact()
-                        .with_file(args.contains("file"))
-                        .with_line_number(args.contains("line"))
-                        .with_writer(writer)
-                        .without_time()
-                        .with_ansi(false);
+                let file_layer = tracing_subscriber::fmt::Layer::new()
+                    // .compact()
+                    .with_file(args.contains("file"))
+                    .with_line_number(args.contains("line"))
+                    .with_writer(writer)
+                    .without_time()
+                    .with_ansi(false);
 
-                    let console_layer = tracing_subscriber::fmt::Layer::new()
-                        // .compact()
-                        .with_file(args.contains("file"))
-                        .with_line_number(args.contains("line"))
-                        .with_ansi(true);
+                let console_layer = tracing_subscriber::fmt::Layer::new()
+                    // .compact()
+                    .with_file(args.contains("file"))
+                    .with_line_number(args.contains("line"))
+                    .with_ansi(true);
 
-                    let subscriber = tracing_subscriber::registry()
-                        .with(console_layer.with_filter(level))
-                        .with(file_layer.with_filter(level));
+                let subscriber = tracing_subscriber::registry()
+                    .with(console_layer.with_filter(level))
+                    .with(file_layer.with_filter(level));
 
-                    tracing::subscriber::with_default(subscriber, move || {
-                        let mut asts = ASTS::new();
-                        let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
-                        let ast = asts
-                            .parse(source_id, modules.sources().get(source_id))
-                            .expect("Failed to parse");
+                tracing::subscriber::with_default(subscriber, move || {
+                    let mut asts = ASTS::new();
+                    let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
+                    let ast = asts
+                        .parse(source_id, modules.sources().get(source_id))
+                        .expect("Failed to parse");
 
-                        let root = ast.root_id().unwrap();
+                    let root = ast.root_id().unwrap();
 
-                        let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
+                    let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
 
-                        // let mut env = TypeEnv::new(modules).with_prelude();
+                    // let mut env = TypeEnv::new(modules).with_prelude();
 
-                        let prelude = prelude();
-                        let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                        let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
+                    let prelude = prelude();
+                    let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+                    let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
-                        env.coalesce(infered);
-                    });
-                }
+                    env.coalesce(infered);
+                });
+            }
 
-                let mut buf = String::new();
-                reader.read_to_string(&mut buf).unwrap();
-                buf
-                // env.to_string(infered)
-            },
-        )
+            let mut buf = String::new();
+            reader.read_to_string(&mut buf).unwrap();
+            buf
+            // env.to_string(infered)
+        })
     }
 
     #[test]
-    fn simple_type() -> test_runner::Result {
+    fn types() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
         let test = move |input: &str,
                          _deps: &HashMap<test_runner::CowStr<'_>, &str>,
@@ -699,31 +704,26 @@ mod tests {
     }
 
     #[test]
-    fn simple_type_dot() -> test_runner::Result {
+    fn types_dot() -> test_runner::Result {
         unsafe { std::env::set_var("NO_COLOR", "1") }
-        test_runner::test_snapshots(
-            "docs/",
-            &["s", ""],
-            "simple-type-dot",
-            |input, _deps, _args| {
-                let mut asts = ASTS::new();
-                let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
-                let ast = asts
-                    .parse(source_id, modules.sources().get(source_id))
-                    .expect("Failed to parse");
+        test_runner::test_snapshots("docs/", &["s", ""], "graphviz", |input, _deps, _args| {
+            let mut asts = ASTS::new();
+            let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
+            let ast = asts
+                .parse(source_id, modules.sources().get(source_id))
+                .expect("Failed to parse");
 
-                let root = ast.root_id().unwrap();
+            let root = ast.root_id().unwrap();
 
-                let mut env = TypeEnv::new();
-                // .with_prelude(modules.sources_mut());
-                // let mut env = TypeEnv::new(modules).with_prelude();
+            let mut env = TypeEnv::new();
+            // .with_prelude(modules.sources_mut());
+            // let mut env = TypeEnv::new(modules).with_prelude();
 
-                let prelude = prelude();
-                let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
+            let prelude = prelude();
+            let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+            let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
-                env.debug_dot(&asts, infered)
-            },
-        )
+            env.debug_dot(&asts, infered)
+        })
     }
 }

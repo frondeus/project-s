@@ -296,7 +296,7 @@ During match expression we can always destruct associated data:
 ```
 
 ```eval
-val area : forall (enum  {Circle: ({radius: number}) | Rectangle: ({width: number, height: number})}) → number = "<Function: LispFn>"
+val area : forall (enum  {Circle: ({radius: number}) | Rectangle: ({height: number, width: number})}) → number = "<Function: LispFn>"
 - : number = 78.5
 ```
 

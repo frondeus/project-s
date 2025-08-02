@@ -113,8 +113,10 @@ impl TypeEnv {
                     self.constrain(value_ty, ty, diagnostics);
                     ty
                 }
-                [first, name_id, ty] if Self::is_symbol(asts, first, "type") => {
-                    let ty = self.ascribe(asts, ty, diagnostics, &mut Default::default(), level);
+                [first, name_id, ref generics @ .., ty] if Self::is_symbol(asts, first, "type") => {
+                    let mut vars = Default::default();
+                    let generics = generics.to_vec();
+                    let ty = self.ascribe(asts, ty, diagnostics, &mut vars, level);
                     let name = self.type_term(asts, name_id, diagnostics, modules, level);
                     let Some(name) = self.find_in_successors(name, InferedType::as_keyword_literal)
                     else {
@@ -125,7 +127,21 @@ impl TypeEnv {
                         return self.error(span);
                     };
                     let name = name.to_string();
-                    self.envs.set_type(&name, ty);
+                    match &generics[..] {
+                        [] => {
+                            self.envs.set_type(&name, TypeValue::Type(ty));
+                        }
+                        args => {
+                            let args = args
+                                .iter()
+                                .map(|g_id| {
+                                    self.ascribe(asts, *g_id, diagnostics, &mut vars, level)
+                                })
+                                .collect::<Vec<_>>();
+                            self.envs
+                                .set_type(&name, TypeValue::Constructor { args, ret: ty });
+                        }
+                    }
                     self.unit(span)
                 }
                 [first] if Self::is_symbol(asts, first, "module") => {
