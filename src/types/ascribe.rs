@@ -258,7 +258,7 @@ impl TypeEnv {
                     match first_ty {
                         Err(e) => e,
                         Ok(None) => {
-                            let first_ty = self.ascribe(asts, id, diagnostics, vars, level);
+                            let first_ty = self.ascribe(asts, first, diagnostics, vars, level);
                             let mut items = vec![first_ty];
                             for item in rest.to_vec() {
                                 let item = self.ascribe(asts, item, diagnostics, vars, level);
@@ -307,7 +307,7 @@ impl TypeEnv {
         for (type_var, arg) in generics.into_iter().zip(params) {
             to_replace.insert(type_var, arg);
         }
-        self.replace_vars(&to_replace, ret, &mut false)
+        self.replace_vars(&to_replace, ret, &mut false, &mut HashSet::new())
     }
 
     fn replace_vars(
@@ -315,8 +315,9 @@ impl TypeEnv {
         to_replace: &HashMap<InferedTypeId, InferedTypeId>,
         ty: InferedTypeId,
         replaced: &mut bool,
+        visited: &mut HashSet<InferedTypeId>,
     ) -> InferedTypeId {
-        let new = self.replace_vars_inner(to_replace, ty);
+        let new = self.replace_vars_inner(to_replace, ty, visited);
         if new != ty {
             *replaced = true;
         }
@@ -327,18 +328,23 @@ impl TypeEnv {
         &mut self,
         to_replace: &HashMap<InferedTypeId, InferedTypeId>,
         ty: InferedTypeId,
+        visited: &mut HashSet<InferedTypeId>,
     ) -> InferedTypeId {
         if let Some(replacement) = to_replace.get(&ty) {
             return *replacement;
         }
+        if visited.contains(&ty) {
+            return ty;
+        }
+        visited.insert(ty);
 
         let mut replaced = false;
 
         let infered = self.get(ty);
         let new = match *infered {
             InferedType::Function { lhs, rhs, span } => {
-                let lhs = self.replace_vars(to_replace, lhs, &mut replaced);
-                let rhs = self.replace_vars(to_replace, rhs, &mut replaced);
+                let lhs = self.replace_vars(to_replace, lhs, &mut replaced, visited);
+                let rhs = self.replace_vars(to_replace, rhs, &mut replaced, visited);
 
                 InferedType::Function { lhs, rhs, span }
             }
@@ -348,10 +354,11 @@ impl TypeEnv {
                 first_arg,
                 span,
             } => {
-                let arg = self.replace_vars(to_replace, arg, &mut replaced);
-                let ret = self.replace_vars(to_replace, ret, &mut replaced);
-                let first_arg = first_arg
-                    .map(|first_arg| self.replace_vars(to_replace, first_arg, &mut replaced));
+                let arg = self.replace_vars(to_replace, arg, &mut replaced, visited);
+                let ret = self.replace_vars(to_replace, ret, &mut replaced, visited);
+                let first_arg = first_arg.map(|first_arg| {
+                    self.replace_vars(to_replace, first_arg, &mut replaced, visited)
+                });
 
                 InferedType::Applicative {
                     arg,
@@ -368,7 +375,7 @@ impl TypeEnv {
                 let items = items
                     .to_vec()
                     .into_iter()
-                    .map(|item| self.replace_vars(to_replace, item, &mut replaced))
+                    .map(|item| self.replace_vars(to_replace, item, &mut replaced, visited))
                     .collect::<Vec<_>>();
 
                 InferedType::Tuple { items, rest, span }
@@ -382,7 +389,7 @@ impl TypeEnv {
                     .clone()
                     .into_iter()
                     .map(|(name, ty)| {
-                        let ty = self.replace_vars(to_replace, ty, &mut replaced);
+                        let ty = self.replace_vars(to_replace, ty, &mut replaced, visited);
                         (name, ty)
                     })
                     .collect();
@@ -394,12 +401,14 @@ impl TypeEnv {
                 }
             }
             InferedType::List { item, span } => {
-                let item = self.replace_vars(to_replace, item, &mut replaced);
+                let item = self.replace_vars(to_replace, item, &mut replaced, visited);
                 InferedType::List { item, span }
             }
             InferedType::Ref { write, read, span } => {
-                let write = write.map(|write| self.replace_vars(to_replace, write, &mut replaced));
-                let read = read.map(|read| self.replace_vars(to_replace, read, &mut replaced));
+                let write =
+                    write.map(|write| self.replace_vars(to_replace, write, &mut replaced, visited));
+                let read =
+                    read.map(|read| self.replace_vars(to_replace, read, &mut replaced, visited));
                 InferedType::Ref { write, read, span }
             }
             InferedType::Module { ref members, span } => {
@@ -408,12 +417,16 @@ impl TypeEnv {
                     .into_iter()
                     .map(|(name, ty)| match ty {
                         InferedTypeScheme::Monomorphic(infered_type_id) => {
-                            let infered_type_id =
-                                self.replace_vars(to_replace, infered_type_id, &mut replaced);
+                            let infered_type_id = self.replace_vars(
+                                to_replace,
+                                infered_type_id,
+                                &mut replaced,
+                                visited,
+                            );
                             (name, InferedTypeScheme::Monomorphic(infered_type_id))
                         }
                         InferedTypeScheme::Polymorphic(InferedPolymorphicType { level, body }) => {
-                            let body = self.replace_vars(to_replace, body, &mut replaced);
+                            let body = self.replace_vars(to_replace, body, &mut replaced, visited);
                             (
                                 name,
                                 InferedTypeScheme::Polymorphic(InferedPolymorphicType {
@@ -432,7 +445,7 @@ impl TypeEnv {
                     .clone()
                     .into_iter()
                     .map(|(name, ty)| {
-                        let ty = self.replace_vars(to_replace, ty, &mut replaced);
+                        let ty = self.replace_vars(to_replace, ty, &mut replaced, visited);
                         (name, ty)
                     })
                     .collect();

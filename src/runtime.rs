@@ -491,9 +491,7 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "match" => {
                         self.match_(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "type" => {
-                        todo!()
-                    }
+                    SExp::Symbol(tag) if tag == "type" => Value::List(vec![]),
                     _first => {
                         let first = self.eval_eager_rec(first_id, true);
 
@@ -581,6 +579,7 @@ mod tests {
         level_from_args,
         modules::MemoryModules,
         source::{SourceId, Sources},
+        type_constructor_transform::TypeConstructorTransformPass,
     };
 
     use super::{s_std::prelude, *};
@@ -688,6 +687,9 @@ mod tests {
             let root_id = ast.root_id().unwrap();
             let prelude = prelude();
             let (root_id, diag) = crate::process_ast(&mut asts, root_id, &[prelude]);
+
+            let root_id = TypeConstructorTransformPass::pass(&mut asts, root_id);
+
             if diag.has_errors() {
                 return diag.pretty_print(&sources);
             }

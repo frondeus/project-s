@@ -6,6 +6,7 @@ use lambda_lifting::LambdaPass;
 use macro_expansion::MacroExpansionPass;
 use modules::ModuleProvider;
 use runtime::Env;
+use type_constructor_transform::TypeConstructorTransformPass;
 
 pub mod cst;
 pub mod source;
@@ -17,6 +18,8 @@ pub mod visitor;
 
 pub mod lambda_lifting;
 pub mod macro_expansion;
+
+pub mod type_constructor_transform;
 
 pub mod patterns;
 pub mod types;
@@ -56,6 +59,10 @@ pub fn process_with_typechk<M: ModuleProvider>(
     let (root, mut diagnostics) = process_ast(asts, root, envs);
     let mut type_env = types::TypeEnv::new().with_prelude(modules.sources_mut());
     type_env.infer(asts, root, &mut diagnostics, &mut modules);
+
+    // Transform type constructors into runtime functions
+    let root = TypeConstructorTransformPass::pass(asts, root);
+
     (root, diagnostics, modules)
 }
 
@@ -90,6 +97,7 @@ mod tests {
         modules::{MemoryModules, ModuleProvider},
         runtime::Runtime,
         s_std::prelude,
+        type_constructor_transform::TypeConstructorTransformPass,
         types::{InferedPolymorphicType, InferedTypeScheme},
     };
 
@@ -110,9 +118,11 @@ mod tests {
         })
     }
 
+    #[allow(clippy::print_stdout)]
     #[test]
     fn eval() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s"], "eval", |input, deps, args| {
+            println!("Running: {input}");
             tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
                 let lazy = args.contains("lazy");
                 let (mut modules, source_id) = MemoryModules::from_deps(input, deps);
@@ -125,6 +135,7 @@ mod tests {
                 let (root_id, mut diagnostics) = crate::process_ast(&mut asts, root_id, &envs);
                 let mut type_env = crate::types::TypeEnv::new().with_prelude(modules.sources_mut());
                 let infered = type_env.infer(&mut asts, root_id, &mut diagnostics, &mut modules);
+                let root_id = TypeConstructorTransformPass::pass(&mut asts, root_id);
 
                 if diagnostics.has_errors() {
                     return diagnostics.pretty_print(modules.sources());

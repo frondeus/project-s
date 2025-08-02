@@ -130,6 +130,11 @@ impl TypeEnv {
                     match &generics[..] {
                         [] => {
                             self.envs.set_type(&name, TypeValue::Type(ty));
+                            let lhs = self.tuple(vec![], None, span);
+                            let rhs = ty;
+                            let runtime_ty = self.function(lhs, rhs, span);
+                            self.envs
+                                .set(&name, InferedTypeScheme::Monomorphic(runtime_ty));
                         }
                         args => {
                             let args = args
@@ -138,8 +143,24 @@ impl TypeEnv {
                                     self.ascribe(asts, *g_id, diagnostics, &mut vars, level)
                                 })
                                 .collect::<Vec<_>>();
-                            self.envs
-                                .set_type(&name, TypeValue::Constructor { args, ret: ty });
+                            self.envs.set_type(
+                                &name,
+                                TypeValue::Constructor {
+                                    args: args.clone(),
+                                    ret: ty,
+                                },
+                            );
+
+                            let lhs = self.tuple(args, None, span);
+                            let rhs = ty;
+                            let runtime_ty = self.function(lhs, rhs, span);
+                            self.envs.set(
+                                &name,
+                                InferedTypeScheme::Polymorphic(InferedPolymorphicType {
+                                    level: level + 1,
+                                    body: runtime_ty,
+                                }),
+                            );
                         }
                     }
                     self.unit(span)

@@ -329,3 +329,35 @@ val area : forall (enum  {Circle: (number) | Rectangle: (number, number)}) → n
   "b": 78.5
 }
 ```
+
+# Type constructors
+
+Writing `(enum)` everywhere is not very efficient. Therefore S-lang introduced type constructors:
+
+Let's try with classic Option type:
+
+We duplicate `:Some` and `:None` because second argument is an enum TAG.
+```s
+(type :Some 'a (enum :Some 'a))
+(type :None (enum :None () ))
+
+(let :s (Some 1))
+(let :n (None))
+```
+
+In the runtime, `Some` is both an enum variant AND a type constructor that in fact
+has a type of `forall 'a 'a -> enum { Some: 'a }`
+
+```eval
+val Some : forall ('a) → enum  {Some: (1)} = "<Function: LispFn>"
+val None : () → enum  {None: ()} = "<Function: LispFn>"
+val s : enum  {Some: (1)} = {
+  "Some": 1.0
+}
+val n : enum  {None: ()} = {
+  "None": []
+}
+- : () = []
+```
+
+Note that `None` is a function not a value, it is so that we can pass it as a parameter to for example "Map".

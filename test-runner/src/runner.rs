@@ -163,6 +163,8 @@ where
         let actual = catch_unwind(|| test_fn(code, previous, &args));
         let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
 
+        println!("* {:?}", test_case.entry);
+
         match assert_section(section_name, source_name, test_case, &actual) {
             Ok(_) => {
                 print!(".");

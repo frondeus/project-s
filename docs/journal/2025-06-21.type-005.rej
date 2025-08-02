@@ -1,4 +1,4 @@
-/Users/frondeus/Code/project-s/docs/journal/2025-06-21.md:275
+/Users/frondeus/Code/project-s/docs/journal/2025-06-21.md:183
 ```
 (let (:f :g) (list
     (fn (:x) x)
@@ -10,7 +10,7 @@ f
 
 --- /Users/frondeus/Code/project-s/docs/journal/2025-06-21.md
 +++ type-005
-@@ -282,7 +282,20 @@
+@@ -190,7 +190,20 @@
  ```
  
  ```type
