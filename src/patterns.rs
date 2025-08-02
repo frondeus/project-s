@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::{
     ast::{ASTS, SExp, SExpId},
@@ -11,7 +11,7 @@ pub enum Pattern {
     Single(String, Span, SExpId),
     Splice(Box<Pattern>, Span, SExpId),
     List(Vec<Pattern>, Span, SExpId),
-    Object(HashMap<String, Pattern>, Span, SExpId),
+    Object(IndexMap<String, Pattern>, Span, SExpId),
 }
 
 impl std::fmt::Debug for Pattern {
@@ -46,7 +46,7 @@ impl Pattern {
         }
         let first = items[0];
         if Self::is_special_case(asts, first, "obj/plain") {
-            let mut patterns = HashMap::new();
+            let mut patterns = IndexMap::new();
             let mut items = items.into_iter().skip(1).peekable();
             while let Some(item) = items.next() {
                 let key = asts.get(item);

@@ -47,8 +47,8 @@ Of course we can use destructing to automatically add imported object into scope
 ```
 
 ```eval
-val bar : "2" = "2"
 val foo : 1 = 1.0
+val bar : "2" = "2"
 - : () = []
 ```
 

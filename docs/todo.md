@@ -56,8 +56,8 @@ Nice to have
 * [ ] Unscope from janet
 
 # After adding types
-* [ ] Type aliases
-* [ ] Type constructors
+* [x] Type aliases
+* [x] Type constructors
 * [x] Enums
 * [ ] Named types
 * [x] Match expression
