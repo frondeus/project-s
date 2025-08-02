@@ -491,7 +491,9 @@ impl Runtime {
                     SExp::Symbol(tag) if tag == "match" => {
                         self.match_(&items[1..]).unwrap_or_else(Value::Error)
                     }
-                    SExp::Symbol(tag) if tag == "type" => Value::List(vec![]),
+                    SExp::Symbol(tag) if tag == "type" => {
+                        todo!()
+                    }
                     _first => {
                         let first = self.eval_eager_rec(first_id, true);
 
