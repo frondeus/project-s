@@ -1,0 +1,30 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-22.md:27
+```
+(let (:a :b :c) (list 1 2 3))
+a
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-22.md
++++ type-003
+@@ -30,7 +30,20 @@
+ ```
+ 
+ ```type
+-1 | 2 | 3
++Error: Type mismatch
++    ╭─[ <input>:1:6 ]
++    │
++  1 │ (let (:a :b :c) (list 1 2 3))
++    │      ─────┬────  
++    │           ╰────── Expected tuple
++    │
++    ├─[ <builtin>:10:24 ]
++    │
++ 10 │ "list": forall ['a] -> ['a]
++    │                        ──┬─  
++    │                          ╰─── But found list
++────╯
++
+ ```
+ 
+ Nested destruction:

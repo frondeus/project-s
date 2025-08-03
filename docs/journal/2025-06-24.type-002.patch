@@ -1,0 +1,46 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-24.md:260
+```
+(fn
+  (:self
+    :root
+    :super
+    :origin)
+  (do
+    (obj/insert
+      self
+      :a
+      (thunk
+        (self
+          root
+          super
+          origin)
+        (obj/construct-or
+          1)))
+    self))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-24.md
++++ type-002
+@@ -278,7 +278,21 @@
+ ```
+ 
+ ```type
+-(refmut<{}>, Any, Any, Any) -> Any
++Error: Undefined variable: obj/insert
++   ╭─[ <input>:7:6 ]
++   │
++ 7 │     (obj/insert
++   │      ─────┬────  
++   │           ╰────── Used here
++───╯
++Error: Undefined variable: obj/construct-or
++    ╭─[ <input>:15:10 ]
++    │
++ 15 │         (obj/construct-or
++    │          ────────┬───────  
++    │                  ╰───────── Used here
++────╯
++
+ ```
+ 
+ Okay, there is a progress here, but...

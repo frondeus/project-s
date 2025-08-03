@@ -1,0 +1,16 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-20.md:22
+```
+(if true 1 2)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-20.md
++++ graphviz
+@@ -36,7 +36,7 @@
+ N4 [label="4 - lvl0 - Primitive { name: \"number\" }"];
+ N5 [label="5 - lvl0 - Literal { value: Number(2.0) }\n`2`"];
+ N6 [label="6 - lvl0 - Primitive { name: \"number\" }"];
+-N7 [label="7 - lvl0 - Variable { id: VarId(0) }\n`(top-level (if true 1 2))`"];
++N7 [label="7 - lvl0 - Variable { id: VarId(0) }\n`(if true 1 2)`"];
+ START -> N7
+ N7 -> N3 [label="LO"];
+ N7 -> N5 [label="LO"];

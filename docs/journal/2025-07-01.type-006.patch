@@ -1,0 +1,29 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-07-01.md:164
+```s
+(let :s (list/find-or
+    (list 1 2 4)
+    (fn (:x) (= x 2))
+    0
+    )
+)
+s
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-07-01.md
++++ type-006
+@@ -172,7 +172,14 @@
+ ```
+ 
+ ```type
+-4 | 2 | 1 | 0
++Error: Undefined variable: list/find-or
++   ╭─[ <input>:1:10 ]
++   │
++ 1 │ (let :s (list/find-or
++   │          ──────┬─────  
++   │                ╰─────── Used here
++───╯
++
+ ```
+ 
+ ```json

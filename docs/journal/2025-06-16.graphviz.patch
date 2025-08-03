@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-16.md:6
+```
+(let :x (if true 5 3))
+
+x
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-16.md
++++ graphviz
+@@ -23,7 +23,7 @@
+ N5 [label="5 - lvl0 - Literal { value: Number(3.0) }\n`3`"];
+ N6 [label="6 - lvl0 - Primitive { name: \"number\" }"];
+ N7 [label="7 - lvl1 - Variable { id: VarId(0) }\n`(if true 5 3)`"];
+-N8 [label="8 - lvl1 - Variable { id: VarId(1) }\n`(top-level (let :x (if true 5 3)) x)`"];
++N8 [label="8 - lvl1 - Variable { id: VarId(1) }\n`:x`"];
+ N9 [label="9 - lvl0 - Tuple { items: [], rest: None }\n`(let :x (if true 5 3))`"];
+ START -> N8
+ N7 -> N3 [label="LO"];

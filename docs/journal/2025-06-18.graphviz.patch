@@ -1,0 +1,18 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-18.md:7
+```
+(let :f (fn (:x) (if true 1 x)))
+
+f
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-18.md
++++ graphviz
+@@ -28,7 +28,7 @@
+ N8 [label="8 - lvl1 - Function { lhs: InferedTypeId(1), rhs: InferedTypeId(7) }\n`(fn (:x) (if true 1 x))`"];
+ N9 [label="9 - lvl1 - Variable { id: VarId(2) }\n`:f`"];
+ N10 [label="10 - lvl0 - Tuple { items: [], rest: None }\n`(let :f (fn (:x) (if true 1 x)))`"];
+-N11 [label="11 - lvl0 - Variable { id: VarId(3) }\n`(top-level (let :f (fn (:x) (if true 1 x))) f)`"];
++N11 [label="11 - lvl0 - Variable { id: VarId(3) }\n`f`"];
+ N12 [label="12 - lvl0 - Variable { id: VarId(4) }"];
+ N13 [label="13 - lvl0 - Variable { id: VarId(5) }"];
+ N14 [label="14 - lvl0 - Tuple { items: [InferedTypeId(12)], rest: None }"];

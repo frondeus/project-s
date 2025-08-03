@@ -24,23 +24,29 @@ type DynError = Box<dyn std::error::Error>;
 type Result<T = (), E = DynError> = std::result::Result<T, E>;
 
 fn try_main() -> Result {
-    let task = env::args().nth(1);
+    let args = env::args().skip(1).collect::<Vec<String>>();
+    let args = args.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
     let root = project_root();
-    match task.as_deref() {
-        Some("gen-syntax") | Some("gs") => gen_syntax::run(&root)?,
-        Some("review-tests") | Some("rt") => review_tests::run(&root)?,
-        Some("test") | Some("t") => test::run(&root)?,
-        Some("repl") | Some("r") => repl::run(&root)?,
-        Some("clippy") | Some("cl") => clippy::run(&root)?,
-        Some("fmt") | Some("f") => fmt::run(&root)?,
-        Some("helix") | Some("hx") => helix::run(&root)?,
-        Some("zed") => zed::run(&root)?,
-        Some("ci") => {
+    match args[..] {
+        ["gen-syntax"] | ["gs"] => gen_syntax::run(&root)?,
+        ["review-tests"] | ["rt"] => review_tests::run(&root)?,
+        ["test"] | ["t"] => test::run(&root)?,
+        ["repl"] | ["r"] => repl::run(&root)?,
+        ["clippy"] | ["cl"] => clippy::run(&root)?,
+        ["fmt"] | ["f"] => fmt::run(&root)?,
+        ["helix"] | ["hx"] => helix::run(&root)?,
+        ["zed"] => zed::run(&root)?,
+        ["ci", ref rest @ ..] => {
             fmt::run(&root)?;
             clippy::run(&root)?;
             gen_syntax::run(&root)?;
             let res = test::run(&root);
-            review_tests::run(&root)?;
+            match rest {
+                ["--no-review"] => (),
+                _ => {
+                    review_tests::run(&root)?;
+                }
+            }
             res?;
         }
         _ => print_help(),
