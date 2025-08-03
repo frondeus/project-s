@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 
 use crate::Result;
 
-pub fn run(root: &Path, no_interactive: bool) -> Result {
+pub fn run(root: &Path, llm: bool) -> Result {
     std::env::set_current_dir(root)?;
 
     let entries = glob::glob("docs/**/*.patch")?.collect::<Result<Vec<_>, _>>()?;
@@ -13,6 +13,9 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
     println!();
     println!("Reviewing snapshots: {max_count} files found");
     println!();
+
+    let mut already_rejected = 0;
+    let mut new_cases: Vec<String> = Vec::with_capacity(entries.len());
 
     for (idx, actual) in entries.into_iter().enumerate() {
         let count = idx + 1;
@@ -23,7 +26,8 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
         if rejected.exists() {
             let rejected_content = std::fs::read_to_string(&rejected)?;
             if actual_content == rejected_content {
-                std::fs::remove_file(&actual)?;
+                already_rejected += 1;
+                std::fs::remove_file(actual)?;
                 println!("\tRejected file is the same as the actual file");
                 println!();
                 continue;
@@ -46,9 +50,11 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
         colordiff.wait_with_output()?;
 
         println!("-----");
-        println!("{}", actual_content.lines().next().unwrap_or_default());
+        let first_line = actual_content.lines().next().unwrap_or_default();
+        println!("{first_line}");
 
-        if no_interactive {
+        if llm {
+            new_cases.push(format!("{} - from {}", actual.display(), first_line));
             continue;
         }
         loop {
@@ -74,7 +80,7 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
 
                     patch.wait_with_output()?;
 
-                    std::fs::remove_file(&actual)?;
+                    std::fs::remove_file(actual)?;
                     if rejected.exists() {
                         std::fs::remove_file(&rejected)?;
                     }
@@ -83,7 +89,7 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
                 }
                 "R" | "r" => {
                     std::fs::copy(&actual, rejected)?;
-                    std::fs::remove_file(&actual)?;
+                    std::fs::remove_file(actual)?;
                     break;
                 }
                 "S" | "s" => {
@@ -101,6 +107,18 @@ pub fn run(root: &Path, no_interactive: bool) -> Result {
     for entry in original_entries {
         if let Err(e) = std::fs::remove_file(&entry) {
             eprintln!("Could not remove {entry:?}: {e}");
+        }
+    }
+
+    if llm {
+        println!();
+        println!("--- SUMMARY ---");
+        println!(
+            "{already_rejected} entries already had rejected snapshot and content did not change"
+        );
+        println!("{} new entries are failing:", new_cases.len());
+        for entry in new_cases {
+            println!("* {entry}");
         }
     }
 

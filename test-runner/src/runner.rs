@@ -206,6 +206,8 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
     let entry = test_case.entry;
     let file = test_case.file;
     let source_line = test_case.source_line;
+    let range = expected.range;
+    let case_line = first_line_from_offset(range.start, file);
 
     let fenced_with_code = |slice: &str, code: CowStr<'_>| -> String {
         let (fin, fout) = {
@@ -217,8 +219,6 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
         };
         format!("{fin}\n{slice}\n{fout}")
     };
-    let fenced_without_code =
-        |slice: &str| -> String { fenced_with_code(slice, CowStr::from(source_name)) };
     let fenced = |slice: &str| -> String { fenced_with_code(slice, expected.name) };
 
     let expected_name = if count > 1 {
@@ -230,12 +230,7 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
     if expected.section != actual {
         let actual = fenced(actual);
 
-        let new = format!(
-            "{}{}{}",
-            &file[..expected.range.start],
-            &actual,
-            &file[expected.range.end..]
-        );
+        let new = format!("{}{}{}", &file[..range.start], &actual, &file[range.end..]);
 
         let patch = diff(entry, expected_name.clone(), &new)?;
 
@@ -253,11 +248,14 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
             .with_context(|| format!("Could create or open: {new_file:?}"))?;
 
         new_file
-            .write_all(format!("{}:{}\n", entry.display(), source_line).as_bytes())
+            .write_all(format!("{}:{}\n", entry.display(), case_line).as_bytes())
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
+        let source_code = format!("{source_name} {}:{}", entry.display(), source_line);
+        let source_code = CowStr::Borrowed(source_code.as_str());
+
         new_file
-            .write_all(fenced_without_code(code).as_bytes())
+            .write_all(fenced_with_code(code, source_code).as_bytes())
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
         new_file
@@ -277,6 +275,11 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
         }
         Ok(())
     }
+}
+
+fn first_line_from_offset(byte_pos: usize, file: &str) -> usize {
+    // byte_pos is guaranteed to be from inside of file.
+    file[..byte_pos].chars().filter(|&c| c == '\n').count() + 1
 }
 
 #[cfg(test)]

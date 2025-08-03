@@ -92,7 +92,7 @@ impl TypeEnv {
                 Some(ty) => ty.instantiate(self, level),
                 None => {
                     diagnostics
-                        .add_sexp(asts, id, format!("Undefined variable: {s}"))
+                        .add_sexp(asts, id, format!("Type error: Undefined variable: {s}"))
                         .add_extra("Used here", Some(span));
                     self.error(span)
                 }

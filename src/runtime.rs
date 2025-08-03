@@ -431,11 +431,11 @@ impl Runtime {
             SExp::Symbol(s) if s.starts_with(":") => {
                 panic!("This should be a keyword: {s}");
             }
-            SExp::Symbol(s) => self
-                .envs
-                .get(s.as_str())
-                .cloned()
-                .unwrap_or_else(|| Value::Error(format!("Undefined variable: {s}"))),
+            SExp::Symbol(s) => {
+                self.envs.get(s.as_str()).cloned().unwrap_or_else(|| {
+                    Value::Error(format!("Runtime error: Undefined variable: {s}"))
+                })
+            }
             SExp::List(items) => {
                 let first_id = items.first().copied();
                 let first = self.asts.maybe_get(first_id);
