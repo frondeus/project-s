@@ -63,7 +63,7 @@ fn strip_fences_offset(range: Range<usize>, s: &str) -> Range<usize> {
     }
 }
 
-pub fn diff(a_path: &Path, b_name: String, b: &str) -> Result<String> {
+pub fn diff(a_path: &Path, b_name: String, b: &str, ignore_trailing_ws: bool) -> Result<String> {
     let parent = a_path.parent().ok_or(anyhow::anyhow!("No parent"))?;
     let tempdir = tempdir()?;
 
@@ -80,17 +80,22 @@ pub fn diff(a_path: &Path, b_name: String, b: &str) -> Result<String> {
         .write_all(b.as_bytes())
         .with_context(|| format!("Could not write to tempfile: {tempfile_path:?}"))?;
 
-    let diff = Command::new("diff")
-        .current_dir(parent)
+    let mut cmd = Command::new("diff");
+
+    cmd.current_dir(parent)
         .arg("-u")
         .arg(a_path)
         .arg(tempfile_path)
         .arg("--label")
         .arg(a_path)
         .arg("--label")
-        .arg(b_name)
-        .output()
-        .context("Could not run diff command")?;
+        .arg(b_name);
+
+    if ignore_trailing_ws {
+        cmd.arg("-Z");
+    }
+
+    let diff = cmd.output().context("Could not run diff command")?;
 
     let out = String::from_utf8(diff.stdout)?;
 

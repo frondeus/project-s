@@ -26,6 +26,12 @@ struct TestCase<'a> {
 }
 
 impl<'a> TestCase<'a> {
+    fn case_line(&self) -> usize {
+        let section = self.section.as_ref().expect("Section");
+        // Ineffictient, counts all lines until the range again and again.
+        first_line_from_offset(section.range.start, self.file)
+    }
+
     fn has_arg(&self, arg: &str) -> bool {
         self.args.contains(&arg.to_string())
     }
@@ -163,15 +169,15 @@ where
         let actual = catch_unwind(|| test_fn(code, previous, &args));
         let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
 
-        println!("* {:?}", test_case.entry);
+        print!("* {}:{}", test_case.entry.display(), test_case.case_line());
 
         match assert_section(section_name, source_name, test_case, &actual) {
             Ok(_) => {
-                print!(".");
+                println!(" v");
                 successes += 1;
             }
             Err(e) => {
-                eprintln!("Error: {e}");
+                println!("Error: {e}");
                 failed += 1;
             }
         }
@@ -201,13 +207,14 @@ fn count_backticks(slice: &str) -> usize {
 
 fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &str) -> Result<()> {
     let code = test_case.previous.get(source_name).expect("Source");
-    let expected = test_case.section.expect("Expected");
+
+    let case_line = test_case.case_line();
+    let expected = test_case.section.expect("expected");
     let count = test_case.count;
     let entry = test_case.entry;
     let file = test_case.file;
     let source_line = test_case.source_line;
     let range = expected.range;
-    let case_line = first_line_from_offset(range.start, file);
 
     let fenced_with_code = |slice: &str, code: CowStr<'_>| -> String {
         let (fin, fout) = {
@@ -227,12 +234,20 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
         name.to_string()
     };
 
+    // This is whitespace sensitive
     if expected.section != actual {
         let actual = fenced(actual);
 
         let new = format!("{}{}{}", &file[..range.start], &actual, &file[range.end..]);
 
-        let patch = diff(entry, expected_name.clone(), &new)?;
+        // For now
+        let patch = diff(entry, expected_name.clone(), &new, true)?;
+        if patch.is_empty() {
+            // There is no real diff,
+            return Ok(());
+        }
+
+        println!();
 
         colordiff(&patch)?;
 

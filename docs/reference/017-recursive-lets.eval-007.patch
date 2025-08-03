@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md:171
+```s /Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md:156
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(let :obj  (fn (:self) {
+    :a 1
+    :b 2
+    :c (thunk () (+ (self :a) (self :b) ))
+}))
+
+(fix obj)
+```
+
+--- /Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md
++++ eval-007
+@@ -174,7 +174,7 @@
+ - : {a: 1, b: 2, c: number} = {
+   "a": 1.0,
+   "b": 2.0,
+-  "c": 3.0
++  "c": "<Error: Runtime error: Undefined variable: self>"
+ }
+ ```
+ 

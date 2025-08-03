@@ -1,0 +1,36 @@
+/Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md:213
+```s /Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md:194
+(let :extend (fn (:base :ext) (do
+   (let*
+        :super (base result {})
+        :result (ext result super)
+   )
+   result
+)))
+
+(let :base (fn (:self :super) { :a 1 :b 2 }))
+
+(let :obj  (fn (:self :super) { ..super
+    :c (thunk () (+ (super :a) (super :b) ))
+    :d 4
+}))
+
+(extend base obj)
+```
+
+--- /Users/frondeus/Code/project-s/docs/reference/017-recursive-lets.md
++++ eval-008
+@@ -214,12 +214,7 @@
+ val extend : forall (('a, {}) -?-> 'b, ('c, 'b) -?-> 'a ∧ 'c) → 'd = "<Function: LispFn>"
+ val base : forall ('a, 'b) → {a: 1, b: 2} = "<Function: LispFn>"
+ val obj : forall ('a, (:a) -?-> number ∧ (:b) -?-> number) → 'b extends {c: number, d: 4} = "<Function: LispFn>"
+-- : {a: 1, b: 2, c: number, d: 4} = {
+-  "a": 1.0,
+-  "b": 2.0,
+-  "c": 3.0,
+-  "d": 4.0
+-}
++- : {a: 1, b: 2, c: number, d: 4} = "<Error: Splice: Expected a list or record, got Error(\"Runtime error: Undefined variable: super\")>"
+ ```
+ 
+ As you can see, we use mutually recursive let expression to initialize both base object and extended object. By doing it, we gain an access to `:self` and `:super`. Where `:super` points to `:base` object.

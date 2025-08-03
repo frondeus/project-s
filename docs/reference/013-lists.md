@@ -182,5 +182,5 @@ first
 
 ```eval
 val first : 'a
-- : 'a = "<Error: Undefined variable: first>"
+- : 'a = "<Error: Runtime error: Undefined variable: first>"
 ```
