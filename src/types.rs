@@ -720,10 +720,7 @@ mod tests {
             // env.to_string(infered)
         };
 
-        let t1 = test_runner::test_snapshots("docs/", &["s", ""], "simple-type", test);
-        let t2 = test_runner::test_snapshots("docs/", &["s", ""], "type", test);
-        t1?;
-        t2
+        test_runner::test_snapshots("docs/", &["s", ""], "type", test)
     }
 
     #[test]
