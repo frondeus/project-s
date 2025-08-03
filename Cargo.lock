@@ -637,6 +637,7 @@ dependencies = [
  "itertools",
  "serde_json",
  "tempfile",
+ "test-case",
  "test-runner",
  "thiserror 2.0.12",
  "tokio",
