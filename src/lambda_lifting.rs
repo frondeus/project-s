@@ -4,7 +4,7 @@ use crate::{
     ast::{ASTS, SExpId},
     patterns::Pattern,
     source::Spanned,
-    visitor::{List, Visitor, VisitorHelper},
+    visitor::{List, Quasiquote, Unquote, Visitor, VisitorHelper},
 };
 
 const SPECIAL_FORMS: &[&str] = &[
@@ -50,14 +50,6 @@ impl<'a> Visitor<'a> for LambdaLiftingPass<'a> {
     }
 
     fn visit_list(&mut self, list: List) -> Option<Spanned<SExpId>> {
-        if self.helper.is_special_form(&list, "quote") {
-            return None;
-        }
-
-        if self.helper.is_special_form(&list, "quasiquote") {
-            return None;
-        }
-
         if self
             .helper
             .is_one_of_special_forms(&list.list, &["do", "top-level"])
@@ -92,6 +84,16 @@ impl<'a> Visitor<'a> for LambdaLiftingPass<'a> {
         let mut list = list;
         list.visit_children(self);
         list.id()
+    }
+
+    fn visit_quasiquote(&mut self, mut quasiquote: Quasiquote) -> Option<Spanned<SExpId>> {
+        quasiquote.visit_unquote(self);
+        Some(quasiquote.id)
+    }
+
+    fn visit_unquote(&mut self, unquote: Unquote) -> Option<Spanned<SExpId>> {
+        self.visit_sexp(unquote.unquoted)?;
+        Some(unquote.id)
     }
 }
 
@@ -313,18 +315,6 @@ impl<'a, 'b> Visitor<'a> for FreeVariableAnalyzer<'a, 'b> {
     }
 
     fn visit_list(&mut self, mut list: List) -> Option<Spanned<SExpId>> {
-        if self.helper.is_special_form(&list, "quote") {
-            return None;
-        }
-
-        if self.helper.is_special_form(&list, "quasiquote") {
-            // For quasiquote, recursively analyze content looking for unquote
-            if list.list.len() >= 2 {
-                self.visit_quasiquote_content(list.list[1]);
-            }
-            return None;
-        }
-
         if self.helper.is_special_form(&list, "fn") || self.helper.is_special_form(&list, "cl") {
             // Don't traverse into nested functions
             return None;
@@ -348,25 +338,15 @@ impl<'a, 'b> Visitor<'a> for FreeVariableAnalyzer<'a, 'b> {
         list.visit_children(self);
         None
     }
-}
 
-impl<'a, 'b> FreeVariableAnalyzer<'a, 'b> {
-    fn visit_quasiquote_content(&mut self, content_id: Spanned<SExpId>) {
-        let sexp = self.helper.get_sexp(content_id);
-        if let Some(list) = sexp.as_list() {
-            if !list.is_empty() {
-                let first = list[0];
-                if self.helper.is_symbol(first, "unquote") && list.len() >= 2 {
-                    // Analyze the unquoted expression
-                    self.visit_sexp(self.helper.spanned(list[1]));
-                } else {
-                    // Recursively analyze nested quasiquote content
-                    for &item_id in list {
-                        self.visit_quasiquote_content(self.helper.spanned(item_id));
-                    }
-                }
-            }
-        }
+    fn visit_quasiquote(&mut self, mut quasiquote: Quasiquote) -> Option<Spanned<SExpId>> {
+        quasiquote.visit_unquote(self);
+        None
+    }
+
+    fn visit_unquote(&mut self, unquote: Unquote) -> Option<Spanned<SExpId>> {
+        self.visit_sexp(unquote.unquoted);
+        None
     }
 }
 
@@ -581,6 +561,7 @@ mod tests {
     #[test_case("(do (let :x 5) (fn (:y) x))" => "(top-level (do (let :x 5) (cl (:y) (x) x)))"; "new_test_12_function_in_do_block")]
     #[test_case("(let :x 1) (let :y 2) (fn (:z) (+ x y z))" => "(top-level (let :x 1) (let :y 2) (cl (:z) (x y) (+ x y z)))"; "new_test_14_nested_lets_with_captures")]
     #[test_case("(fn (:x) (quote y))" => "(top-level (fn (:x) (quote y)))"; "new_test_15_quoted_symbols_not_captured")]
+    #[test_case("(let :d 42.0) (fn (:a :b) `(+ ,a ,b c ,d))" => "(top-level (let :d 42) (cl (:a :b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote d)))))"; "new_test_16_quasiquote_unquote_captures_free_vars")]
     fn lambda_lifting_pass_comprehensive_tests(input: &str) -> String {
         lambda_lifting_pass_test_helper(input)
     }
