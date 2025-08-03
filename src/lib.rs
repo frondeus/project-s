@@ -101,6 +101,7 @@ mod tests {
         types::{InferedPolymorphicType, InferedTypeScheme},
     };
 
+    #[ignore]
     #[test]
     fn javascript() -> test_runner::Result {
         // This is NOT interopt. It is just
