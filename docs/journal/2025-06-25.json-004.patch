@@ -1,0 +1,37 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-25.md:127
+```
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(let :fix-root (fn (:root :f) (do
+    (let* :result (f result root))
+    result
+)))
+
+(fix (fn (:self) (obj/plain
+    :a 1
+    :b (thunk ()
+        (fix-root self (fn (:self :root)
+            (obj/plain
+                :c (root :a)
+            )
+        ))
+    )
+) ))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-25.md
++++ json-004
+@@ -154,9 +154,7 @@
+ ```json
+ {
+   "a": 1.0,
+-  "b": {
+-    "c": 1.0
+-  }
++  "b": "<Error: Undefined variable: self>"
+ }
+ ```
+ 

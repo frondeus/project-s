@@ -1,0 +1,45 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-25.md:84
+```
+(let :fix (fn (:f) (do (let* :result (f result)) result )))
+
+(let :fix-extend (fn (:ext :base) (do
+    (let :base-inst (fix (fn (:self) (base self (obj/plain)))))
+      
+    (fix (fn (:self) (ext self base-inst)))
+)))
+
+(let :base-pkgs (fn (:self :super) 
+    (obj/plain
+        :a 1
+        :b 2
+        :c (thunk () (- (self :b) (self :a)))
+    )
+))
+
+(let :extended-pkgs (fn (:self :super) 
+    (obj/extend super
+        :a 10
+        :d (thunk () (- (self :a) (super :c)))
+        :c 2
+    )
+))
+
+(fix-extend extended-pkgs base-pkgs)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-25.md
++++ json-003
+@@ -114,12 +114,7 @@
+ ```
+ 
+ ```json
+-{
+-  "a": 10.0,
+-  "b": 2.0,
+-  "c": 2.0,
+-  "d": 9.0
+-}
++"<Error: Undefined variable: super>"
+ ```
+ 
+ Okay, what about root?

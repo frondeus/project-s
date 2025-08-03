@@ -1,0 +1,17 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-05-30.md:69
+```
+(let :d 42.0 )
+(fn (:a :b) `(+ ,a ,b c ,d))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-05-30.md
++++ lift-004
+@@ -72,7 +72,7 @@
+ ```
+ 
+ ```lift
+-(top-level (let :d 42) (cl (:a :b) (d) (quasiquote (+ (unquote a) (unquote b) c (unquote d)))))
++(top-level (let :d 42) (fn (:a :b) (quasiquote (+ (unquote a) (unquote b) c (unquote d)))))
+ ```
+ 
+ Yep, that's correct.

@@ -1,0 +1,27 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-25.md:5
+```
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(let :pkgs (fn (:self) (obj/plain
+    :a 3
+    :b 4
+    :c (thunk () (- (self :b) (self :a)))
+)))
+
+(fix pkgs)
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-25.md
++++ json
+@@ -25,7 +25,7 @@
+ {
+   "a": 3.0,
+   "b": 4.0,
+-  "c": 1.0
++  "c": "<Error: Undefined variable: self>"
+ }
+ ```
+ 
