@@ -4,7 +4,7 @@ If you need to test if it works, use snapshot test or write unit test.
 1. After you make a change, make sure it is passing
 
 ```
-cargo xtask ci --llm
+cargo xtask llm
 ```
 
 I will inform you if there are some tests not passing because of you or not in the beginning of your work.
@@ -56,5 +56,5 @@ We are still in the discovery phase of what we want.
 * zed folder contains integration with Zed Editor, syntax highlighting and LSP client.
 * vscode has basic (and no longer maintained, i moved to Zed) plugin
 for vscode based editors. You can ignore it.
-* xtask is for humans, except for `cargo xtask ci --llm` but you do not modify it, ever.
+* xtask is for humans, except for `cargo xtask llm` but you do not modify it, ever.
 * Ignore `test-runner`.

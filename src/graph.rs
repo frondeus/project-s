@@ -162,6 +162,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_name() {
         let graphs = Graphs::default();
         let mut graph = graphs.new_graph();

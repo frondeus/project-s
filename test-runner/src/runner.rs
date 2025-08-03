@@ -69,6 +69,8 @@ where
     R: Send + Fn(&str, &HashMap<CowStr, &str>, &HashSet<&str>) -> String,
     for<'a> &'a R: Send,
 {
+    let quiet = std::env::var("TEST_RUNNER_Q").unwrap_or_default() == "1";
+
     let path = crate::utils::project_root()?;
 
     let entries = glob::glob(&format!("{}/{root}/**/*.md", path.display()))?
@@ -169,11 +171,15 @@ where
         let actual = catch_unwind(|| test_fn(code, previous, &args));
         let actual = actual.unwrap_or_else(|_| "<Thread panicked>".to_string());
 
-        print!("* {}:{}", test_case.entry.display(), test_case.case_line());
+        if !quiet {
+            print!("* {}:{}", test_case.entry.display(), test_case.case_line());
+        }
 
-        match assert_section(section_name, source_name, test_case, &actual) {
+        match assert_section(section_name, source_name, test_case, &actual, quiet) {
             Ok(_) => {
-                println!(" v");
+                if !quiet {
+                    println!(" v");
+                }
                 successes += 1;
             }
             Err(e) => {
@@ -205,7 +211,13 @@ fn count_backticks(slice: &str) -> usize {
         .0
 }
 
-fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &str) -> Result<()> {
+fn assert_section(
+    name: &str,
+    source_name: &str,
+    test_case: TestCase,
+    actual: &str,
+    quiet: bool,
+) -> Result<()> {
     let code = test_case.previous.get(source_name).expect("Source");
 
     let case_line = test_case.case_line();
@@ -247,9 +259,11 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
             return Ok(());
         }
 
-        println!();
+        if !quiet {
+            println!();
 
-        colordiff(&patch)?;
+            colordiff(&patch)?;
+        }
 
         let extension = format!("{expected_name}.patch");
 
@@ -262,12 +276,13 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
             .open(&new_file)
             .with_context(|| format!("Could create or open: {new_file:?}"))?;
 
+        let expected_name = format!("{}:{}", entry.display(), case_line);
         new_file
-            .write_all(format!("{}:{}\n", entry.display(), case_line).as_bytes())
+            .write_all(format!("{expected_name}\n").as_bytes())
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
-        let source_code = format!("{source_name} {}:{}", entry.display(), source_line);
-        let source_code = CowStr::Borrowed(source_code.as_str());
+        let source_name = format!("{source_name} {}:{source_line}", entry.display());
+        let source_code = CowStr::Borrowed(source_name.as_str());
 
         new_file
             .write_all(fenced_with_code(code, source_code).as_bytes())
@@ -281,7 +296,7 @@ fn assert_section(name: &str, source_name: &str, test_case: TestCase, actual: &s
             .write_all(patch.as_bytes())
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
-        bail!("failed")
+        bail!("{expected_name} failed")
     } else {
         let rej_extension = format!("{expected_name}.rej");
         let rej_file = entry.with_extension(rej_extension);

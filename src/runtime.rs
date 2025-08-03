@@ -570,15 +570,12 @@ pub struct Runtime {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
-
-    use tracing_subscriber::{Layer, layer::SubscriberExt};
 
     use crate::{
         diagnostics::Diagnostics,
-        level_from_args,
         modules::MemoryModules,
         source::{SourceId, Sources},
+        test_utils::capture_traces,
         type_constructor_transform::TypeConstructorTransformPass,
     };
 
@@ -628,7 +625,7 @@ mod tests {
     fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s", ""], "json", |input, deps, args| {
             let lazy = args.contains("lazy");
-            tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
+            tracing::subscriber::with_default(crate::test_utils::init_tracing(), || {
                 let (deps, source_id) = MemoryModules::from_deps(input, deps);
                 eval_to_json(source_id, deps, !lazy)
             })
@@ -638,43 +635,12 @@ mod tests {
     #[test]
     fn traces() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s", ""], "traces", |input, deps, args| {
-            let mut reader = tempfile::NamedTempFile::new().unwrap();
-
-            let writer = reader.reopen().unwrap();
-
-            {
-                let level = level_from_args(args);
-                let (writer, _guard) = tracing_appender::non_blocking(writer);
-
-                let file_layer = tracing_subscriber::fmt::Layer::new()
-                    // .compact()
-                    .with_file(args.contains("file"))
-                    .with_line_number(args.contains("line"))
-                    .with_writer(writer)
-                    .without_time()
-                    .with_ansi(false);
-
-                let console_layer = tracing_subscriber::fmt::Layer::new()
-                    // .compact()
-                    .with_file(args.contains("file"))
-                    .with_line_number(args.contains("line"))
-                    .with_ansi(true);
-
-                let subscriber = tracing_subscriber::registry()
-                    .with(console_layer.with_filter(level))
-                    .with(file_layer.with_filter(level));
-
-                tracing::subscriber::with_default(subscriber, move || {
-                    let (deps, source_id) = MemoryModules::from_deps(input, deps);
-                    // let (mut runtime, value) = eval_to_value(input, modules);
-                    // runtime.to_json(value, true);
-                    eval_to_json(source_id, deps, true)
-                });
-            }
-
-            let mut buf = String::new();
-            reader.read_to_string(&mut buf).unwrap();
-            buf
+            capture_traces(args, move || {
+                let (deps, source_id) = MemoryModules::from_deps(input, deps);
+                // let (mut runtime, value) = eval_to_value(input, modules);
+                // runtime.to_json(value, true);
+                eval_to_json(source_id, deps, true);
+            })
         })
     }
 

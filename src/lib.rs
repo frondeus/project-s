@@ -67,24 +67,7 @@ pub fn process_with_typechk<M: ModuleProvider>(
 }
 
 #[cfg(test)]
-pub fn level_from_args(
-    args: &std::collections::HashSet<&str>,
-) -> tracing::level_filters::LevelFilter {
-    const LEVELS: &[(&str, tracing::level_filters::LevelFilter)] = &[
-        ("trace", tracing::level_filters::LevelFilter::TRACE),
-        ("debug", tracing::level_filters::LevelFilter::DEBUG),
-        ("info", tracing::level_filters::LevelFilter::INFO),
-        ("warn", tracing::level_filters::LevelFilter::WARN),
-        ("error", tracing::level_filters::LevelFilter::ERROR),
-    ];
-
-    for (name, level) in LEVELS {
-        if args.contains(name) {
-            return *level;
-        }
-    }
-    tracing::level_filters::LevelFilter::INFO
-}
+pub mod test_utils;
 
 #[cfg(test)]
 mod tests {
@@ -119,12 +102,10 @@ mod tests {
         })
     }
 
-    #[allow(clippy::print_stdout)]
     #[test]
     fn eval() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s"], "eval", |input, deps, args| {
-            println!("Running: {input}");
-            tracing::subscriber::with_default(tracing_subscriber::fmt().finish(), || {
+            tracing::subscriber::with_default(crate::test_utils::init_tracing(), || {
                 let lazy = args.contains("lazy");
                 let (mut modules, source_id) = MemoryModules::from_deps(input, deps);
                 let mut asts = ASTS::new();

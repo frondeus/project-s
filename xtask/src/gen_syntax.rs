@@ -9,7 +9,5 @@ pub fn run(root: &Path) -> Result {
         "tree-sitter",
         &["generate"],
     )?;
-
-    println!("Generated syntax");
     Ok(())
 }

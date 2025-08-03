@@ -617,72 +617,38 @@ impl Envs {
 
 #[cfg(test)]
 mod tests {
-    use tracing_subscriber::{Layer, layer::SubscriberExt};
 
     use crate::{
-        level_from_args,
         modules::{MemoryModules, ModuleProvider},
         process_ast,
         s_std::prelude,
+        test_utils::capture_traces,
     };
 
     use super::*;
 
     #[test]
     fn types_traces() -> test_runner::Result {
-        use std::io::Read;
-        unsafe { std::env::set_var("NO_COLOR", "1") }
         test_runner::test_snapshots("docs/", &["s", ""], "type-traces", |input, _deps, args| {
-            let mut reader = tempfile::NamedTempFile::new().unwrap();
+            capture_traces(args, move || {
+                let mut asts = ASTS::new();
+                let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
+                let ast = asts
+                    .parse(source_id, modules.sources().get(source_id))
+                    .expect("Failed to parse");
 
-            let writer = reader.reopen().unwrap();
-            {
-                let level = level_from_args(args);
-                let (writer, _guard) = tracing_appender::non_blocking(writer);
+                let root = ast.root_id().unwrap();
 
-                let file_layer = tracing_subscriber::fmt::Layer::new()
-                    // .compact()
-                    .with_file(args.contains("file"))
-                    .with_line_number(args.contains("line"))
-                    .with_writer(writer)
-                    .without_time()
-                    .with_ansi(false);
+                let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
 
-                let console_layer = tracing_subscriber::fmt::Layer::new()
-                    // .compact()
-                    .with_file(args.contains("file"))
-                    .with_line_number(args.contains("line"))
-                    .with_ansi(true);
+                // let mut env = TypeEnv::new(modules).with_prelude();
 
-                let subscriber = tracing_subscriber::registry()
-                    .with(console_layer.with_filter(level))
-                    .with(file_layer.with_filter(level));
+                let prelude = prelude();
+                let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
+                let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
 
-                tracing::subscriber::with_default(subscriber, move || {
-                    let mut asts = ASTS::new();
-                    let (mut modules, source_id) = MemoryModules::from_deps(input, _deps);
-                    let ast = asts
-                        .parse(source_id, modules.sources().get(source_id))
-                        .expect("Failed to parse");
-
-                    let root = ast.root_id().unwrap();
-
-                    let mut env = TypeEnv::new().with_prelude(modules.sources_mut());
-
-                    // let mut env = TypeEnv::new(modules).with_prelude();
-
-                    let prelude = prelude();
-                    let (root, mut diagnostics) = process_ast(&mut asts, root, &[prelude]);
-                    let infered = env.infer(&mut asts, root, &mut diagnostics, &mut modules);
-
-                    env.coalesce(infered);
-                });
-            }
-
-            let mut buf = String::new();
-            reader.read_to_string(&mut buf).unwrap();
-            buf
-            // env.to_string(infered)
+                env.coalesce(infered);
+            })
         })
     }
 

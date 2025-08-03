@@ -8,6 +8,7 @@ mod clippy;
 mod fmt;
 mod gen_syntax;
 mod helix;
+mod llm;
 mod repl;
 mod review_tests;
 mod test;
@@ -36,20 +37,13 @@ fn try_main() -> Result {
         ["fmt"] | ["f"] => fmt::run(&root)?,
         ["helix"] | ["hx"] => helix::run(&root)?,
         ["zed"] => zed::run(&root)?,
-        ["ci", ref rest @ ..] => {
+        ["llm"] => llm::run(&root)?,
+        ["ci"] => {
             fmt::run(&root)?;
             clippy::run(&root)?;
             gen_syntax::run(&root)?;
             let res = test::run(&root);
-            match rest {
-                ["--no-review"] => (),
-                ["--llm"] => {
-                    review_tests::run(&root, true)?;
-                }
-                _ => {
-                    review_tests::run(&root, false)?;
-                }
-            }
+            review_tests::run(&root, false)?;
             res?;
         }
         _ => print_help(),
@@ -70,6 +64,8 @@ fn print_help() {
         helix [hx] - Build grammar for helix editor
         zed - Build grammar for zed editor
 
+        llm - CI for LLM Agents
+
         ci - ['gen-syntax', 'test', 'review-tests']
     "
     );
@@ -87,11 +83,44 @@ pub fn project_root() -> PathBuf {
     cargo_path.parent().unwrap().to_path_buf()
 }
 
+pub fn run_command_q(
+    desc: &str,
+    dir: impl AsRef<Path>,
+    cmd: &str,
+    args: &[&str],
+    envs: &[(&str, &str)],
+) -> Result {
+    print!("{desc}...");
+    let mut cmd = Command::new(cmd);
+    cmd.current_dir(dir).args(args);
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    let output = cmd.output()?;
+
+    if !output.status.success() {
+        println!(" x");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        println!("{stdout}");
+        eprintln!("{stderr}");
+
+        Err(format!("{desc} failed"))?;
+    }
+    println!(" v");
+    Ok(())
+}
+
 pub fn run_command(desc: &str, dir: impl AsRef<Path>, cmd: &str, args: &[&str]) -> Result {
+    print!("{desc}...");
     let status = Command::new(cmd).current_dir(dir).args(args).status()?;
 
     if !status.success() {
+        println!(" x");
         Err(format!("{desc} failed"))?;
     }
+    println!(" v");
     Ok(())
 }
