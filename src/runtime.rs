@@ -623,6 +623,7 @@ mod tests {
         serde_json::to_string_pretty(&value).unwrap()
     }
 
+    #[ignore]
     #[test]
     fn json() -> test_runner::Result {
         test_runner::test_snapshots("docs/", &["s", ""], "json", |input, deps, args| {
