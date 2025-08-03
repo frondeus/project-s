@@ -154,7 +154,7 @@ impl TypeEnv {
         infered: InferedTypeId,
     ) -> InferedTypeId {
         tracing::trace!("`{}` with type N{infered}", asts.fmt(sexp));
-        self.sexps.insert(sexp, infered);
+        self.code_map.insert(sexp, infered);
         infered
     }
 

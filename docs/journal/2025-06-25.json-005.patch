@@ -1,0 +1,22 @@
+/Users/frondeus/Code/project-s/docs/journal/2025-06-25.md:187
+```
+(let :fix (fn (:f) (do
+    (let* :result (f result))
+    result
+)))
+
+(fix (fn (:self) (obj/plain
+    :a 1
+    :b (thunk () (self :a))
+)))
+```
+
+--- /Users/frondeus/Code/project-s/docs/journal/2025-06-25.md
++++ json-005
+@@ -197,5 +197,5 @@
+ ```
+ 
+ ```json lazy
+-"<Thunk: Thunk/Evaluated(Object({\"a\": (Number(1.0), Some(SExpId { id: 21, generation: 0 })), \"b\": (Thunk(Thunk/ToEvaluate), Some(SExpId { id: 23, generation: 0 }))}))>"
++"<Thunk: Thunk/Evaluated(Object({\"a\": (Number(1.0), Some(SExpId { generation: 0, id: 21 })), \"b\": (Thunk(Thunk/ToEvaluate), Some(SExpId { generation: 0, id: 23 }))}))>"
+ ```

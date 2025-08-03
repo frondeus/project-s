@@ -177,8 +177,8 @@ impl AST {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SExpId {
-    id: usize,
     generation: usize,
+    id: usize,
 }
 
 impl SExpId {

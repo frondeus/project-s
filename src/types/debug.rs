@@ -24,14 +24,13 @@ impl TypeEnv {
         use std::fmt::Write;
         writeln!(buf, "digraph G {{")?;
         for (id, node) in self.iter() {
-            let sexp = self.sexps.iter().find_map(
-                |(sexp, node_id)| {
-                    if *node_id == id { Some(sexp) } else { None }
-                },
-            );
+            let sexp = self
+                .code_map
+                .get_sexps(id)
+                .and_then(|mut sexps| sexps.next());
             let mut label = format!("{id} - lvl{} - {node:?}", id.level(self));
             if let Some(sexp) = sexp {
-                label.push_str(&format!("\n`{}`", asts.fmt(*sexp)));
+                label.push_str(&format!("\n`{}`", asts.fmt(sexp)));
             }
             let label = label.escape_debug();
             writeln!(buf, "N{id} [label=\"{label}\"];",)?;

@@ -1,5 +1,5 @@
 #![allow(dead_code, clippy::unnecessary_to_owned)]
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -27,7 +27,7 @@ mod prelude;
 mod type_term;
 mod utils;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct InferedTypeId(usize);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -426,10 +426,33 @@ pub enum TypeValue {
 }
 
 #[derive(Default)]
+struct CodeMap {
+    sexp_to_ty: BTreeMap<SExpId, InferedTypeId>,
+    type_to_sexps: BTreeMap<InferedTypeId, Vec<SExpId>>,
+}
+
+impl CodeMap {
+    fn insert(&mut self, sexp: SExpId, ty: InferedTypeId) {
+        self.sexp_to_ty.entry(sexp).or_insert(ty);
+        self.type_to_sexps.entry(ty).or_default().push(sexp);
+    }
+
+    fn get_type(&self, sexp: SExpId) -> Option<InferedTypeId> {
+        self.sexp_to_ty.get(&sexp).copied()
+    }
+
+    pub(crate) fn get_sexps(&self, typ: InferedTypeId) -> Option<impl Iterator<Item = SExpId>> {
+        let items = self.type_to_sexps.get(&typ)?;
+
+        Some(items.iter().copied())
+    }
+}
+
+#[derive(Default)]
 pub struct TypeEnv {
     infered: Vec<InferedType>,
     vars: Vec<VarState>,
-    sexps: HashMap<SExpId, InferedTypeId>,
+    code_map: CodeMap,
     envs: Envs,
     constraint_cache: HashSet<(InferedTypeId, InferedTypeId)>,
     constraints: Vec<(InferedTypeId, InferedTypeId)>,
@@ -498,7 +521,7 @@ impl TypeEnv {
     pub const SYMBOL: &str = "symbol";
 
     pub fn get_infered(&self, sexp: SExpId) -> Option<InferedTypeId> {
-        self.sexps.get(&sexp).copied()
+        self.code_map.get_type(sexp)
     }
 }
 
