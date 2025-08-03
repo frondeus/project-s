@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 
 use crate::Result;
 
-pub fn run(root: &Path) -> Result {
+pub fn run(root: &Path, no_interactive: bool) -> Result {
     std::env::set_current_dir(root)?;
 
     let entries = glob::glob("docs/**/*.patch")?.collect::<Result<Vec<_>, _>>()?;
@@ -48,6 +48,9 @@ pub fn run(root: &Path) -> Result {
         println!("-----");
         println!("{}", actual_content.lines().next().unwrap_or_default());
 
+        if no_interactive {
+            continue;
+        }
         loop {
             println!("[Aa]ccept, [Rr]eject or [Ss]kip");
 

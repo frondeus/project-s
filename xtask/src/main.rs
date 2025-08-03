@@ -29,7 +29,7 @@ fn try_main() -> Result {
     let root = project_root();
     match args[..] {
         ["gen-syntax"] | ["gs"] => gen_syntax::run(&root)?,
-        ["review-tests"] | ["rt"] => review_tests::run(&root)?,
+        ["review-tests"] | ["rt"] => review_tests::run(&root, false)?,
         ["test"] | ["t"] => test::run(&root)?,
         ["repl"] | ["r"] => repl::run(&root)?,
         ["clippy"] | ["cl"] => clippy::run(&root)?,
@@ -43,8 +43,11 @@ fn try_main() -> Result {
             let res = test::run(&root);
             match rest {
                 ["--no-review"] => (),
+                ["--llm"] => {
+                    review_tests::run(&root, true)?;
+                }
                 _ => {
-                    review_tests::run(&root)?;
+                    review_tests::run(&root, false)?;
                 }
             }
             res?;
