@@ -218,7 +218,7 @@ fn assert_section(
     actual: &str,
     quiet: bool,
 ) -> Result<()> {
-    let code = test_case.previous.get(source_name).expect("Source");
+    // let code = test_case.previous.get(source_name).expect("Source");
 
     let case_line = test_case.case_line();
     let expected = test_case.section.expect("expected");
@@ -227,6 +227,7 @@ fn assert_section(
     let file = test_case.file;
     let source_line = test_case.source_line;
     let range = expected.range;
+    let expected_name = expected.name;
 
     let fenced_with_code = |slice: &str, code: CowStr<'_>| -> String {
         let (fin, fout) = {
@@ -238,7 +239,7 @@ fn assert_section(
         };
         format!("{fin}\n{slice}\n{fout}")
     };
-    let fenced = |slice: &str| -> String { fenced_with_code(slice, expected.name) };
+    let fenced = |slice: &str| -> String { fenced_with_code(slice, expected_name) };
 
     let expected_name = if count > 1 {
         format!("{name}-{count:0>3}")
@@ -278,18 +279,30 @@ fn assert_section(
 
         let expected_name = format!("{}:{}", entry.display(), case_line);
         new_file
-            .write_all(format!("{expected_name}\n").as_bytes())
-            .with_context(|| format!("Could not write to: {new_file:?}"))?;
-
-        let source_name = format!("{source_name} {}:{source_line}", entry.display());
-        let source_code = CowStr::Borrowed(source_name.as_str());
-
-        new_file
-            .write_all(fenced_with_code(code, source_code).as_bytes())
+            .write_all(format!("expected = \"{expected_name}\"\n").as_bytes())
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
         new_file
-            .write_all(b"\n\n")
+            .write_all(format!("source = \"{source_name}\"\n").as_bytes())
+            .with_context(|| format!("Could not write to: {new_file:?}"))?;
+
+        new_file
+            .write_all(format!("input = \"{}:{source_line}\"\n", entry.display()).as_bytes())
+            .with_context(|| format!("Could not write to: {new_file:?}"))?;
+
+        new_file
+            .write_all(
+                format!(
+                    "args = [{}]\n",
+                    test_case
+                        .args
+                        .iter()
+                        .map(|arg| format!("\"{arg}\""))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+                .as_bytes(),
+            )
             .with_context(|| format!("Could not write to: {new_file:?}"))?;
 
         new_file
