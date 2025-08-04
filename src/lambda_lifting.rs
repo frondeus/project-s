@@ -182,16 +182,19 @@ impl<'a> LambdaLiftingPass<'a> {
                 BTreeSet::new()
             };
 
-        // Analyze body for additional free variables in a separate scope
-        let (new_body, new_free_vars) = {
+        // First, recursively process the body to handle nested functions/thunks
+        let new_body = self.visit_sexp(body).unwrap_or(body);
+
+        // Then analyze the processed body for free variables
+        let new_free_vars = {
             let mut analyzer = FreeVariableAnalyzer {
                 helper: &self.helper,
                 envs: &self.envs,
                 free_vars: BTreeSet::new(),
             };
 
-            let new_body = analyzer.visit_sexp(body).unwrap_or(body);
-            (new_body, analyzer.free_vars)
+            analyzer.visit_sexp(new_body);
+            analyzer.free_vars
         };
 
         // Combine existing and new free variables
@@ -322,11 +325,17 @@ impl<'a, 'b> Visitor<'a> for FreeVariableAnalyzer<'a, 'b> {
 
         if self.helper.is_special_form(&list, "thunk") {
             // For thunks, only analyze the captured variables list
+            // but check if they're actually free from current scope
             if list.list.len() >= 2 {
                 if let Some(captured_list) = self.helper.get_sexp(list.list[1]).as_list() {
                     for captured_id in captured_list {
                         if let Some(symbol) = self.helper.get_sexp(*captured_id).as_symbol() {
-                            self.free_vars.insert(symbol.to_string());
+                            match self.envs.has(symbol) {
+                                Some(VariableKind::Free) => {
+                                    self.free_vars.insert(symbol.to_string());
+                                }
+                                None | Some(VariableKind::Local) => {}
+                            }
                         }
                     }
                 }
