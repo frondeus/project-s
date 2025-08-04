@@ -75,4 +75,4 @@ Nice to have
 * [ ] Typesafe macros like in metaocaml.
 
 # LLM
-* [ ] Make sure cargo xtask ci --llm is less verbose (tests!, traces!).
+* [x] Make sure cargo xtask ci --llm is less verbose (tests!, traces!).

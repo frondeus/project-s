@@ -7,7 +7,8 @@ pub fn run(root: &Path) -> Result {
         "cargo",
         &[
             "clippy",
-            "--all",
+            "-q",
+            "--workspace",
             "--all-targets",
             "--all-features",
             "--",
