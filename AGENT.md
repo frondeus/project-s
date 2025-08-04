@@ -39,6 +39,9 @@ Example
 foo
 ```
 
+When investigating in your `./docs/llm.md` use ` auto-approve` flag, so that `cargo xtask ci` will automaticaly approve newly generated content.
+Then expected codeblock is defacto output of the processing, org-mode BABEL style.
+
 5. Basic architecture:
 * tree-sitter-s has CST grammar in `grammar.js`.
 * then CST is transformed to "AST" -> however it is not very abstract for now.

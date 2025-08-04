@@ -73,6 +73,12 @@ pub fn run(root: &Path, llm: bool) -> Result {
         let first_line = actual_content.lines().next().unwrap_or_default();
         println!("{first_line}");
 
+        if header.args.contains(&"auto-approve".to_string()) {
+            println!("Auto approving {actual:?}");
+            approve(&actual, &actual_content, &rejected)?;
+            continue;
+        }
+
         if llm {
             new_cases.push(format!("{} - from {}", actual.display(), first_line));
             continue;
@@ -85,26 +91,7 @@ pub fn run(root: &Path, llm: bool) -> Result {
 
             match choice.as_str().trim() {
                 "A" | "a" => {
-                    let dir = actual.parent().ok_or("Expected parent of snapshot file")?;
-
-                    let mut patch = Command::new("patch")
-                        .arg("--ignore-whitespace")
-                        .current_dir(dir)
-                        .stdin(Stdio::piped())
-                        .spawn()?;
-                    patch
-                        .stdin
-                        .as_mut()
-                        .ok_or("Could not attach patch STDIN")?
-                        .write_all(actual_content.as_bytes())?;
-
-                    patch.wait_with_output()?;
-
-                    std::fs::remove_file(actual)?;
-                    if rejected.exists() {
-                        std::fs::remove_file(&rejected)?;
-                    }
-
+                    approve(&actual, &actual_content, &rejected)?;
                     break;
                 }
                 "R" | "r" => {
@@ -157,5 +144,28 @@ pub fn run(root: &Path, llm: bool) -> Result {
         }
     }
 
+    Ok(())
+}
+
+fn approve(actual: &Path, actual_content: &str, rejected: &Path) -> Result {
+    let dir = actual.parent().ok_or("Expected parent of snapshot file")?;
+
+    let mut patch = Command::new("patch")
+        .arg("--ignore-whitespace")
+        .current_dir(dir)
+        .stdin(Stdio::piped())
+        .spawn()?;
+    patch
+        .stdin
+        .as_mut()
+        .ok_or("Could not attach patch STDIN")?
+        .write_all(actual_content.as_bytes())?;
+
+    patch.wait_with_output()?;
+
+    std::fs::remove_file(actual)?;
+    if rejected.exists() {
+        std::fs::remove_file(rejected)?;
+    }
     Ok(())
 }
