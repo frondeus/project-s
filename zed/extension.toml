@@ -9,7 +9,7 @@ repository = "https://github.com/frondeus/project-s"
 [grammars.s]
 repository = "file:///Users/frondeus/Code/project-s"
 path = "tree-sitter-s"
-rev = "7cfcf4a865b09ee03ec63183fc3612f1cfddfb17"
+rev = "32c32394bf771ee03465e22610d0d73fa441c48a"
 
 [language_servers.project-s]
 name = "Project S LSP"
