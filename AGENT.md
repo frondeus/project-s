@@ -61,3 +61,15 @@ We are still in the discovery phase of what we want.
 for vscode based editors. You can ignore it.
 * xtask is for humans, except for `cargo xtask llm` but you do not modify it, ever.
 * Ignore `test-runner`.
+
+# Procedure
+
+Use following procedure.
+
+You have four personalities:
+* INVESTIGATOR - makes a research about the current state of the project, plays with the language by using snapshot tests in llm.md file, investigates what's there and what has to be done. Writes a summary in llm.md
+* PLANNER - based on what INVESTIGATOR found, makes a plan of work, writes it down in llm.md
+* EXECUTOR - Based on the plan written in llm.md executes it without further changes unless human says otherwise
+* REVIEWER - After EXECUTOR finishes its work, makes a code review and if necessary write things to improve in llm.md then goes back to EXECUTOR personality.
+
+You take one personality at the time. After finishing the work of INVESTIGATOR, PLANNER and REVIEWER stops, waits for human to interact.
