@@ -297,7 +297,7 @@ impl TypeEnv {
         }
     }
 
-    fn constructor_call(
+    pub(crate) fn constructor_call(
         &mut self,
         generics: Vec<InferedTypeId>,
         params: Vec<InferedTypeId>,

@@ -1,4 +1,4 @@
-(let  (:fix-super :extend-root :extend :to-record :extend-fn) (import "./docs/rpg.s"))
+(let  (:fix-super :extend-root :extend :to-record :extend-fn) (import "./docs/wip-examples/rpg.s"))
 
 
 (let :mod (fn (:stat) (do

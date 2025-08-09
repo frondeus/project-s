@@ -12,42 +12,52 @@ mod macros;
 
 pub fn prelude() -> Env {
     use functions::*;
-    use macros::*;
+    // use macros::*;
 
     Env::default()
-        .with_fn("-", sub)
-        .with_fn("+", add)
-        .with_fn("*", mul)
-        .with_fn(">", gt)
-        .with_fn("<=", lte)
-        .with_fn("=", eq)
-        .with_fn("ref", new_ref)
-        .with_fn("set", set)
-        .with_fn("get", get)
+        // Builtin constructs
+        .with_fn("import", import)
+        // Type constructors
         .with_fn("list", make_list)
         .with_fn("tuple", make_tuple)
-        .with_fn("obj/insert", insert_to_struct)
-        .with_fn("obj/con", obj_con)
+        .with_fn("enum", construct_enum)
         .with_fn("obj/plain", obj_plain)
+        .with_fn("ref", new_ref)
+        // - Option
+        .with_fn("Some", make_some)
+        .with_fn("None", make_none)
+        // Basic operators
+        .with_fn("+", add_numbers)
+        .with_fn("-", sub_numbers)
+        .with_fn("*", mul_numbers)
+        .with_fn(">", gt_numbers)
+        .with_fn("<=", lte_numbers)
+        .with_fn("=", eq_any)
+        // Builtin record operations
         .with_fn("obj/extend", obj_extend)
-        .with_try_macro("obj/record", obj_record)
-        .with_try_macro("obj/condef", condef)
-        .with_try_macro("obj/put", objput)
-        .with_try_macro("obj/+", obj_add)
-        .with_try_macro("obj/struct", obj_struct)
-        .with_fn("obj/eval", obj_eval)
-        .with_fn("obj/construct-or", obj_construct_or)
-        .with_fn("obj/new", obj_construct_or)
-        .with_try_macro("struct", obj_struct)
-        .with_fn("eager", eager)
-        .with_fn("deep-eager", deep_eager)
-        .with_fn("has?", obj_has)
-        .with_fn("import", import)
+        // Reference operations
+        .with_fn("set", set)
+        .with_fn("get", get)
+        // List functions
         .with_fn("list/enumerate", list_enumerate)
         .with_fn("list/map", list_map)
-        .with_fn("list/find-or", list_find_or)
+        .with_fn("list/find", list_find)
+        // .with_fn("list/find-or", list_find_or)
+        // .with_fn("obj/insert", insert_to_struct)
+        // .with_fn("obj/con", obj_con)
+        // .with_try_macro("obj/record", obj_record)
+        // .with_try_macro("obj/condef", condef)
+        // .with_try_macro("obj/put", objput)
+        // .with_try_macro("obj/+", obj_add)
+        // .with_try_macro("obj/struct", obj_struct)
+        // .with_fn("obj/eval", obj_eval)
+        // .with_fn("obj/construct-or", obj_construct_or)
+        // .with_fn("obj/new", obj_construct_or)
+        // .with_try_macro("struct", obj_struct)
+        // .with_fn("eager", eager)
+        // .with_fn("deep-eager", deep_eager)
+        // .with_fn("has?", obj_has)
         .with_fn("error", error)
-        .with_fn("enum", construct_enum)
         .with_fn("debug", |args: Rest<Value>| {
             tracing::info!("Debug: {:#?}", &*args);
 

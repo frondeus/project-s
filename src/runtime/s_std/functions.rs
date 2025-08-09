@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{collections::BTreeMap, path::PathBuf};
 
 use itertools::Itertools;
@@ -18,14 +20,14 @@ use crate::{
 
 use super::macros::obj_put_thunk;
 
-pub fn sub(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
+pub fn sub_numbers(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
     args.into_iter()
         .map(|a| a.value)
         .reduce(|a, b| a - b)
         .unwrap_or(0.0)
 }
 
-pub fn mul(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
+pub fn mul_numbers(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
     args.into_iter()
         .map(|a| a.value)
         .reduce(|a, b| a * b)
@@ -33,7 +35,7 @@ pub fn mul(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
 }
 
 #[tracing::instrument(skip_all)]
-fn add_numbers(
+pub fn add_numbers(
     first: EagerRec<f64, WithoutConstructor>,
     args: Rest<EagerRec<f64, WithoutConstructor>>,
 ) -> f64 {
@@ -385,7 +387,7 @@ pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
 }
 
 // Eq
-pub fn eq(left: Value, right: Value) -> bool {
+pub fn eq_any(left: Value, right: Value) -> bool {
     match (left, right) {
         (Value::Number(l), Value::Number(r)) => l == r,
         _ => false,
@@ -393,12 +395,12 @@ pub fn eq(left: Value, right: Value) -> bool {
 }
 
 // Greater than
-pub fn gt(left: f64, right: f64) -> bool {
+pub fn gt_numbers(left: f64, right: f64) -> bool {
     left > right
 }
 
 // Less than or equal
-pub fn lte(left: f64, right: f64) -> bool {
+pub fn lte_numbers(left: f64, right: f64) -> bool {
     left <= right
 }
 
@@ -423,6 +425,22 @@ pub fn list_map(rt: &mut Runtime, list: Vec<Value>, map: Function) -> Vec<Value>
     result
 }
 
+pub fn list_find(rt: &mut Runtime, list: Vec<Value>, f: Function) -> Result<Value, String> {
+    for value in list {
+        let result = rt.closure_call_inner(f.clone(), vec![value.clone()]);
+        let Value::Bool(result) = result else {
+            return Err("Expected boolean result from function".into());
+        };
+        if result {
+            return Ok(construct_enum(
+                Keyword("Some".into()),
+                Rest::new(vec![value]),
+            ));
+        }
+    }
+    Ok(construct_enum(Keyword("None".into()), Rest::new(vec![])))
+}
+
 pub fn list_find_or(rt: &mut Runtime, list: Vec<Value>, f: Function, or: Value) -> Value {
     for value in list {
         let result = rt.closure_call_inner(f.clone(), vec![value.clone()]);
@@ -436,9 +454,23 @@ pub fn list_find_or(rt: &mut Runtime, list: Vec<Value>, f: Function, or: Value) 
     or
 }
 
-pub fn construct_enum(name: Keyword, fields: Rest<Value>) -> Result<Value, String> {
-    Ok(Value::Enum(Enum {
+pub fn construct_enum(name: Keyword, fields: Rest<Value>) -> Value {
+    Value::Enum(Enum {
         variant: name.0,
         fields: fields.into_iter().collect(),
-    }))
+    })
+}
+
+pub fn make_some(a: Value) -> Value {
+    Value::Enum(Enum {
+        variant: "Some".into(),
+        fields: vec![a],
+    })
+}
+
+pub fn make_none() -> Value {
+    Value::Enum(Enum {
+        variant: "None".into(),
+        fields: vec![],
+    })
 }

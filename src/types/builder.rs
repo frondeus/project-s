@@ -76,14 +76,14 @@ impl SourceBuilder {
 }
 
 pub trait TypeBuilder {
-    fn build(self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId;
+    fn build(&self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId;
 }
 
 impl<F> TypeBuilder for F
 where
-    F: FnOnce(&mut TypeEnv, &mut SourceBuilder) -> InferedType,
+    F: Fn(&mut TypeEnv, &mut SourceBuilder) -> InferedType,
 {
-    fn build(self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
+    fn build(&self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
         let ty = self(env, source);
         env.add_infered(ty)
     }
@@ -95,9 +95,9 @@ struct IdFn<F> {
 
 impl<F> TypeBuilder for IdFn<F>
 where
-    F: FnOnce(&mut TypeEnv, &mut SourceBuilder) -> InferedTypeId,
+    F: Fn(&mut TypeEnv, &mut SourceBuilder) -> InferedTypeId,
 {
-    fn build(self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
+    fn build(&self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
         (self.f)(env, source)
     }
 }
@@ -120,9 +120,7 @@ pub fn boolean() -> impl TypeBuilder {
     primitive(TypeEnv::BOOLEAN)
 }
 
-pub fn id_fn(
-    f: impl FnOnce(&mut TypeEnv, &mut SourceBuilder) -> InferedTypeId,
-) -> impl TypeBuilder {
+pub fn id_fn(f: impl Fn(&mut TypeEnv, &mut SourceBuilder) -> InferedTypeId) -> impl TypeBuilder {
     IdFn { f }
 }
 
@@ -195,11 +193,47 @@ pub fn list(arg: impl TypeBuilder) -> impl TypeBuilder {
     }
 }
 
+pub fn enum_(variant_builders: IndexMap<String, Box<dyn TypeBuilder>>) -> impl TypeBuilder {
+    move |env: &mut TypeEnv, source: &mut SourceBuilder| {
+        let from = source.point();
+        source.append("enum { ");
+        let mut variants = IndexMap::new();
+        for (name, builder) in variant_builders.iter() {
+            source.append(&format!("{name}: "));
+            let variant = builder.build(env, source);
+            variants.insert(name.clone(), variant);
+        }
+        source.append("}");
+        let to = source.point();
+        let span = source.span(from, to);
+
+        InferedType::Enum { variants, span }
+    }
+}
+
+pub fn constructor_instance(name: &str, params: impl TypeBuilder) -> impl TypeBuilder {
+    id_fn(move |env: &mut TypeEnv, source: &mut SourceBuilder| {
+        let ty = env.envs.get_type(name).expect("Type");
+
+        source.append(&format!("{name} "));
+        let params = params.build(env, source);
+        let params = env.get(params);
+        let InferedType::Tuple { items, .. } = params else {
+            panic!("Expected tuple");
+        };
+
+        match ty {
+            TypeValue::Constructor { args, ret } => env.constructor_call(args, items.clone(), ret),
+            _ => panic!("Expected type constructor"),
+        }
+    })
+}
+
 macro_rules! build_tuple {
     ($($item:tt),*) => {
         impl<$($item: TypeBuilder),*> TypeBuilder for ($($item,)*) {
             #[allow(non_snake_case)]
-            fn build(self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
+            fn build(&self, env: &mut TypeEnv, source: &mut SourceBuilder) -> InferedTypeId {
                 let from = source.point();
                 source.append("(");
                 let ($($item,)*) = self;
@@ -217,6 +251,7 @@ macro_rules! build_tuple {
 
 }
 
+build_tuple!();
 build_tuple!(T1);
 build_tuple!(T1, T2);
 build_tuple!(T1, T2, T3);

@@ -63,13 +63,13 @@ That is not allowed, since we can't pass a list directly.
 
 ```eval
 Error: Type mismatch
-    ╭─[ <builtin>:10:24 ]
+    ╭─[ <builtin>:13:24 ]
     │
-  1 │ "+": [number] -> number
+  4 │ "+": [number] -> number
     │       ───┬──  
     │          ╰──── Expected number
     │ 
- 10 │ "list": forall ['a] -> ['a]
+ 13 │ "list": forall ['a] -> ['a]
     │                        ──┬─  
     │                          ╰─── But found list
 ────╯
