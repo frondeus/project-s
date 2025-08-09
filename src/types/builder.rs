@@ -120,6 +120,14 @@ pub fn boolean() -> impl TypeBuilder {
     primitive(TypeEnv::BOOLEAN)
 }
 
+pub fn string() -> impl TypeBuilder {
+    primitive(TypeEnv::STRING)
+}
+
+pub fn keyword() -> impl TypeBuilder {
+    primitive(TypeEnv::KEYWORD)
+}
+
 pub fn id_fn(f: impl Fn(&mut TypeEnv, &mut SourceBuilder) -> InferedTypeId) -> impl TypeBuilder {
     IdFn { f }
 }
@@ -190,6 +198,38 @@ pub fn list(arg: impl TypeBuilder) -> impl TypeBuilder {
         let span = source.span(from, to);
 
         InferedType::List { item, span }
+    }
+}
+
+pub fn tuple_with_rest(
+    items: Vec<Box<dyn TypeBuilder>>,
+    rest: Option<Box<dyn TypeBuilder>>,
+) -> impl TypeBuilder {
+    move |env: &mut TypeEnv, source: &mut SourceBuilder| {
+        let from = source.point();
+        source.append("(");
+        let mut built_items = Vec::new();
+        for builder in items.iter() {
+            let item = builder.build(env, source);
+            built_items.push(item);
+            source.append(", ");
+        }
+        let rest_id = if let Some(rest_builder) = &rest {
+            source.append("..[");
+            let r = rest_builder.build(env, source);
+            source.append("]");
+            Some(r)
+        } else {
+            None
+        };
+        source.append(")");
+        let to = source.point();
+        let span = source.span(from, to);
+        InferedType::Tuple {
+            items: built_items,
+            rest: rest_id,
+            span,
+        }
     }
 }
 

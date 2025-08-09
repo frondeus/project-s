@@ -300,10 +300,11 @@ impl LanguageServer for Backend {
             let mut modules: FileModules = sources.into();
             // let sources: &mut Sources = &mut sources;
             let asts: &mut ASTS = &mut asts;
-            let prelude = prelude();
-            let envs = &[prelude];
-            let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
+            let prelude_env = prelude();
+            let envs = [prelude_env];
+            let (root, mut diagnostics) = process_ast(asts, root, &envs);
+            let mut type_env =
+                TypeEnv::new().with_runtime_prelude_envs(modules.sources_mut(), &envs);
             type_env.infer(asts, root, &mut diagnostics, &mut modules);
             // let type_ = type_env.check(asts, selected, &mut diagnostics);
             let Some(infered) = type_env.get_infered(selected) else {
@@ -410,10 +411,11 @@ impl Backend {
         let (modules, diag) = {
             let mut modules: FileModules = sources.into();
             let asts: &mut ASTS = &mut asts;
-            let prelude = prelude();
-            let envs = &[prelude];
-            let (root, mut diagnostics) = process_ast(asts, root, envs);
-            let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
+            let prelude_env = prelude();
+            let envs = [prelude_env];
+            let (root, mut diagnostics) = process_ast(asts, root, &envs);
+            let mut type_env =
+                TypeEnv::new().with_runtime_prelude_envs(modules.sources_mut(), &envs);
             type_env.infer(asts, root, &mut diagnostics, &mut modules);
             (modules, diagnostics)
         };

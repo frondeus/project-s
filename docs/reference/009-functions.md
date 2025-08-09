@@ -10,14 +10,14 @@ It is because of function application.
 Okay, let's start with that, we can call abound defining function later.
 
 Fortunately, S-Lang provides a basic prelude that includes useful functions.
-One of them is `-` that subtracts two numbers.
+One of them is `-` that subtracts numbers.
 
 ```s
 -
 ```
 
 ```eval
-- : (number, number) → number = "<Function: RustFn>"
+- : [number] → number = "<Function: RustFn>"
 ```
 
 Since it is LISP-like language, in order to call such a function we are using `(- 2 1)` expression:

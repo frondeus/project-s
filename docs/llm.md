@@ -1,5 +1,25 @@
 # Context provided by Human
 
+## EXECUTOR (compact)
+- Auto-typed infra: TypeOf, FnSignature; Param<ID, T=Value>, Fun<(Args), Ret>; TypeOf for Vec<T>, Rest<T>, (T,), (A, B), Option<T>, Result<T, String>.
+- Runtime bridges: FromValue/IntoValue for Option<T>, Result<T, String>, Param, (T,), Fun.
+- Removed Fn1 and OptionV; inlined and auto-typed list/enumerate, list/map, list/find using Fun and Param; list/find now returns Result<Option<Param<1>>, String>.
+- Prelude: with_auto_typed_fn_poly for list/*; with_auto_typed_fn_mono for >, <=, roll; manual types retained for +, -, *, =, ref/get, print, debug, tuple, list.
+- All checks pass (format, clippy, parser, tests, snapshots).
+
+## PLAN (towards full auto-typed)
+- Short-term migrations:
+  - "=": add auto-typed wrapper eq_typed(a: Param<1>, b: Param<2>) -> bool; register via with_auto_typed_fn_poly.
+  - print/debug: add single-arg typed wrappers (Param<1> -> number / Param<1> -> Param<1>) and register auto-typed; keep existing variadic behavior functions.
+  - get/ref: add RefOf<A>(Ref, PhantomData<A>) with TypeOf -> reference(A) and FromValue/IntoValue; register auto-typed wrappers.
+- Medium-term:
+  - Consider typed wrappers for list/tuple consistent with current prelude schemes, or align runtime semantics with declared types.
+  - Explore FnSignature support for pure Rest<T> to migrate + and * automatically.
+- Cleanup:
+  - Remove remaining with_mono_type/with_poly_type after migrating all.
+  - Refresh docs if type displays change.
+- DoD: zero with_mono_type/with_poly_type usages; all via with_auto_typed_fn_mono/poly.
+
 1. src/runtime has everything that happens during the runtime
 
 s_std.rs is the file where we can define builtin functions and macros that
@@ -18,6 +38,109 @@ src/api.rs has high level traits and type definitions that are glue between low 
 This API allows us to define function as `fn add(left: f64, right: f64) -> f64` and Rust compiler knows, that when doing `env.with_fn("add", add)` that we define a function that takes precisely two parameters and returns a number. Howerver, currently `with_fn` does not register its type. That type is registered manually in prelude.rs
 
 If you have any questions about ARCHITECTURE of the project, do not hesistate to ask human for clarification. Better than spending hours trying to understand the code on your own.
+
+---
+
+## INVESTIGATOR
+
+Findings about current state:
+
+- Runtime
+  - Builtins are registered in `src/runtime/s_std.rs` via `Env::with_fn(name, rust_fn)`. There are also macros, but for this task we can ignore them.
+  - The `api` layer (`src/api.rs` and `src/api/macros.rs`) provides:
+    - `IntoNativeFunction` and `NativeFunction` to bridge Rust functions to runtime `Value`.
+    - Support for functions with optional `&mut Runtime` and optional trailing `Rest<T>`.
+    - A family of wrappers used in signatures: `EagerRec<T, Marker>`, `Keyword`, `Ref`, etc. These affect runtime evaluation but currently have no direct mapping to type inference.
+
+- Types
+  - The type inferer has its own prelude in `src/types/prelude.rs`. It registers:
+    - Type constructors: `Some`, `None`, `Option`.
+    - Builtin function types for operators (e.g., `+`, `-`, `*`, `>`, `<=`, `=`) and utility functions (`print`, `debug`, `tuple`, `list`, `list/enumerate`, `list/map`, `list/find`, `get`).
+  - This prelude is manually kept in sync with the runtime’s builtins.
+  - The `TypeBuilder` utilities build types and also record textual form in a `SourceBuilder`. Primitives: `number`, `bool`, `string`, `keyword`. Variadic tuples exist as `InferedType::Tuple { rest }` but had no ergonomic builder.
+  - Equality `=` is registered polymorphically as `('a, 'b) -> bool` (by design).
+
+- Gap we want to close
+  - Adding a Rust builtin requires also adding a matching type in `types/prelude.rs`. We want: define the Rust function once and have the type prelude be derived automatically (with manual overrides for special cases).
+
+Notes from HUMAN review (key guidance):
+- Start by removing dead code and cleaning `s_std/functions.rs` (some wrappers become unnecessary).
+- Variadic tuples are supported and can be modeled; however, current docs/snapshots use `[number] -> number` for `+/*`.
+- Keep `=` polymorphic across any two types (worst case false).
+- Consider markers to thread polymorphic variables (link input and output types) and wrappers to express higher-order function arg types.
+
+---
+
+## EXECUTOR outcome (what is implemented now)
+
+1) Runtime Env can carry typed builtin schemes
+- Added `runtime::BuiltinTy` and extended `runtime::Env`:
+  - `with_mono_type`, `with_poly_type`
+  - `with_typed_fn_mono`, `with_typed_fn_poly`
+  - `iter_typed`, `get_typed`
+- Types can now be seeded from runtime env(s) using:
+  - `TypeEnv::with_runtime_prelude_envs(sources, &envs)`
+  - `TypeEnv::with_runtime_prelude(sources, &env)`, delegating to the slice version
+- Existing snapshots preserved by emitting builtins in the original order.
+
+2) Auto-typing traits (no proc-macros, just traits and macro_rules for boilerplate)
+- `api/typing.rs`:
+  - `TypeGen`: stable type var allocator for markers
+  - `TypeOf<T>`: maps Rust types to TypeBuilders
+    - Implemented for `f64`, `i32`, `bool`, `String`, `Keyword`
+    - `EagerRec<T, _>` erases to `T`
+    - `Param<const ID, T>`: threads the same type variable across positions
+    - `Fn1<A, B>`: higher-order arg type, maps to `function((A,), B)`
+  - `FnSignature<Ctx>`: maps any `F: Fn` signature to a function type builder
+    - Implemented for arities up to 3:
+      - NO (no runtime): `Ctx = (O, A, B, ...)`
+      - RT (with runtime): `Ctx = (O, A, B, ..., WithRuntime)`
+    - Varargs (`Rest<T>`) intentionally not covered to avoid overlapping impls; keep explicit type overrides for `+/*` for now.
+
+3) Auto-typed registration helpers
+- In `api.rs`:
+  - `Env::with_auto_typed_fn_mono<F, Ctx>(name, f)`
+  - `Env::with_auto_typed_fn_poly<F, Ctx>(name, f)`
+  - Work with any `F: IntoOverloadedFunction<Ctx> + FnSignature<Ctx>` (Ctx mirrors existing `IntoNativeFunction` macros).
+
+4) s_std prelude adoption
+- Switched `>` and `<=` to auto-typed registration.
+- Left `+/*` and other special cases with explicit types (to match docs/snapshots and semantics).
+- Registered typed schemes for other builtins (tuple, list, print, debug, list/enumerate, list/map, list/find, get, ref) within runtime env so `with_runtime_prelude_envs` has full data.
+- Cleaned up `s_std/functions.rs` (removed dead code like object-constructor composition and `list_find_or`).
+
+5) Call sites
+- Type checking now seeded from runtime env(s) everywhere:
+  - `lib.rs`, `lsp.rs` use `with_runtime_prelude_envs(modules.sources_mut(), &envs)`
+  - Avoids cloning envs
+
+6) Snapshot stability
+- All `cargo xtask llm` checks pass; no snapshot changes introduced.
+
+---
+
+## PLANNER (next steps)
+
+- Migrate more builtins to auto-typed registration:
+  - `list/enumerate`: use `Param<1, _>` to tie element type
+  - `list/map`: use `Param<1, _>`, `Param<2, _>` with `Fn1` for the mapping function
+  - `list/find`: similar to `list/map` but return `Option 'a`
+- Keep overrides for:
+  - `+/*` (list varargs)
+  - `=` polymorphic across any two types
+  - `ref/get` (ref-polymorphism)
+- Optional future work:
+  - Literal wrappers (e.g., `StrLit`, `KeywordLit`) if we want to expose literal types in API
+  - Consider adding safe, non-overlapping patterns to support `Rest<T>` in FnSignature if needed
+
+---
+
+## REVIEWER notes
+
+- The auto-typing layer is additive and non-invasive: existing manual prelude remains the source of truth for order and semantics; runtime env seeding matches it.
+- We’ve proven the approach by auto-typing `>` and `<=` without changing snapshots.
+- The extension is ready to cover more builtins as we proceed, while preserving explicit overrides for tricky cases.
+
 
 ---
 

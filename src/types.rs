@@ -14,7 +14,7 @@ use crate::{
 };
 
 mod ascribe;
-mod builder;
+pub mod builder;
 mod coalesce;
 mod constrain;
 mod constructors;
@@ -26,6 +26,8 @@ mod levels;
 mod prelude;
 mod type_term;
 mod utils;
+
+pub(crate) use utils::variable_letters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct InferedTypeId(usize);

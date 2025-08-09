@@ -56,7 +56,7 @@ pub fn process_with_typechk<M: ModuleProvider>(
     envs: &[Env],
 ) -> (SExpId, Diagnostics, M) {
     let (root, mut diagnostics) = process_ast(asts, root, envs);
-    let mut type_env = types::TypeEnv::new().with_prelude(modules.sources_mut());
+    let mut type_env = types::TypeEnv::new().with_runtime_prelude_envs(modules.sources_mut(), envs);
     type_env.infer(asts, root, &mut diagnostics, &mut modules);
 
     // Transform type constructors into runtime functions
@@ -114,7 +114,8 @@ mod tests {
                 let prelude = prelude();
                 let envs = [prelude];
                 let (root_id, mut diagnostics) = crate::process_ast(&mut asts, root_id, &envs);
-                let mut type_env = crate::types::TypeEnv::new().with_prelude(modules.sources_mut());
+                let mut type_env = crate::types::TypeEnv::new()
+                    .with_runtime_prelude_envs(modules.sources_mut(), &envs);
                 let infered = type_env.infer(&mut asts, root_id, &mut diagnostics, &mut modules);
                 let root_id = TypeConstructorTransformPass::pass(&mut asts, root_id);
 

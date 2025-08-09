@@ -1,24 +1,14 @@
-#![allow(dead_code)]
-
 use std::{collections::BTreeMap, path::PathBuf};
 
 use itertools::Itertools;
 
-use crate::{
-    api::{
-        CalledConstructor, EagerRec, FromValue, IntoNativeFunction, Keyword, Rest, WithConstructor,
-        WithoutConstructor,
-    },
-    ast::{SExp, SExpId},
-    builder::ASTBuilder,
-    runtime::{
-        Function, Runtime, Value,
-        value::{Constructor, Enum, Ref},
-    },
-    source::Spanned,
-};
+use crate::api::typing::{Fun, Param};
 
-use super::macros::obj_put_thunk;
+use crate::api::AllParams;
+use crate::{
+    api::{EagerRec, Rest, WithConstructor, WithoutConstructor},
+    runtime::{Runtime, Value, value::Enum},
+};
 
 pub fn sub_numbers(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
     args.into_iter()
@@ -27,341 +17,41 @@ pub fn sub_numbers(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
         .unwrap_or(0.0)
 }
 
-pub fn mul_numbers(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
-    args.into_iter()
-        .map(|a| a.value)
-        .reduce(|a, b| a * b)
-        .unwrap_or(1.0)
+pub fn set(key: crate::api::RefOf<Param<0>>, value: Param<0>) -> Param<0> {
+    tracing::info!("Setting {:?} to {:?}", &key.0, &value.0);
+    *key.0.borrow_mut() = value.0.clone();
+    Param(value.0)
 }
 
-#[tracing::instrument(skip_all)]
-pub fn add_numbers(
-    first: EagerRec<f64, WithoutConstructor>,
-    args: Rest<EagerRec<f64, WithoutConstructor>>,
-) -> f64 {
-    first.value
-        + args
-            .into_iter()
-            .map(|a| a.value)
-            .reduce(|a, b| a + b)
-            .unwrap_or(0.0)
+pub fn get(key: crate::api::RefOf<Param<0>>) -> Param<0> {
+    Param(key.0.borrow().clone())
 }
 
-#[derive(Clone, Debug)]
-pub enum ObjectOrConstructor {
-    Object(BTreeMap<String, (Value, Option<SExpId>)>),
-    Constructor(Constructor),
-}
-
-impl FromValue for ObjectOrConstructor {
-    fn is_matching(_rt: &mut Runtime, value: &Value) -> bool {
-        matches!(value, Value::Object(_) | Value::Constructor(_))
-    }
-
-    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
-        match value {
-            Value::Object(left) => Ok(ObjectOrConstructor::Object(left)),
-            Value::Constructor(left) => Ok(ObjectOrConstructor::Constructor(left)),
-            _ => Err(format!("Expected object or constructor, got {value:?}")),
-        }
+pub fn new_ref(a: Param<0>) -> crate::api::RefOf<Param<0>> {
+    if let Value::Ref(r) = Value::ref_(a.0) {
+        crate::api::RefOf(r, std::marker::PhantomData)
+    } else {
+        unreachable!()
     }
 }
 
-impl ObjectOrConstructor {
-    fn call(
-        self,
-        rt: &mut Runtime,
-        self_: Value,
-        root: Option<Value>,
-        super_: Value,
-        origin: Option<Value>,
-    ) -> Result<Value, String> {
-        Ok(match self {
-            ObjectOrConstructor::Constructor(left) => {
-                rt.envs.push();
-                // rt.envs.set("self", self_.clone());
-                if let Some(root) = root {
-                    rt.envs.set("root", root.clone());
-                }
-                rt.envs.set("super", super_.clone());
-                if let Some(origin) = origin {
-                    rt.envs.set("origin", origin.clone());
-                }
-                let res = rt.constructor_call(left, Some(self_.clone()));
-                rt.envs.pop();
-                res
-            }
-            ObjectOrConstructor::Object(left) => {
-                let ref_self = self_.as_ref().cloned().unwrap();
-                for (key, (value, id)) in left {
-                    insert_to_struct(
-                        ref_self.clone(),
-                        StructKey(key, id),
-                        CalledConstructor(value),
-                    )?;
-                }
-                self_
-            }
-        })
-    }
-}
-
-#[tracing::instrument(skip_all)]
-fn add_two_objects(left: ObjectOrConstructor, right: ObjectOrConstructor) -> Constructor {
-    let constructor = move |rt: &mut Runtime,
-                            self_: Value,
-                            root: Value,
-                            _super: Value,
-                            origin: Value|
-          -> Result<Value, String> {
-        let left = left.clone();
-        let right = right.clone();
-        tracing::debug!("Adding obj: {:?}, {:?}", left, right);
-        tracing::debug!("Self: {:?}", self_);
-        tracing::debug!("Root: {:?}", root);
-        let left = left.call(
-            rt,
-            self_.clone(),
-            Some(root.clone()),
-            self_.clone(),
-            Some(origin),
-        )?;
-        tracing::debug!("Left: {:?}", left);
-        let super_ = left.deref();
-        tracing::debug!("Super: {:?}", super_);
-        tracing::debug!("Self: {:?}", self_);
-        right.call(rt, self_.clone(), Some(self_.clone()), super_, Some(root))?;
-        tracing::debug!("Result: {:?}", self_);
-
-        Ok(self_)
-    };
-    let constructor = constructor.into_native_function();
-
-    Constructor {
-        constructor: Function::from(move |rt: &mut Runtime, args: Vec<Value>| {
-            constructor.call(rt, args)
-        }),
-    }
-}
-
-fn add_objects(
-    left: EagerRec<ObjectOrConstructor, WithoutConstructor>,
-    rights: Rest<EagerRec<ObjectOrConstructor, WithoutConstructor>>,
-) -> Value {
-    let mut left = left.value;
-    for right in rights {
-        left = ObjectOrConstructor::Constructor(add_two_objects(left.clone(), right.value));
-    }
-    match left {
-        ObjectOrConstructor::Object(left) => Value::Object(left),
-        ObjectOrConstructor::Constructor(left) => Value::Constructor(left),
-    }
-}
-
-#[allow(non_upper_case_globals, clippy::type_complexity)]
-pub const add: (
-    fn(EagerRec<f64, WithoutConstructor>, Rest<EagerRec<f64, WithoutConstructor>>) -> f64,
-    fn(
-        EagerRec<ObjectOrConstructor, WithoutConstructor>,
-        Rest<EagerRec<ObjectOrConstructor, WithoutConstructor>>,
-    ) -> Value,
-) = (add_numbers, add_objects);
-
-pub fn set(key: Ref, value: Value) -> Value {
-    tracing::info!("Setting {key:?} to {value:?}");
-
-    *key.borrow_mut() = value.clone();
-
-    value
-}
-
-pub fn get(key: Ref) -> Value {
-    key.borrow().clone()
-}
-
-pub fn new_ref(one: Value) -> Value {
-    Value::ref_(one)
-}
-
-pub struct StructKey(String, Option<SExpId>);
-impl FromValue for StructKey {
-    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
-        match value {
-            Value::String(_) => true,
-            Value::SExp(id) => matches!(
-                &**rt.asts.get(*id),
-                SExp::Symbol(_) | SExp::Keyword(_) | SExp::String(_)
-            ),
-            _ => false,
-        }
-    }
-
-    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
-        let Value::SExp(id) = value else {
-            return Err("Expected keyword".into());
-        };
-
-        let key = match &**rt.asts.get(id) {
-            SExp::Keyword(s) => s.to_string(),
-            _ => return Err("Expected keyword".into()),
-        };
-
-        Ok(Self(key, Some(id)))
-    }
-}
-
-#[tracing::instrument(skip_all)]
-pub fn insert_to_struct(
-    this: Ref,
-    key: StructKey,
-    value: CalledConstructor<Value>,
-) -> Result<Value, String> {
-    let value = value.0;
-    let mut this = this.borrow_mut();
-
-    let Some(this) = this.as_object_mut() else {
-        return Err("Expected object".into());
-    };
-
-    tracing::debug!("Inserting to struct({:?}): {} - {:?}", this, key.0, value);
-
-    let old = this.insert(key.0, (value, key.1));
-
-    tracing::debug!("After insertion: {this:?}");
-
-    Ok(old.map(|old| old.0).unwrap_or_else(|| Value::List(vec![])))
-}
-
-pub fn obj_eval(rt: &mut Runtime, to_eval: Value) -> Result<Value, String> {
-    match to_eval {
-        Value::SExp(id) => {
-            let ast = rt.asts.get(id);
-            let span = ast.span;
-            let Some(list) = ast.as_list() else {
-                return Err("Expected list".into());
-            };
-
-            let list = list.to_vec();
-            let mut iter = list.into_iter();
-            let mut last = None;
-            while let Some(key) = iter.next() {
-                let key = &**rt.asts.get(key);
-                let Some(key) = key.as_keyword() else {
-                    return Err("ObjEval: Expected keyword".into());
-                };
-
-                let Some(value) = iter.next() else {
-                    return Err("ObjEval: Expected value".into());
-                };
-
-                let value = Spanned::new(value, span);
-                let expr = obj_put_thunk(key.to_string(), value).build_ast(&mut rt.asts, span);
-
-                // let expr = expr.build(&mut rt.asts, span);
-                last = Some(rt.eval(expr.inner()));
-            }
-            Ok(last
-                .unwrap_or_else(|| Value::Error("ObjEval: Expected at least one argument".into())))
-        }
-        rest => Ok(rest),
-    }
-}
-
-pub fn obj_construct_or(value: CalledConstructor<Value>) -> Value {
-    value.0
-}
-
-pub fn eager(value: EagerRec<Value, WithConstructor>) -> Value {
-    value.value
-}
-
-pub fn deep_eager(rt: &mut Runtime, value: Value) -> Value {
-    let eager_value = value.clone().eager_rec(rt, true);
-    tracing::debug!("Deep eager: {:?}", eager_value);
-
-    if let Value::Object(map) = &eager_value {
-        for (value, _id) in map.values() {
-            deep_eager(rt, value.clone());
-        }
-    }
-    value
-}
-
-pub struct SymbolOrKeyword(String);
-impl FromValue for SymbolOrKeyword {
-    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
-        match value {
-            Value::SExp(id) => matches!(&**rt.asts.get(*id), SExp::Symbol(_) | SExp::Keyword(_)),
-            _ => false,
-        }
-    }
-
-    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
-        let sexp = value.as_sexp().ok_or("Expected symbol or keyword")?;
-        let sexp = rt.asts.get(*sexp);
-        match &**sexp {
-            SExp::Symbol(s) | SExp::Keyword(s) => Ok(Self(s.to_string())),
-            _ => Err("Expected symbol or keyword".into()),
-        }
-    }
-}
-
-pub fn obj_has(
-    obj: EagerRec<BTreeMap<String, (Value, Option<SExpId>)>, WithConstructor>,
-    key: EagerRec<SymbolOrKeyword, WithConstructor>,
-) -> Result<Value, String> {
-    let obj = obj.value;
-    let key = key.value;
-
-    Ok(Value::Bool(obj.contains_key(&key.0)))
-}
-
-pub fn obj_plain(rt: &mut Runtime, args: Rest<Value>) -> Result<Value, String> {
-    if args.len() % 2 != 0 {
+pub fn obj_plain(rt: &mut Runtime, args: Rest<Param<0>>) -> Result<Param<1>, String> {
+    let values: Vec<Value> = args.into_iter().map(|p| p.0).collect();
+    if values.len() % 2 != 0 {
         return Err("Expected even number of arguments".into());
     }
     let mut inner = BTreeMap::new();
 
-    for (key, value) in args.into_iter().tuples() {
+    for (key, value) in values.into_iter().tuples() {
         let key_id = *key.as_sexp().ok_or("Expected keyword")?;
         let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
         inner.insert(key.to_string(), (value, Some(key_id)));
     }
 
-    Ok(Value::Object(inner))
+    Ok(Param(Value::Object(inner)))
 }
 
-pub fn obj_extend(
-    rt: &mut Runtime,
-    obj: EagerRec<BTreeMap<String, (Value, Option<SExpId>)>, WithConstructor>,
-    args: Rest<Value>,
-) -> Result<BTreeMap<String, (Value, Option<SExpId>)>, String> {
-    let mut obj = obj.value;
-
-    for (key, value) in args.into_iter().tuples() {
-        let id = *key.as_sexp().ok_or("Expected keyword")?;
-        let key = rt.as_keyword(&key).ok_or("Expected keyword")?;
-        obj.insert(key.to_string(), (value, Some(id)));
-    }
-
-    Ok(obj)
-}
-
-pub fn obj_con(constructor: EagerRec<Function, WithoutConstructor>) -> Value {
-    Value::Constructor(Constructor {
-        constructor: constructor.value,
-    })
-}
-
-pub fn make_list(args: Rest<Value>) -> Value {
-    Value::List(args.into_iter().collect())
-}
-
-pub fn make_tuple(args: Rest<Value>) -> Value {
-    Value::List(args.into_iter().collect())
-}
-
-pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
+pub fn import(rt: &mut Runtime, path: String) -> Result<Param<0>, String> {
     let modules = rt.modules_mut();
     let path_buf = PathBuf::from(&path);
     let Some(source_id) = modules.get_module(&path_buf) else {
@@ -371,7 +61,6 @@ pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
         return Err(format!("Module not found: {}", path_buf.display()));
     };
     let source = source.clone();
-    // let module = source..to_string();
 
     let ast = rt
         .asts
@@ -383,15 +72,19 @@ pub fn import(rt: &mut Runtime, path: String) -> Result<Value, String> {
     let result = rt.eval(root);
     rt.envs.restore(save);
 
-    Ok(result)
+    Ok(Param(result))
 }
 
 // Eq
-pub fn eq_any(left: Value, right: Value) -> bool {
-    match (left, right) {
+pub fn eq(l: Param<0>, r: Param<1>) -> bool {
+    match (l.0, r.0) {
         (Value::Number(l), Value::Number(r)) => l == r,
         _ => false,
     }
+}
+
+pub fn eq_any(l: Param<0>, r: Param<1>) -> bool {
+    eq(l, r)
 }
 
 // Greater than
@@ -404,73 +97,128 @@ pub fn lte_numbers(left: f64, right: f64) -> bool {
     left <= right
 }
 
-pub fn error(s: String) -> Value {
-    Value::Error(s)
+pub fn error(s: String) -> Param<0> {
+    Param(Value::Error(s))
 }
 
-pub fn list_enumerate(list: Vec<Value>) -> Vec<(i32, Value)> {
+pub fn list_enumerate(list: Vec<Param<0>>) -> Vec<(i32, Param<0>)> {
     list.into_iter()
         .enumerate()
-        .map(|(index, value)| (index as i32, value))
+        .map(|(i, p)| (i as i32, p))
         .collect()
 }
 
-pub fn list_map(rt: &mut Runtime, list: Vec<Value>, map: Function) -> Vec<Value> {
-    let mut result = Vec::with_capacity(list.len());
-    for value in list {
-        // let value = rt.eval(value)?;
-        let value = rt.closure_call_inner(map.clone(), vec![value]);
-        result.push(value);
-    }
-    result
+pub fn list_map(
+    rt: &mut Runtime,
+    list: Vec<Param<0>>,
+    f: Fun<(Param<0>,), Param<1>>,
+) -> Result<Vec<Param<1>>, String> {
+    list.into_iter().map(|v| f.clone().call(rt, (v,))).collect()
 }
 
-pub fn list_find(rt: &mut Runtime, list: Vec<Value>, f: Function) -> Result<Value, String> {
-    for value in list {
-        let result = rt.closure_call_inner(f.clone(), vec![value.clone()]);
-        let Value::Bool(result) = result else {
-            return Err("Expected boolean result from function".into());
-        };
-        if result {
-            return Ok(construct_enum(
-                Keyword("Some".into()),
-                Rest::new(vec![value]),
-            ));
+pub fn list_find(
+    rt: &mut Runtime,
+    list: Vec<Param<0>>,
+    f: Fun<(Param<0>,), bool>,
+) -> Result<Option<Param<0>>, String> {
+    for v in list {
+        let res = f.clone().call(rt, (v.clone(),))?;
+        if res {
+            return Ok(Some(v));
         }
     }
-    Ok(construct_enum(Keyword("None".into()), Rest::new(vec![])))
+    Ok(None)
 }
 
-pub fn list_find_or(rt: &mut Runtime, list: Vec<Value>, f: Function, or: Value) -> Value {
-    for value in list {
-        let result = rt.closure_call_inner(f.clone(), vec![value.clone()]);
-        let Value::Bool(result) = result else {
-            return Value::Error("Expected boolean result from function".into());
-        };
-        if result {
-            return value;
-        }
-    }
-    or
-}
-
-pub fn construct_enum(name: Keyword, fields: Rest<Value>) -> Value {
-    Value::Enum(Enum {
-        variant: name.0,
-        fields: fields.into_iter().collect(),
-    })
-}
-
-pub fn make_some(a: Value) -> Value {
-    Value::Enum(Enum {
+pub fn some(a: Param<0>) -> Param<1> {
+    Param(Value::Enum(Enum {
         variant: "Some".into(),
-        fields: vec![a],
-    })
+        fields: vec![a.0],
+    }))
 }
 
-pub fn make_none() -> Value {
-    Value::Enum(Enum {
+pub fn none() -> Param<0> {
+    Param(Value::Enum(Enum {
         variant: "None".into(),
         fields: vec![],
-    })
+    }))
+}
+
+pub fn add(args: Rest<EagerRec<f64, WithoutConstructor>>) -> f64 {
+    args.into_iter().map(|a| a.value).sum()
+}
+
+pub fn mul(args: Rest<EagerRec<f64, WithConstructor>>) -> f64 {
+    args.into_iter()
+        .map(|a| a.value)
+        .reduce(|a, b| a * b)
+        .unwrap_or(1.0)
+}
+
+pub fn print(rt: &mut Runtime, args: Rest<Param<0>>) -> f64 {
+    for arg in args.into_iter() {
+        let arg = arg.0.eager_rec(rt, true);
+        tracing::info!("{:?}", arg);
+    }
+    1.0
+}
+
+pub fn roll(formula: String) -> f64 {
+    tracing::info!("Rolling {formula}");
+    1.0
+}
+
+pub fn make_list(args: Rest<Param<0>>) -> Vec<Param<0>> {
+    args.into()
+}
+
+pub fn tuple(args: AllParams<Param<0>>) -> Param<0> {
+    let values: Vec<Value> = args.into();
+    Param(Value::List(values))
+}
+
+pub fn construct_enum(rt: &mut Runtime, args: Rest<Param<0>>) -> Result<Param<1>, String> {
+    let mut vals: Vec<Param<0>> = args.into();
+    if vals.is_empty() {
+        return Err("enum: Expected at least one argument".into());
+    }
+    let first = vals.remove(0).0;
+    let name = rt
+        .as_keyword(&first)
+        .ok_or("enum: Expected keyword as first argument")?;
+    let fields: Vec<Value> = vals.into_iter().map(|p| p.0).collect();
+    Ok(Param(Value::Enum(Enum {
+        variant: name.to_string(),
+        fields,
+    })))
+}
+
+pub fn obj_extend(rt: &mut Runtime, args: Rest<Param<0>>) -> Result<Param<0>, String> {
+    use itertools::Itertools;
+
+    let mut vals: Vec<Param<0>> = args.into();
+    if vals.is_empty() {
+        return Err("obj/extend: Expected at least one argument".into());
+    }
+
+    let mut obj = vals.remove(0).0.eager_rec(rt, true);
+    let map = obj
+        .as_object_mut()
+        .ok_or("obj/extend: Expected object as first argument")?;
+
+    for (key_p, val_p) in vals.into_iter().tuples() {
+        let key_v = key_p.0;
+        let id = *key_v.as_sexp().ok_or("obj/extend: Expected keyword")?;
+        let key = rt
+            .as_keyword(&key_v)
+            .ok_or("obj/extend: Expected keyword")?;
+        map.insert(key.to_string(), (val_p.0, Some(id)));
+    }
+
+    Ok(Param(obj))
+}
+
+pub fn debug(a: Param<0>) -> Param<0> {
+    tracing::debug!("{:?}", a.0);
+    a
 }

@@ -107,3 +107,23 @@ pub fn obj_add(
         arg => Err(format!("Expected two arguments. Found: {}", arg.len())),
     }
 }
+
+pub fn extend_macro(
+    asts: &mut ASTS,
+    caller: Span,
+    mut args: Vec<Spanned<SExpId>>,
+) -> Result<Spanned<SExpId>, String> {
+    let last = args
+        .pop()
+        .ok_or("extend!: Expected at least one argument")?;
+    let mut args = args.into_iter();
+    let mut previous = args
+        .next()
+        .ok_or("extend!: Expected at least two arguments")?;
+    let ast = asts.new_ast_mut();
+    for arg in args {
+        previous = ("extend-fn", previous, arg).assemble_id_with_span(ast, caller);
+    }
+    previous = ("extend", previous, last).assemble_id_with_span(ast, caller);
+    Ok(previous)
+}

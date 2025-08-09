@@ -42,7 +42,7 @@ fn run(filename: &str) {
     let envs = &[prelude];
     eprintln!("Processing..");
     let (root, mut diagnostics) = process_ast(&mut asts, root, envs);
-    let mut type_env = TypeEnv::new().with_prelude(modules.sources_mut());
+    let mut type_env = TypeEnv::new().with_runtime_prelude(modules.sources_mut(), &envs[0]);
     eprintln!("Type checking..");
     type_env.infer(&mut asts, root, &mut diagnostics, &mut modules);
     if diagnostics.has_errors() {

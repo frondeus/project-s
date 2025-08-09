@@ -6,16 +6,34 @@ use crate::{
     builder::{ASTBuilder, error},
     source::{Span, Spanned},
     try_err,
+    types::builder::TypeBuilder,
 };
 
 use super::value::{Function, Macro, Value};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone)]
+pub enum BuiltinTy {
+    Mono(Rc<dyn TypeBuilder>),
+    Poly(Rc<dyn TypeBuilder>),
+}
+
+#[derive(Default, Clone)]
 pub struct Env {
     // is_obj: bool,
     vars: BTreeMap<String, Value>,
+    typed: BTreeMap<String, BuiltinTy>,
 }
 
+impl std::fmt::Debug for Env {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let vars_keys: Vec<&str> = self.vars.keys().map(|k| k.as_str()).collect();
+        let typed_keys: Vec<&str> = self.typed.keys().map(|k| k.as_str()).collect();
+        f.debug_struct("Env")
+            .field("vars", &vars_keys)
+            .field("typed", &typed_keys)
+            .finish()
+    }
+}
 impl Env {
     pub fn keys(&self) -> impl Iterator<Item = &str> {
         self.vars.keys().map(|k| k.as_str())
@@ -27,6 +45,26 @@ impl Env {
 
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.vars.get(key)
+    }
+
+    pub fn get_typed(&self, name: &str) -> Option<&BuiltinTy> {
+        self.typed.get(name)
+    }
+
+    pub fn iter_typed(&self) -> impl Iterator<Item = (&str, &BuiltinTy)> {
+        self.typed.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
+    pub fn with_mono_type(mut self, name: &'static str, ty: impl TypeBuilder + 'static) -> Self {
+        self.typed
+            .insert(name.to_string(), BuiltinTy::Mono(Rc::new(ty)));
+        self
+    }
+
+    pub fn with_poly_type(mut self, name: &'static str, ty: impl TypeBuilder + 'static) -> Self {
+        self.typed
+            .insert(name.to_string(), BuiltinTy::Poly(Rc::new(ty)));
+        self
     }
 
     pub fn with_macro(
@@ -43,7 +81,8 @@ impl Env {
         self
     }
 
-    pub fn with_fn<CTX>(
+    #[deprecated(note = "Use with_typed_fn_mono and with_typed_fn_poly instead")]
+    pub fn with_dynamic_fn<CTX>(
         mut self,
         name: &'static str,
         body: impl IntoOverloadedFunction<CTX>,

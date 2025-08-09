@@ -2,10 +2,50 @@ use std::{collections::BTreeMap, marker::PhantomData};
 
 use crate::{
     ast::{SExp, SExpId},
-    runtime::{Function, Runtime, Value, value::Ref},
+    runtime::{
+        Function, Runtime, Value,
+        value::{Enum, Ref},
+    },
 };
 
-use super::{FromValue, IntoValue};
+use super::{
+    FromValue, IntoValue,
+    typing::{Fun, Param, TypeOf},
+};
+
+use crate::types::builder::{id_fn, reference};
+
+pub struct RefOf<A>(pub Ref, pub PhantomData<A>);
+
+impl<A> FromValue for RefOf<A> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Ref(r) => Ok(RefOf(r, PhantomData::<A>)),
+            other => Err(format!("Expected ref, got {other:?}")),
+        }
+    }
+
+    fn is_matching(_rt: &mut Runtime, value: &Value) -> bool {
+        value.as_ref().is_some()
+    }
+}
+
+impl<A> IntoValue for RefOf<A> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
+        Ok(Value::Ref(self.0))
+    }
+}
+
+impl<A> TypeOf for RefOf<A>
+where
+    A: TypeOf,
+{
+    fn ty(g: &crate::api::typing::TypeGen) -> Box<dyn crate::types::builder::TypeBuilder> {
+        let a = <A as TypeOf>::ty(g);
+        let a = id_fn(move |env: &mut crate::types::TypeEnv, src| a.build(env, src));
+        Box::new(reference(a))
+    }
+}
 
 impl<T: IntoValue> IntoValue for Result<T, String> {
     fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
@@ -142,10 +182,13 @@ impl IntoValue for BTreeMap<String, (Value, Option<SExpId>)> {
     }
 }
 
-impl FromValue for Vec<Value> {
-    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+impl<T: FromValue + 'static> FromValue for Vec<T> {
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
         match value.ok()? {
-            Value::List(list) => Ok(list.into_iter().collect()),
+            Value::List(list) => list
+                .into_iter()
+                .map(|v| <T as FromValue>::try_from_value(rt, v))
+                .collect(),
             value => Err(format!("Expected list, got {value:?}")),
         }
     }
@@ -155,7 +198,7 @@ impl FromValue for Vec<Value> {
     }
 }
 
-impl<T: IntoValue> IntoValue for Vec<T> {
+impl<T: IntoValue + 'static> IntoValue for Vec<T> {
     fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
         let list = self
             .into_iter()
@@ -245,6 +288,48 @@ where
     }
 }
 
+impl<T> FromValue for (T,)
+where
+    T: FromValue + 'static,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::List(mut list) => {
+                if list.len() != 1 {
+                    return Err(format!(
+                        "Expected 1-element tuple (list), got {}",
+                        list.len()
+                    ));
+                }
+                let v = list.remove(0);
+                let inner = T::try_from_value(rt, v)?;
+                Ok((inner,))
+            }
+            other => Err(format!("Expected list for tuple, got {other:?}")),
+        }
+    }
+
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        if let Value::List(list) = value {
+            if list.len() == 1 {
+                return T::is_matching(rt, &list[0]);
+            }
+        }
+        false
+    }
+}
+
+impl<T> IntoValue for (T,)
+where
+    T: IntoValue + 'static,
+{
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
+        let (t,) = self;
+        let inner = t.try_into_value(rt)?;
+        Ok(Value::List(vec![inner]))
+    }
+}
+
 impl<T, U> IntoValue for (T, U)
 where
     T: IntoValue,
@@ -275,5 +360,127 @@ impl FromValue for Keyword {
             Value::SExp(id) => matches!(&**rt.asts().get(*id), SExp::Keyword(_)),
             _ => false,
         }
+    }
+}
+
+impl<T> FromValue for Option<T>
+where
+    T: FromValue + 'static,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Enum(e) => match e.variant.as_str() {
+                "Some" => {
+                    let mut it = e.fields.into_iter();
+                    let first = it.next().ok_or("Some: missing field")?;
+                    let v = T::try_from_value(rt, first)?;
+                    Ok(Some(v))
+                }
+                "None" => Ok(None),
+                other => Err(format!("Expected Option enum, got variant {other}")),
+            },
+            v => Err(format!("Expected enum for Option, got {v:?}")),
+        }
+    }
+
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        if let Value::Enum(e) = value {
+            if e.variant == "None" {
+                return true;
+            }
+            if e.variant == "Some" {
+                return e
+                    .fields
+                    .first()
+                    .map(|v| T::is_matching(rt, v))
+                    .unwrap_or(false);
+            }
+        }
+        false
+    }
+}
+
+impl<T> IntoValue for Option<T>
+where
+    T: IntoValue + 'static,
+{
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
+        match self {
+            Some(v) => {
+                let inner = v.try_into_value(rt)?;
+                Ok(Value::Enum(Enum {
+                    variant: "Some".into(),
+                    fields: vec![inner],
+                }))
+            }
+            None => Ok(Value::Enum(Enum {
+                variant: "None".into(),
+                fields: vec![],
+            })),
+        }
+    }
+}
+
+impl<T> FromValue for Result<T, String>
+where
+    T: FromValue + 'static,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value {
+            Value::Error(e) => Ok(Err(e)),
+            other => {
+                let v = T::try_from_value(rt, other)?;
+                Ok(Ok(v))
+            }
+        }
+    }
+
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        matches!(value, Value::Error(_)) || T::is_matching(rt, value)
+    }
+}
+
+// Typed function wrapper conversions for higher-order args
+
+impl<Args, Ret> FromValue for Fun<Args, Ret> {
+    fn try_from_value(_rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        match value.ok()? {
+            Value::Function(f) => Ok(Fun(f, PhantomData::<(Args, Ret)>)),
+            other => Err(format!("Expected function, got {other:?}")),
+        }
+    }
+    fn is_matching(_rt: &mut Runtime, value: &Value) -> bool {
+        value.as_function().is_some()
+    }
+}
+
+impl<Args, Ret> IntoValue for Fun<Args, Ret> {
+    fn try_into_value(self, _rt: &mut Runtime) -> Result<Value, String> {
+        Ok(Value::Function(self.0))
+    }
+}
+
+// Auto-typing adapters for list/enumerate using Param marker.
+// Provide runtime conversions so IntoNativeFunction can parse Param values.
+impl<T, const ID: usize> FromValue for Param<ID, T>
+where
+    T: FromValue,
+{
+    fn try_from_value(rt: &mut Runtime, value: Value) -> Result<Self, String> {
+        let inner = T::try_from_value(rt, value)?;
+        Ok(Param::<ID, T>(inner))
+    }
+
+    fn is_matching(rt: &mut Runtime, value: &Value) -> bool {
+        T::is_matching(rt, value)
+    }
+}
+
+impl<T, const ID: usize> IntoValue for Param<ID, T>
+where
+    T: IntoValue,
+{
+    fn try_into_value(self, rt: &mut Runtime) -> Result<Value, String> {
+        self.0.try_into_value(rt)
     }
 }

@@ -7,6 +7,7 @@ use crate::runtime::{Runtime, Value};
 
 mod value_impls;
 pub use value_impls::*;
+pub mod typing;
 
 // ------------- Definitions ------------
 
@@ -237,6 +238,43 @@ impl<T> IntoIterator for Rest<T> {
     }
 }
 
+// AllParams marker for heterogeneous argument packs
+pub struct AllParams<T> {
+    values: Vec<Value>,
+    marker: PhantomData<T>,
+}
+impl<T> AllParams<T> {
+    pub fn new(values: Vec<Value>) -> Self {
+        Self {
+            values,
+            marker: PhantomData,
+        }
+    }
+}
+impl<T> From<AllParams<T>> for Vec<Value> {
+    fn from(ap: AllParams<T>) -> Self {
+        ap.values
+    }
+}
+impl<T> Deref for AllParams<T> {
+    type Target = Vec<Value>;
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+impl<T> DerefMut for AllParams<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.values
+    }
+}
+impl<T> IntoIterator for AllParams<T> {
+    type Item = Value;
+    type IntoIter = std::vec::IntoIter<Value>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.into_iter()
+    }
+}
+
 //------------- Utils ------------
 fn assert_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
     if !has_arity(len, values) {
@@ -264,6 +302,32 @@ fn assert_at_least_arity<T>(len: usize, values: &[T]) -> Result<(), String> {
 }
 
 mod macros;
+pub use macros::{WithRest, WithRuntime};
+pub struct WithParams;
+
+impl crate::runtime::Env {
+    pub fn with_fn_mono<F, Ctx>(self, name: &'static str, f: F) -> Self
+    where
+        F: IntoOverloadedFunction<Ctx> + crate::api::typing::FnSignature<Ctx> + 'static,
+    {
+        let r#gen = crate::api::typing::TypeGen::new();
+        let tb = <F as crate::api::typing::FnSignature<Ctx>>::type_of(&r#gen);
+        let tb = crate::types::builder::id_fn(move |env, src| tb.build(env, src));
+        #[allow(deprecated)]
+        self.with_dynamic_fn(name, f).with_mono_type(name, tb)
+    }
+
+    pub fn with_fn_poly<F, Ctx>(self, name: &'static str, f: F) -> Self
+    where
+        F: IntoOverloadedFunction<Ctx> + crate::api::typing::FnSignature<Ctx> + 'static,
+    {
+        let r#gen = crate::api::typing::TypeGen::new();
+        let tb = <F as crate::api::typing::FnSignature<Ctx>>::type_of(&r#gen);
+        let tb = crate::types::builder::id_fn(move |env, src| tb.build(env, src));
+        #[allow(deprecated)]
+        self.with_dynamic_fn(name, f).with_poly_type(name, tb)
+    }
+}
 
 #[cfg(test)]
 mod tests {

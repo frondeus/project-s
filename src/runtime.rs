@@ -18,6 +18,7 @@ mod functions;
 mod json;
 mod macros;
 mod quotes;
+pub use env::BuiltinTy;
 pub mod s_std;
 mod structs;
 mod thunks;

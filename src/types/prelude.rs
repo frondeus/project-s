@@ -189,4 +189,108 @@ impl TypeEnv {
         sources.get_mut(builtin).set(&source.finalize());
         self
     }
+
+    pub fn with_runtime_prelude(self, sources: &mut Sources, renv: &crate::runtime::Env) -> Self {
+        self.with_runtime_prelude_envs(sources, std::slice::from_ref(renv))
+    }
+
+    pub fn with_runtime_prelude_envs(
+        mut self,
+        sources: &mut Sources,
+        renvs: &[crate::runtime::Env],
+    ) -> Self {
+        let builtin = sources.add("<builtin>", "");
+        let mut source = SourceBuilder::new(builtin);
+
+        {
+            let vars = Vars::default();
+
+            self.with_type_constructor(
+                &mut source,
+                "Some",
+                vec![Box::new(vars.var("'a", 1))],
+                enum_({
+                    let mut variants: IndexMap<String, Box<dyn TypeBuilder>> = IndexMap::new();
+
+                    variants.insert("Some".to_string(), Box::new(vars.var("'a", 1)));
+                    variants
+                }),
+            );
+        }
+
+        {
+            self.with_type_constructor(
+                &mut source,
+                "None",
+                vec![],
+                enum_({
+                    let mut variants: IndexMap<String, Box<dyn TypeBuilder>> = IndexMap::new();
+
+                    variants.insert("None".to_string(), Box::new(()));
+                    variants
+                }),
+            );
+        }
+
+        {
+            let vars = Vars::default();
+
+            self.with_type_constructor(
+                &mut source,
+                "Option",
+                vec![Box::new(vars.var("'a", 1))],
+                enum_({
+                    let mut variants: IndexMap<String, Box<dyn TypeBuilder>> = IndexMap::new();
+
+                    variants.insert("Some".to_string(), Box::new(vars.var("'a", 1)));
+                    variants.insert("None".to_string(), Box::new(()));
+                    variants
+                }),
+            );
+        }
+
+        // Emit builtins in the exact original prelude order.
+        let order = [
+            "+",
+            "-",
+            "*",
+            ">",
+            "<=",
+            "=",
+            "print",
+            "debug",
+            "tuple",
+            "list",
+            "list/enumerate",
+            "list/map",
+            "list/find",
+            "get",
+        ];
+
+        for renv in renvs {
+            for name in order {
+                if let Some(ty) = renv.get_typed(name) {
+                    match ty {
+                        crate::runtime::BuiltinTy::Mono(b) => {
+                            let tb = id_fn({
+                                let b = b.clone();
+                                move |env: &mut TypeEnv, src: &mut SourceBuilder| b.build(env, src)
+                            });
+                            self.with_mono(&mut source, name, tb);
+                        }
+                        crate::runtime::BuiltinTy::Poly(b) => {
+                            let tb = id_fn({
+                                let b = b.clone();
+                                move |env: &mut TypeEnv, src: &mut SourceBuilder| b.build(env, src)
+                            });
+                            self.with_poly(&mut source, name, tb);
+                        }
+                    }
+                }
+            }
+        }
+
+        sources.get_mut(builtin).set(&source.finalize());
+        self
+    }
 }

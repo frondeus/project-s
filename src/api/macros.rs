@@ -429,3 +429,67 @@ fnlike!(
 fnlike!(
     RTRE, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16,
 );
+
+// AllParams (WithParams) support - no runtime
+impl<F, O, R> IntoNativeFunction<(O, R, WithParams)> for F
+where
+    F: 'static + Fn(AllParams<R>) -> O,
+    O: IntoValue + 'static,
+    R: 'static,
+{
+    fn into_native_function(self) -> Box<dyn NativeFunction> {
+        FnLike::<F, (O, R, WithParams)>::box_new(self)
+    }
+}
+
+impl<F, O, R> NativeFunction for FnLike<F, (O, R, WithParams)>
+where
+    F: 'static + Fn(AllParams<R>) -> O,
+    O: IntoValue,
+    R: 'static,
+{
+    fn with_name(&mut self, name: &'static str) {
+        self.name = Some(name);
+    }
+
+    fn signature_matches(&self, _rt: &mut Runtime, _values: &[Value]) -> bool {
+        true
+    }
+
+    fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+        let o = (self.f)(AllParams::new(values));
+        O::try_into_value(o, rt)
+    }
+}
+
+// AllParams (WithParams) support - with runtime
+impl<F, O, R> IntoNativeFunction<(O, R, WithRuntime, WithParams)> for F
+where
+    F: 'static + Fn(&mut Runtime, AllParams<R>) -> O,
+    O: IntoValue + 'static,
+    R: 'static,
+{
+    fn into_native_function(self) -> Box<dyn NativeFunction> {
+        FnLike::<F, (O, R, WithRuntime, WithParams)>::box_new(self)
+    }
+}
+
+impl<F, O, R> NativeFunction for FnLike<F, (O, R, WithRuntime, WithParams)>
+where
+    F: 'static + Fn(&mut Runtime, AllParams<R>) -> O,
+    O: IntoValue,
+    R: 'static,
+{
+    fn with_name(&mut self, name: &'static str) {
+        self.name = Some(name);
+    }
+
+    fn signature_matches(&self, _rt: &mut Runtime, _values: &[Value]) -> bool {
+        true
+    }
+
+    fn try_call(&self, rt: &mut Runtime, values: Vec<Value>) -> Result<Value, String> {
+        let o = (self.f)(rt, AllParams::new(values));
+        O::try_into_value(o, rt)
+    }
+}
