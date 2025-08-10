@@ -23,7 +23,7 @@ impl TypeEnv {
             SExp::Symbol(s) => {
                 let Some(ty) = self.envs.get_type(s) else {
                     diagnostics
-                        .add(span, "Unknown type")
+                        .add(span, format!("Unknown type: {s}"))
                         .add_extra("Used here", Some(span));
                     return Err(self.error(span));
                 };
