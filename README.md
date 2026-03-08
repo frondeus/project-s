@@ -7,8 +7,9 @@ Therefore I started writing a journal which you can see here: https://github.com
 I used this whitepaper https://www.cs.tufts.edu/~nr/cs257/archive/stephen-dolan/thesis.pdf for my inference theory.
 
 This experiment lasted almost four months and was stopped by two reasons:
-* I started experimenting with agentic coding which in august 2025 was not yet that good imho.
+* I started experimenting with agentic coding (in last few weeks of the project) which in august 2025 was not yet that good imho. I regret that a bit.
 * I was going through chemiotheraphy (I wont that battle btw) and could no longer focus on anything for few months.
+* Then i discovered I'd rather do something based on https://lptk.github.io/files/[v6.2]%20mlstruct.pdf whitepaper but it would mean massive rewrite of the inference.
 
 Overall i think it was a success.
 
